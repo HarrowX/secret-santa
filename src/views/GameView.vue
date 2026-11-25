@@ -14,6 +14,7 @@ const invite = ref(null)
 const notifications = ref([])
 const answers = ref([])
 const organizers = ref([])
+const lastOrganizerInvite = ref('')
 const error = ref('')
 const actionError = ref('')
 const loading = ref(true)
@@ -117,13 +118,26 @@ function removeParticipant(participant) {
 function inviteOrganizer() {
   return runAction(async () => {
     const invite = await api.games.inviteOrganizer(route.params.token)
-    await navigator.clipboard.writeText(invite.url).catch(() => {})
+    lastOrganizerInvite.value = invite.url
+    try {
+      await navigator.clipboard.writeText(invite.url)
+    } catch {
+      actionError.value = 'Ссылка скопировать не удалось — скопируйте её вручную'
+    }
     return invite
   })
 }
 
+function canRemoveOrganizer(organizer) {
+  if (busy.value || organizers.value.length <= 1) return false
+  return organizer.role !== 'owner' || Boolean(organizer.user_id)
+}
+
 function removeOrganizer(organizer) {
-  if (!window.confirm('Удалить организатора?')) return
+  const text = organizer.invited_token
+    ? 'Отменить приглашение организатора?'
+    : 'Удалить организатора?'
+  if (!window.confirm(text)) return
   return runAction(() => api.games.removeOrganizer(route.params.token, organizer.id))
 }
 
@@ -338,26 +352,44 @@ function reveal(pair) {
             Пригласить помощника
           </button>
         </div>
+        <button
+          v-if="lastOrganizerInvite"
+          type="button"
+          class="mt-3 w-full truncate rounded-xl border border-white/15 bg-white/5 px-4 py-2 text-left text-sm transition hover:bg-white/10"
+          @click="copyLink(lastOrganizerInvite)"
+        >
+          {{ lastOrganizerInvite }}
+        </button>
         <ul class="mt-3 grid gap-2 text-sm">
           <li
             v-for="organizer in organizers"
             :key="organizer.id"
-            class="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-white/10 bg-white/5 px-4 py-2"
+            class="grid gap-2 rounded-xl border border-white/10 bg-white/5 px-4 py-2"
           >
-            <span>
-              {{ organizer.user_email ?? (organizer.role === 'owner' ? 'Создатель (вход не выполнен)' : 'Приглашение ещё не принято') }}
-            </span>
-            <span class="flex items-center gap-3 text-xs opacity-60">
-              <span>{{ organizer.role === 'owner' ? 'создатель' : 'организатор' }}</span>
-              <button
-                type="button"
-                class="underline transition hover:opacity-100 disabled:opacity-50"
-                :disabled="busy || organizers.length <= 1"
-                @click="removeOrganizer(organizer)"
-              >
-                Удалить
-              </button>
-            </span>
+            <div class="flex flex-wrap items-center justify-between gap-2">
+              <span>
+                {{ organizer.user_email ?? (organizer.role === 'owner' ? 'Создатель (вход не выполнен)' : 'Приглашение ещё не принято') }}
+              </span>
+              <span class="flex items-center gap-3 text-xs opacity-60">
+                <span>{{ organizer.invited_token ? 'приглашён' : organizer.role === 'owner' ? 'создатель' : 'организатор' }}</span>
+                <button
+                  type="button"
+                  class="underline transition hover:opacity-100 disabled:opacity-50"
+                  :disabled="!canRemoveOrganizer(organizer)"
+                  @click="removeOrganizer(organizer)"
+                >
+                  {{ organizer.invited_token ? 'Отменить' : 'Удалить' }}
+                </button>
+              </span>
+            </div>
+            <button
+              v-if="organizer.url"
+              type="button"
+              class="truncate text-left text-xs opacity-60 underline transition hover:opacity-100"
+              @click="copyLink(organizer.url)"
+            >
+              {{ organizer.url }}
+            </button>
           </li>
           <li v-if="!organizers.length" class="opacity-50">Организаторов пока нет</li>
         </ul>

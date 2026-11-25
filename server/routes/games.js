@@ -637,7 +637,10 @@ gamesRouter.get('/:id/organizers', (req, res) => {
       LEFT JOIN users ON users.id = organizers.user_id
       WHERE organizers.game_id = ?
       ORDER BY organizers.id
-    `).all(id),
+    `).all(id).map((organizer) => ({
+      ...organizer,
+      url: organizer.invited_token ? publicLink(req, `/organizer/${organizer.invited_token}`) : null,
+    })),
   )
 })
 
@@ -687,12 +690,21 @@ gamesRouter.delete('/:id/organizers/:organizerId', (req, res) => {
   getGame(id)
   const organizerId = Number(req.params.organizerId)
   const organizer = db
-    .prepare('SELECT id FROM organizers WHERE id = ? AND game_id = ?')
+    .prepare('SELECT id, role, user_id FROM organizers WHERE id = ? AND game_id = ?')
     .get(organizerId, id)
   if (!organizer) fail(404, 'Организатор не найден')
 
   const count = db.prepare('SELECT COUNT(*) AS total FROM organizers WHERE game_id = ?').get(id).total
   if (count <= 1) fail(409, 'Нельзя удалить последнего организатора')
+  if (organizer.role === 'owner') {
+    const accepted = db
+      .prepare(`
+        SELECT COUNT(*) AS total FROM organizers
+        WHERE game_id = ? AND user_id IS NOT NULL AND id <> ?
+      `)
+      .get(id, organizerId).total
+    if (!accepted) fail(409, 'Сначала передайте управление принявшему приглашение организатору')
+  }
 
   db.prepare('DELETE FROM organizers WHERE id = ?').run(organizerId)
   addEvent(id, 'settings', 'Организатор удалён', req.user?.id ?? null)

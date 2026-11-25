@@ -499,6 +499,14 @@ describe('API', () => {
     assert.equal(invite.status, 201)
     assert.match(invite.body.url, /https:\/\/santa\.local\/organizer\//)
 
+    const pending = await request('GET', `/games/${game.id}/organizers`)
+    assert.ok(pending.body.some((organizer) => organizer.url === invite.body.url))
+    const earlyOwnerRemoval = await request(
+      'DELETE',
+      `/games/${game.id}/organizers/${pending.body[0].id}`,
+    )
+    assert.equal(earlyOwnerRemoval.status, 409)
+
     const accepted = await request(
       'POST',
       `/organizer-invites/${invite.body.token}/accept`,
