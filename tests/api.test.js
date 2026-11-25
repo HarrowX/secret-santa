@@ -413,6 +413,16 @@ describe('API', () => {
       if (originalDomainName === undefined) delete process.env.DOMAIN_NAME
       else process.env.DOMAIN_NAME = originalDomainName
     }
+
+    process.env.APP_URL = 'http://localhost'
+    try {
+      const invite = await request('GET', `/games/${game.id}/invite`)
+      assert.equal(invite.body.commonUrl, `http://localhost/game/${game.token}`)
+      assert.ok(invite.body.participants.every((person) => person.url.startsWith('http://localhost/join/')))
+    } finally {
+      if (originalAppUrl === undefined) delete process.env.APP_URL
+      else process.env.APP_URL = originalAppUrl
+    }
   })
 
   it('удаляет участника и перестраивает пары', async () => {
