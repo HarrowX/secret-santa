@@ -53,16 +53,16 @@ function cookieHeader(response) {
   return response.cookie ? { Cookie: response.cookie } : {}
 }
 
-async function createGame(title = 'Тестовая игра') {
-  const response = await request('POST', '/games', { title, themeId: 'winter' })
+async function createGame(title = 'Тестовая игра', headers = {}) {
+  const response = await request('POST', '/games', { title, themeId: 'winter' }, headers)
   assert.equal(response.status, 201)
   return response.body
 }
 
-async function addParticipants(gameId, names) {
+async function addParticipants(gameId, names, headers = {}) {
   const people = []
   for (const name of names) {
-    const response = await request('POST', `/games/${gameId}/participants`, { name })
+    const response = await request('POST', `/games/${gameId}/participants`, { name }, headers)
     assert.equal(response.status, 201)
     people.push(response.body)
   }
@@ -542,17 +542,30 @@ describe('API', () => {
   })
 
   it('приглашает организатора по ссылке и защищает последнего организатора', async () => {
-    const game = await createGame()
+    const owner = await request('POST', '/auth/session', {})
     const session = await request('POST', '/auth/session', {})
-    const invite = await request('POST', `/games/${game.id}/organizers/invite`)
+    const game = await createGame('Организаторы', cookieHeader(owner))
+    const invite = await request(
+      'POST',
+      `/games/${game.id}/organizers/invite`,
+      undefined,
+      cookieHeader(owner),
+    )
     assert.equal(invite.status, 201)
     assert.match(invite.body.url, /https:\/\/santa\.local\/organizer\//)
 
-    const pending = await request('GET', `/games/${game.id}/organizers`)
+    const pending = await request(
+      'GET',
+      `/games/${game.id}/organizers`,
+      undefined,
+      cookieHeader(owner),
+    )
     assert.ok(pending.body.some((organizer) => organizer.url === invite.body.url))
     const earlyOwnerRemoval = await request(
       'DELETE',
       `/games/${game.id}/organizers/${pending.body[0].id}`,
+      undefined,
+      cookieHeader(owner),
     )
     assert.equal(earlyOwnerRemoval.status, 409)
 
@@ -566,76 +579,176 @@ describe('API', () => {
     assert.equal(accepted.body.id, game.id)
     assert.equal(accepted.body.token, game.token)
 
-    const organizers = await request('GET', `/games/${game.id}/organizers`)
+    const organizers = await request(
+      'GET',
+      `/games/${game.id}/organizers`,
+      undefined,
+      cookieHeader(owner),
+    )
     assert.equal(organizers.body.length, 2)
 
-    const third = await request('POST', `/games/${game.id}/organizers/invite`)
+    const third = await request(
+      'POST',
+      `/games/${game.id}/organizers/invite`,
+      undefined,
+      cookieHeader(owner),
+    )
     assert.equal(third.status, 201)
-    const fourth = await request('POST', `/games/${game.id}/organizers/invite`)
+    const fourth = await request(
+      'POST',
+      `/games/${game.id}/organizers/invite`,
+      undefined,
+      cookieHeader(owner),
+    )
     assert.equal(fourth.status, 409)
 
     const firstRemoval = await request(
       'DELETE',
       `/games/${game.id}/organizers/${organizers.body[0].id}`,
+      undefined,
+      cookieHeader(owner),
     )
     assert.equal(firstRemoval.status, 200)
     const lastRemoval = await request(
       'DELETE',
       `/games/${game.id}/organizers/${organizers.body[1].id}`,
+      undefined,
+      cookieHeader(session),
     )
     assert.equal(lastRemoval.status, 200)
-    const guard = await request('DELETE', `/games/${game.id}/organizers/${third.body.id}`)
+    const guard = await request(
+      'DELETE',
+      `/games/${game.id}/organizers/${third.body.id}`,
+      undefined,
+      cookieHeader(session),
+    )
     assert.equal(guard.status, 409)
   })
 
   it('управляет вопросами, сообщениями, организаторами и поддоменами', async () => {
-    const game = await createGame()
-    const people = await addParticipants(game.id, ['Аня', 'Борис'])
+    const owner = await request('POST', '/auth/session', {})
+    const game = await createGame('Управление', cookieHeader(owner))
+    const people = await addParticipants(game.id, ['Аня', 'Борис'], cookieHeader(owner))
     const session = await request('POST', '/auth/session', {})
 
-    const question = await request('POST', `/games/${game.id}/questions`, {
-      title: 'Что подарить?',
-      type: 'single',
-      required: true,
-    })
+    const question = await request(
+      'POST',
+      `/games/${game.id}/questions`,
+      {
+        title: 'Что подарить?',
+        type: 'single',
+        required: true,
+      },
+      cookieHeader(owner),
+    )
     assert.equal(question.status, 201)
-    const updated = await request('PATCH', `/games/${game.id}/questions/${question.body.id}`, {
-      title: 'Идея подарка',
-    })
+    const updated = await request(
+      'PATCH',
+      `/games/${game.id}/questions/${question.body.id}`,
+      { title: 'Идея подарка' },
+      cookieHeader(owner),
+    )
     assert.equal(updated.body.title, 'Идея подарка')
-    const deleted = await request('DELETE', `/games/${game.id}/questions/${question.body.id}`)
+    const deleted = await request(
+      'DELETE',
+      `/games/${game.id}/questions/${question.body.id}`,
+      undefined,
+      cookieHeader(owner),
+    )
     assert.equal(deleted.status, 200)
 
-    const message = await request('POST', `/games/${game.id}/messages`, {
-      body: 'Напоминание',
-      toId: people[1].id,
-    })
+    const message = await request(
+      'POST',
+      `/games/${game.id}/messages`,
+      { body: 'Напоминание', toId: people[1].id },
+      cookieHeader(owner),
+    )
     assert.equal(message.status, 201)
-    const messages = await request('GET', `/games/${game.id}/messages`)
+    const messages = await request(
+      'GET',
+      `/games/${game.id}/messages`,
+      undefined,
+      cookieHeader(owner),
+    )
     assert.equal(messages.body.length, 1)
 
-    const organizer = await request('POST', `/games/${game.id}/organizers`, {
-      token: session.body.user.token,
-    })
+    const organizer = await request(
+      'POST',
+      `/games/${game.id}/organizers`,
+      { token: session.body.user.token },
+      cookieHeader(owner),
+    )
     assert.equal(organizer.status, 201)
-    const organizers = await request('GET', `/games/${game.id}/organizers`)
+    const organizers = await request(
+      'GET',
+      `/games/${game.id}/organizers`,
+      undefined,
+      cookieHeader(owner),
+    )
     assert.equal(organizers.body.length, 2)
 
-    const tenant = await request('POST', '/tenants', {
-      slug: 'company',
-      gameId: game.id,
-      domain: 'santa.local',
-    })
+    const tenant = await request(
+      'POST',
+      '/tenants',
+      { slug: 'company', gameId: game.id, domain: 'santa.local' },
+      cookieHeader(owner),
+    )
     assert.equal(tenant.status, 201)
     const resolved = await request('GET', '/tenants/company')
     assert.equal(resolved.body.game.title, game.title)
     const current = await request('GET', '/tenants/current')
     assert.equal(current.body.tenant, null)
 
-    const invalid = await request('POST', '/tenants', { slug: 'bad slug', gameId: game.id })
+    const invalid = await request(
+      'POST',
+      '/tenants',
+      { slug: 'bad slug', gameId: game.id },
+      cookieHeader(owner),
+    )
     assert.equal(invalid.status, 400)
-    const reserved = await request('POST', '/tenants', { slug: 'admin', gameId: game.id })
+    const reserved = await request(
+      'POST',
+      '/tenants',
+      { slug: 'admin', gameId: game.id },
+      cookieHeader(owner),
+    )
     assert.equal(reserved.status, 409)
+  })
+
+  it('проверяет права организаторов', async () => {
+    const owner = await request('POST', '/auth/session', {})
+    const outsider = await request('POST', '/auth/session', {})
+    const game = await createGame('Права доступа', cookieHeader(owner))
+
+    const allowed = await request(
+      'POST',
+      `/games/${game.id}/participants`,
+      { name: 'Свой участник' },
+      cookieHeader(owner),
+    )
+    assert.equal(allowed.status, 201)
+
+    const denied = await request(
+      'POST',
+      `/games/${game.id}/participants`,
+      { name: 'Чужой участник' },
+      cookieHeader(outsider),
+    )
+    assert.equal(denied.status, 403)
+    assert.match(denied.body.error.message, /организатор/)
+
+    const anonymous = await request('POST', `/games/${game.id}/participants`, {
+      name: 'Без сессии',
+    })
+    assert.equal(anonymous.status, 403)
+  })
+
+  it('записывает автора событий в историю', async () => {
+    const owner = await request('POST', '/auth/session', {})
+    const game = await createGame('Autor', cookieHeader(owner))
+    const response = await request('GET', `/games/${game.id}`, undefined, cookieHeader(owner))
+    const created = response.body.events.find((item) => item.text === 'Игра создана')
+    assert.equal(created.actor, String(owner.body.user.id))
   })
 
   it('ограничивает частоту запросов к auth', async () => {

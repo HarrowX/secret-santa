@@ -1,5 +1,6 @@
 import { Router } from 'express'
 import { fail, HttpError } from '../http-error.js'
+import { requireOrganizer } from '../permissions.js'
 import { gamesRepository } from '../repositories/games.js'
 import { tenantsRepository } from '../repositories/tenants.js'
 import { schemas, validateBody } from '../validation.js'
@@ -27,6 +28,7 @@ tenantsRouter.post('/', validateBody(schemas.tenant), (req, res) => {
   const gameId = req.body.gameId
   const game = gamesRepository.findById(gameId)
   if (!game) fail(404, 'Игра не найдена')
+  requireOrganizer(game.id, req.user)
   const domain = req.body.domain ?? null
 
   try {

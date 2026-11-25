@@ -622,7 +622,10 @@ function reveal(pair) {
         <div class="rounded-2xl border border-white/10 bg-white/5 p-5">
           <h2 class="font-bold">История</h2>
           <ol class="mt-3 grid gap-2 text-sm opacity-70">
-            <li v-for="item in data.events" :key="item.id">{{ item.created_at }} · {{ item.text }}</li>
+            <li v-for="item in data.events" :key="item.id">
+              {{ item.created_at }} · {{ item.text }}
+              <span v-if="item.actor" class="opacity-60">— {{ item.actor }}</span>
+            </li>
             <li v-if="!data.events.length" class="opacity-50">Событий пока нет</li>
           </ol>
         </div>
