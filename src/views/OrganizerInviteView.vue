@@ -12,7 +12,7 @@ onMounted(async () => {
   try {
     await ensureSession()
     const game = await api.organizerInvites.accept(route.params.token)
-    await router.replace(`/game/${game.id}`)
+    await router.replace(`/game/${game.token}`)
   } catch (requestError) {
     error.value = requestError.message
   } finally {

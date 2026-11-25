@@ -35,11 +35,20 @@ const questionHint = ref('')
 const questionType = ref('text')
 const questionRequired = ref(false)
 const questionCount = computed(() => data.value?.questions.length ?? 0)
+const gameToken = computed(() => String(route.params.token ?? ''))
+const gameLabel = computed(() =>
+  gameToken.value && gameToken.value !== 'undefined' ? gameToken.value.slice(0, 8) : 'демо',
+)
 
 async function load(id) {
   loading.value = true
   error.value = ''
   data.value = null
+  if (!id || id === 'undefined') {
+    error.value = 'Игра не найдена'
+    loading.value = false
+    return
+  }
   invite.value = null
   notifications.value = []
   answers.value = []
@@ -227,7 +236,7 @@ function reveal(pair) {
     </button>
 
     <div class="mt-8">
-      <p class="text-xs font-semibold uppercase tracking-[0.3em] opacity-60">Игра · {{ route.params.token.slice(0, 8) }}</p>
+      <p class="text-xs font-semibold uppercase tracking-[0.3em] opacity-60">Игра · {{ gameLabel }}</p>
       <h1 class="mt-2 text-3xl font-bold tracking-tight sm:text-4xl">{{ data?.game.title ?? 'Загрузка игры' }}</h1>
     </div>
 

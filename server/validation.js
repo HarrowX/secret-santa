@@ -76,6 +76,12 @@ export const schemas = {
     })
     .strict(),
   organizer: z.object({ token: text.max(80) }).strict(),
+  credentials: z
+    .object({
+      email: z.string().trim().toLowerCase().email().max(160),
+      password: z.string().min(6).max(200),
+    })
+    .strict(),
   recovery: z.object({ code: text.max(40) }).strict(),
   email: z.object({ email: z.string().trim().toLowerCase().email().max(160) }).strict(),
   tenant: z

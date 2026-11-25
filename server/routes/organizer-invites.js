@@ -9,7 +9,7 @@ organizerInvitesRouter.post('/:token/accept', (req, res) => {
 
   const invite = db
     .prepare(`
-      SELECT o.id, o.game_id, o.user_id, g.title
+      SELECT o.id, o.game_id, o.user_id, g.title, g.token AS game_token
       FROM organizers o
       JOIN games g ON g.id = o.game_id
       WHERE o.invited_token = ?
@@ -33,7 +33,7 @@ organizerInvitesRouter.post('/:token/accept', (req, res) => {
     ).run(invite.game_id, 'settings', 'Принято приглашение организатора', 'организатор')
   })()
 
-  res.json({ id: invite.game_id, title: invite.title })
+  res.json({ id: invite.game_id, token: invite.game_token, title: invite.title })
 })
 
 organizerInvitesRouter.use((error, _req, res, next) => {
