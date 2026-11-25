@@ -214,6 +214,9 @@ describe('API', () => {
     assert.ok(newPairs.some((pair) => pair.to_id === third.id))
     assert.ok(newPairs.some((pair) => pair.to_id === fourth.id))
 
+    const namedPairs = await request('GET', `/games/${game.id}/pairs`)
+    assert.ok(namedPairs.body.every((pair) => pair.from_name && pair.to_name))
+
     const repeated = await request('POST', `/games/${game.id}/draw/new`)
     assert.equal(repeated.status, 400)
   })

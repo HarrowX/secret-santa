@@ -50,6 +50,11 @@ function participantName(id) {
   return data.value?.participants.find((person) => person.id === id)?.name ?? 'Участник'
 }
 
+function receiverFor(id) {
+  const pair = data.value?.pairs.find((item) => item.from_id === id)
+  return pair ? participantName(pair.to_id) : ''
+}
+
 function notificationText(item) {
   try {
     const payload = JSON.parse(item.payload)
@@ -354,6 +359,7 @@ function reveal(pair) {
               :person="person"
               :accent="preferences.theme.accent"
               :busy="busy"
+              :receiver-name="receiverFor(person.id)"
               @save="updateParticipant(person.id, $event)"
             />
             <p v-if="!data.participants.length" class="text-sm opacity-50">Пока никто не присоединился</p>
