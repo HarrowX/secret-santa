@@ -2,6 +2,7 @@ import express from 'express'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { authMiddleware } from './middlewares/auth.js'
+import { csrfMiddleware } from './middlewares/csrf.js'
 import { rateLimit } from './middlewares/rateLimit.js'
 import { requestLogger } from './middlewares/logger.js'
 import { tenantMiddleware } from './middlewares/tenant.js'
@@ -24,6 +25,7 @@ export function createApp() {
   app.use(requestLogger)
   app.use(express.json())
   app.use(authMiddleware)
+  app.use(csrfMiddleware)
   app.use(tenantMiddleware)
 
   app.get('/api/health', (_req, res) => {
@@ -34,7 +36,7 @@ export function createApp() {
     res.json({ message: 'Привет из Secret Santa API' })
   })
 
-  app.use('/api/auth', rateLimit({ windowMs: 60_000, max: 20 }), authRouter)
+  app.use('/api/auth', rateLimit({ name: 'auth', windowMs: 60_000, max: 20 }), authRouter)
   app.use('/api/games', gamesRouter)
   app.use('/api/invites', invitesRouter)
   app.use('/api/me', meRouter)

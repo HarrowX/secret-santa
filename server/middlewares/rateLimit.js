@@ -1,10 +1,14 @@
-export function rateLimit({ windowMs = 60_000, max = 10 } = {}) {
-  const hits = new Map()
+function clientKey(req) {
+  return req.ip || req.socket.remoteAddress || 'unknown'
+}
 
+export function rateLimit({ windowMs = 60_000, max = 10, name = 'rate', key } = {}) {
   return (req, res, next) => {
-    const key = req.ip || req.socket.remoteAddress || 'unknown'
+    const store = (req.app.locals.rateLimits ??= new Map())
+    const identity = key ? key(req) : clientKey(req)
+    const cacheKey = `${name}:${identity}`
     const now = Date.now()
-    const entry = hits.get(key) ?? { start: now, count: 0 }
+    const entry = store.get(cacheKey) ?? { start: now, count: 0 }
 
     if (now - entry.start > windowMs) {
       entry.start = now
@@ -12,7 +16,7 @@ export function rateLimit({ windowMs = 60_000, max = 10 } = {}) {
     }
 
     entry.count += 1
-    hits.set(key, entry)
+    store.set(cacheKey, entry)
 
     if (entry.count > max) {
       res.status(429).json({ error: { message: 'Слишком много запросов' } })

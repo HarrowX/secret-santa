@@ -117,7 +117,13 @@ function pastPairsFor(gameId) {
   )
 }
 
-const reminderRateLimit = rateLimit({ windowMs: 60_000, max: 10 })
+const reminderRateLimit = rateLimit({ name: 'reminder', windowMs: 60_000, max: 10 })
+const drawRateLimit = rateLimit({
+  name: 'draw',
+  windowMs: 60_000,
+  max: 10,
+  key: (req) => `${req.ip || req.socket.remoteAddress || 'unknown'}:${req.params.id ?? ''}`,
+})
 
 gamesRouter.get('/', (_req, res) => {
   res.json(gamesRepository.list())
@@ -417,7 +423,7 @@ gamesRouter.delete('/:id/exclusions/:fromId/:toId', (req, res) => {
   res.json({ ok: true })
 })
 
-gamesRouter.post('/:id/draw', (req, res) => {
+gamesRouter.post('/:id/draw', drawRateLimit, (req, res) => {
   const id = resolveGameId(req.params.id)
   getGame(id)
   requireOrganizer(id, req.user)
@@ -451,7 +457,7 @@ gamesRouter.post('/:id/draw', (req, res) => {
   res.json(db.prepare('SELECT * FROM pairs WHERE game_id = ? ORDER BY from_id').all(id))
 })
 
-gamesRouter.post('/:id/draw/new', (req, res) => {
+gamesRouter.post('/:id/draw/new', drawRateLimit, (req, res) => {
   const id = resolveGameId(req.params.id)
   getGame(id)
   requireOrganizer(id, req.user)
@@ -515,7 +521,7 @@ gamesRouter.get('/:id/pairs', (req, res) => {
   )
 })
 
-gamesRouter.post('/:id/pairs/reset', (req, res) => {
+gamesRouter.post('/:id/pairs/reset', drawRateLimit, (req, res) => {
   const id = resolveGameId(req.params.id)
   getGame(id)
   requireOrganizer(id, req.user)

@@ -2,6 +2,7 @@ import { createHash, randomBytes } from 'node:crypto'
 import { db } from './db.js'
 
 export const SESSION_COOKIE = 'santa_session'
+export const CSRF_COOKIE = 'santa_csrf'
 export const SESSION_TTL = 30 * 24 * 60 * 60 * 1000
 
 export function createToken(bytes = 32) {

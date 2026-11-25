@@ -9,6 +9,7 @@ let db
 let createApp
 let server
 let base
+const cookies = new Map()
 
 before(async () => {
   process.env.DB_PATH = path.join(tmp, 'test.sqlite')
@@ -20,6 +21,7 @@ before(async () => {
 
 beforeEach(async () => {
   db.exec('DELETE FROM users; DELETE FROM games;')
+  cookies.clear()
   server = createApp().listen(0)
   await new Promise((resolve) => server.once('listening', resolve))
   base = `http://127.0.0.1:${server.address().port}/api`
@@ -35,17 +37,54 @@ after(() => {
   fs.rmSync(tmp, { recursive: true, force: true })
 })
 
+function parseCookies(header) {
+  const parsed = new Map()
+  for (const part of String(header ?? '').split(';')) {
+    const [name, ...rest] = part.trim().split('=')
+    if (name && rest.length) parsed.set(name, decodeURIComponent(rest.join('=')))
+  }
+  return parsed
+}
+
+function mergedCookies(headers) {
+  const merged = new Map(cookies)
+  for (const [name, value] of parseCookies(headers.Cookie ?? headers.cookie)) merged.set(name, value)
+  return merged
+}
+
+function saveCookies(response) {
+  const items = response.headers.getSetCookie?.() ?? []
+  for (const item of items) {
+    const [name, ...rest] = item.split(';')[0].trim().split('=')
+    if (!name || !rest.length) continue
+    if (!rest.join('=') || /Max-Age=0/i.test(item)) cookies.delete(name)
+    else cookies.set(name, decodeURIComponent(rest.join('=')))
+  }
+}
+
 async function request(method, target, body, headers = {}) {
+  const noCookies = headers['x-test-no-cookies'] === true
+  const merged = noCookies ? new Map() : mergedCookies(headers)
+  const cookie = [...merged].map(([name, value]) => `${name}=${value}`).join('; ')
+  const unsafe = !['GET', 'HEAD', 'OPTIONS'].includes(method)
+  const { Cookie: _upperCookie, cookie: _lowerCookie, 'x-test-no-cookies': _noCookies, ...restHeaders } = headers
   const response = await fetch(`${base}${target}`, {
     method,
-    headers: { 'Content-Type': 'application/json', ...headers },
+    headers: {
+      'Content-Type': 'application/json',
+      ...(cookie ? { Cookie: cookie } : {}),
+      ...(unsafe && merged.get('santa_csrf') ? { 'x-csrf-token': merged.get('santa_csrf') } : {}),
+      ...restHeaders,
+    },
     body: body === undefined ? undefined : JSON.stringify(body),
   })
+  saveCookies(response)
   const payload = await response.json().catch(() => null)
+  const sessionCookie = (response.headers.getSetCookie?.() ?? []).find((item) => item.startsWith('santa_session='))
   return {
     status: response.status,
     body: payload,
-    cookie: response.headers.get('set-cookie')?.split(';')[0] ?? null,
+    cookie: sessionCookie?.split(';')[0] ?? null,
   }
 }
 
@@ -375,7 +414,7 @@ describe('API', () => {
   it('показывает пользователю его игры и раскрытый обмен', async () => {
     const session = await request('POST', '/auth/session', {})
     const headers = cookieHeader(session)
-    const game = await createGame('Мой кабинет')
+    const game = await createGame('Мой кабинет', { 'x-test-no-cookies': true })
     const [person] = await addParticipants(game.id, ['Аня', 'Борис'])
     const invite = await request('GET', `/games/${game.id}/invite`)
     const token = invite.body.participants[0].invite_token
@@ -397,7 +436,7 @@ describe('API', () => {
     assert.equal(exchanges.body[0].receiver_name, 'Борис')
     assert.ok(exchanges.body[0].revealed_at)
 
-    const unauthorized = await request('GET', '/me/games')
+    const unauthorized = await request('GET', '/me/games', undefined, { 'x-test-no-cookies': true })
     assert.equal(unauthorized.status, 401)
   })
 
@@ -818,6 +857,37 @@ describe('API', () => {
       statuses.push(response.status)
     }
     assert.equal(statuses.filter((status) => status === 201).length, 20)
+    assert.equal(statuses.at(-1), 429)
+  })
+
+  it('требует CSRF-токен для изменений с активной сессией', async () => {
+    const session = await request('POST', '/auth/session', {})
+    assert.equal(session.status, 201)
+    assert.ok(cookies.get('santa_csrf'))
+
+    const rejected = await request(
+      'POST',
+      '/games',
+      { title: 'Без токена', themeId: 'winter' },
+      {
+        'x-csrf-token': '',
+      },
+    )
+    assert.equal(rejected.status, 403)
+
+    const allowed = await createGame('С токеном')
+    assert.ok(allowed.id)
+  })
+
+  it('ограничивает частоту жеребьёвки', async () => {
+    const game = await createGame('Лимит жеребьёвки')
+    await addParticipants(game.id, ['Аня', 'Борис', 'Вика'])
+    const statuses = []
+    for (let index = 0; index < 11; index += 1) {
+      const response = await request('POST', `/games/${game.id}/draw`)
+      statuses.push(response.status)
+    }
+    assert.equal(statuses.filter((status) => status === 200).length, 10)
     assert.equal(statuses.at(-1), 429)
   })
 })

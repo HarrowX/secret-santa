@@ -24,7 +24,7 @@ function userByEmail(email) {
 }
 
 authRouter.get('/session', (req, res) => {
-  res.json({ user: req.user ?? null })
+  res.json({ user: req.user ?? null, csrfToken: req.csrfToken })
 })
 
 authRouter.post('/session', (req, res) => {
@@ -40,7 +40,7 @@ authRouter.post('/session', (req, res) => {
     createSession(userId, res)
   })()
 
-  res.status(201).json({ user: publicUser(user), recoveryCodes })
+  res.status(201).json({ user: publicUser(user), recoveryCodes, csrfToken: req.csrfToken })
 })
 
 authRouter.post('/register', validateBody(schemas.credentials), (req, res) => {

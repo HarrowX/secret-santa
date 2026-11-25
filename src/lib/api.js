@@ -1,4 +1,14 @@
 const baseUrl = (import.meta.env.VITE_API_BASE_URL || '/api').replace(/\/$/, '')
+const CSRF_COOKIE = 'santa_csrf'
+
+function csrfToken() {
+  const cookie = document.cookie.split('; ').find((item) => item.startsWith(`${CSRF_COOKIE}=`))
+  return cookie ? decodeURIComponent(cookie.slice(CSRF_COOKIE.length + 1)) : ''
+}
+
+function isUnsafeMethod(method) {
+  return !['GET', 'HEAD', 'OPTIONS'].includes(method.toUpperCase())
+}
 
 export class ApiError extends Error {
   constructor(status, message) {
@@ -10,13 +20,16 @@ export class ApiError extends Error {
 
 async function request(path, options = {}) {
   let response
+  const method = options.method ?? 'GET'
 
   try {
     response = await fetch(`${baseUrl}${path}`, {
       credentials: 'include',
       ...options,
+      method,
       headers: {
         'Content-Type': 'application/json',
+        ...(isUnsafeMethod(method) ? { 'x-csrf-token': csrfToken() } : {}),
         ...(options.headers ?? {}),
       },
     })
