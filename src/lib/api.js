@@ -139,6 +139,9 @@ export const api = {
   randomizer: {
     draw: (names) => request('/randomizer', { method: 'POST', body: JSON.stringify({ names }) }),
   },
+  support: {
+    send: (body) => request('/support', { method: 'POST', body: JSON.stringify(body) }),
+  },
   invites: {
     get: (token) => request(`/invites/${encodeURIComponent(token)}`),
     accept: (token, body) =>

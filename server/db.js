@@ -39,6 +39,11 @@ for (const column of ['gift_sent_at', 'gift_received_at']) {
   }
 }
 
+const gameColumns = db.prepare('PRAGMA table_info(games)').all()
+if (!gameColumns.some((column) => column.name === 'format')) {
+  db.exec('ALTER TABLE games ADD COLUMN format TEXT')
+}
+
 const messageColumns = db.prepare('PRAGMA table_info(messages)').all()
 for (const [column, definition] of [
   ['recipient_email', 'TEXT'],

@@ -18,9 +18,9 @@ defineProps({
       <div>
         <p class="text-xs font-semibold uppercase tracking-widest opacity-60">Игра</p>
         <div class="mt-3 grid gap-2 text-sm opacity-75">
-          <span>Создать игру</span>
-          <span>Быстрая жеребьёвка</span>
-          <span>Мои игры</span>
+          <RouterLink to="/" class="hover:underline">Создать игру</RouterLink>
+          <RouterLink to="/randomizer" class="hover:underline">Быстрая жеребьёвка</RouterLink>
+          <RouterLink to="/my" class="hover:underline">Мои игры</RouterLink>
         </div>
       </div>
       <div>
@@ -30,15 +30,16 @@ defineProps({
           <span>Коллегам</span>
           <span>Семье</span>
           <span>Классу</span>
+          <span>Белому слону</span>
         </div>
       </div>
       <div>
         <p class="text-xs font-semibold uppercase tracking-widest opacity-60">Помощь</p>
         <div class="mt-3 grid gap-2 text-sm opacity-75">
-          <span>Частые вопросы</span>
-          <span>Написать в поддержку</span>
-          <span>Условия</span>
-          <span>Приватность</span>
+          <RouterLink to="/faq" class="hover:underline">Частые вопросы</RouterLink>
+          <RouterLink to="/support" class="hover:underline">Написать в поддержку</RouterLink>
+          <RouterLink to="/terms" class="hover:underline">Условия</RouterLink>
+          <RouterLink to="/privacy" class="hover:underline">Приватность</RouterLink>
         </div>
       </div>
     </div>

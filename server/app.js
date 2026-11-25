@@ -12,6 +12,7 @@ import { invitesRouter } from './routes/invites.js'
 import { meRouter } from './routes/me.js'
 import { organizerInvitesRouter } from './routes/organizer-invites.js'
 import { randomizerRouter } from './routes/randomizer.js'
+import { supportRouter } from './routes/support.js'
 import { tenantsRouter } from './routes/tenants.js'
 import { themesRouter } from './routes/themes.js'
 
@@ -39,6 +40,7 @@ export function createApp() {
   app.use('/api/me', meRouter)
   app.use('/api/organizer-invites', organizerInvitesRouter)
   app.use('/api/randomizer', randomizerRouter)
+  app.use('/api/support', supportRouter)
   app.use('/api/tenants', tenantsRouter)
   app.use('/api/themes', themesRouter)
 

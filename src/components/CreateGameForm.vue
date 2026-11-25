@@ -1,6 +1,7 @@
 <script setup>
 import { ref, watch } from 'vue'
 import { api, ensureSession } from '../lib/api'
+import { presets } from '../content/presets'
 
 const props = defineProps({
   accent: String,
@@ -17,6 +18,7 @@ const title = ref('Новогодняя игра')
 const budget = ref('')
 const exchangeDate = ref('')
 const rules = ref('')
+const format = ref('')
 const selectedTheme = ref(props.themeId)
 const busy = ref(false)
 const error = ref('')
@@ -24,6 +26,16 @@ const error = ref('')
 watch(() => props.themeId, (value) => {
   selectedTheme.value = value
 })
+
+function applyPreset(id) {
+  const preset = presets.find((item) => item.id === id)
+  if (!preset) return
+  format.value = preset.id
+  selectedTheme.value = preset.themeId
+  if (!rules.value || presets.some((item) => rules.value === item.rules)) {
+    rules.value = preset.rules
+  }
+}
 
 async function submit() {
   busy.value = true
@@ -35,6 +47,7 @@ async function submit() {
       budget: budget.value,
       exchangeDate: exchangeDate.value,
       rules: rules.value,
+      format: format.value,
       themeId: selectedTheme.value,
     })
     emit('created', game)
@@ -53,7 +66,7 @@ async function submit() {
         <div>
           <p class="text-xs font-semibold uppercase tracking-[0.3em] opacity-60">Реальная игра</p>
           <h2 class="mt-1 text-xl font-bold">Настройте игру и начните</h2>
-          <p class="mt-1 text-xs opacity-60">Без регистрации и оплаты — игра появится сразу</p>
+          <p class="mt-1 text-xs opacity-60">Регистрация не нужна — игра появится сразу</p>
         </div>
         <button
           type="submit"
@@ -93,6 +106,17 @@ async function submit() {
             type="date"
             class="rounded-xl border border-white/15 bg-white/5 px-4 py-2.5 text-sm outline-none focus:border-white/40"
           />
+        </label>
+        <label class="grid gap-1 text-sm lg:col-span-2">
+          <span class="text-xs font-semibold uppercase tracking-widest opacity-60">Формат</span>
+          <select
+            :value="format"
+            class="rounded-xl border border-white/15 bg-slate-900/80 px-4 py-2.5 text-sm outline-none focus:border-white/40"
+            @change="applyPreset($event.target.value)"
+          >
+            <option value="">Без пресета</option>
+            <option v-for="preset in presets" :key="preset.id" :value="preset.id">{{ preset.label }}</option>
+          </select>
         </label>
         <label class="grid gap-1 text-sm lg:col-span-2">
           <span class="text-xs font-semibold uppercase tracking-widest opacity-60">Тема</span>

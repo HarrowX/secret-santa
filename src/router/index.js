@@ -1,6 +1,8 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import LandingView from '../views/LandingView.vue'
 import DemoView from '../views/DemoView.vue'
+import InfoView from '../views/InfoView.vue'
+import SupportView from '../views/SupportView.vue'
 import GameView from '../views/GameView.vue'
 import JoinView from '../views/JoinView.vue'
 import MyGamesView from '../views/MyGamesView.vue'
@@ -17,6 +19,10 @@ const router = createRouter({
     { path: '/organizer/:token', name: 'organizer-invite', component: OrganizerInviteView },
     { path: '/my', name: 'my', component: MyGamesView },
     { path: '/randomizer', name: 'randomizer', component: RandomizerView },
+    { path: '/faq', name: 'faq', component: InfoView, props: { kind: 'faq' } },
+    { path: '/terms', name: 'terms', component: InfoView, props: { kind: 'terms' } },
+    { path: '/privacy', name: 'privacy', component: InfoView, props: { kind: 'privacy' } },
+    { path: '/support', name: 'support', component: SupportView },
     { path: '/:pathMatch(.*)*', redirect: '/' },
   ],
   scrollBehavior(to, _from, savedPosition) {

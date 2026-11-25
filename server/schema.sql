@@ -29,6 +29,7 @@ CREATE TABLE IF NOT EXISTS games (
   budget TEXT,
   exchange_date TEXT,
   rules TEXT,
+  format TEXT,
   theme_id TEXT NOT NULL DEFAULT 'winter',
   created_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
@@ -117,6 +118,15 @@ CREATE TABLE IF NOT EXISTS messages (
   status TEXT NOT NULL DEFAULT 'sent',
   error TEXT,
   dedupe_key TEXT,
+  created_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+CREATE TABLE IF NOT EXISTS support_requests (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  user_id INTEGER REFERENCES users(id) ON DELETE SET NULL,
+  email TEXT,
+  subject TEXT NOT NULL,
+  body TEXT NOT NULL,
   created_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
 

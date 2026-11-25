@@ -295,7 +295,9 @@ function sendReminder() {
     </button>
 
     <div class="mt-8">
-      <p class="text-xs font-semibold uppercase tracking-[0.3em] opacity-60">Игра · {{ gameLabel }}</p>
+      <p class="text-xs font-semibold uppercase tracking-[0.3em] opacity-60">
+        Игра · {{ gameLabel }}<span v-if="data?.game.format"> · {{ data.game.format }}</span>
+      </p>
       <h1 class="mt-2 text-3xl font-bold tracking-tight sm:text-4xl">{{ data?.game.title ?? 'Загрузка игры' }}</h1>
     </div>
 

@@ -874,6 +874,19 @@ describe('API', () => {
     assert.equal(created.actor, String(owner.body.user.id))
   })
 
+  it('принимает обращения в поддержку', async () => {
+    const response = await request('POST', '/support', {
+      email: 'user@example.test',
+      subject: 'Вопрос по игре',
+      body: 'Не приходит напоминание участнику.',
+    })
+    assert.equal(response.status, 201)
+    assert.ok(response.body.id)
+
+    const invalid = await request('POST', '/support', { subject: '', body: '   ' })
+    assert.equal(invalid.status, 400)
+  })
+
   it('ограничивает частоту запросов к auth', async () => {
     const statuses = []
     for (let index = 0; index < 21; index += 1) {

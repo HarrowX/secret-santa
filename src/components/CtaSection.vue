@@ -32,7 +32,7 @@ const emit = defineEmits(['open-demo'])
           Посмотреть демо
         </button>
       </div>
-      <p class="relative mt-5 text-xs opacity-50">Никаких тарифов и подписок — все возможности сразу.</p>
+      <p class="relative mt-5 text-xs opacity-50">Все возможности доступны сразу.</p>
     </div>
   </section>
 </template>

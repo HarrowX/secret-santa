@@ -13,6 +13,7 @@ export const schemas = {
       budget: z.string().trim().max(80).optional().default(''),
       exchangeDate: z.string().trim().max(40).optional().default(''),
       rules: z.string().trim().max(2000).optional().default(''),
+      format: z.string().trim().max(40).optional().default(''),
       themeId: text.max(40).optional().default('winter'),
     })
     .strict(),
@@ -73,6 +74,13 @@ export const schemas = {
       body: text.max(2000),
       fromId: identifier.optional().nullable(),
       toId: identifier.optional().nullable(),
+    })
+    .strict(),
+  support: z
+    .object({
+      email: z.string().trim().toLowerCase().email().max(160).optional().default(''),
+      subject: text.max(120),
+      body: text.max(2000),
     })
     .strict(),
   pastPairsImport: z.object({ pastGameId: identifier }).strict(),

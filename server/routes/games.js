@@ -120,17 +120,17 @@ gamesRouter.get('/', (_req, res) => {
 })
 
 gamesRouter.post('/', validateBody(schemas.createGame), (req, res) => {
-  const { title, budget, exchangeDate, rules, themeId } = req.body
+  const { title, budget, exchangeDate, rules, format, themeId } = req.body
   const theme = db.prepare('SELECT id FROM themes WHERE id = ?').get(themeId)
   if (!theme) fail(400, 'Неизвестная тема оформления')
 
   const token = randomUUID()
   const result = db
     .prepare(`
-      INSERT INTO games (token, title, budget, exchange_date, rules, theme_id)
-      VALUES (?, ?, ?, ?, ?, ?)
+      INSERT INTO games (token, title, budget, exchange_date, rules, format, theme_id)
+      VALUES (?, ?, ?, ?, ?, ?, ?)
     `)
-    .run(token, title, budget, exchangeDate, rules, themeId)
+    .run(token, title, budget, exchangeDate, rules, format, themeId)
 
   const id = Number(result.lastInsertRowid)
   db.prepare('INSERT INTO organizers (game_id, user_id, role) VALUES (?, ?, ?)').run(
