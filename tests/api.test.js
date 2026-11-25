@@ -79,7 +79,11 @@ describe('API', () => {
   it('создаёт игру и возвращает её в списке', async () => {
     const game = await createGame('Зима')
     assert.equal(game.theme_id, 'winter')
-    assert.ok(game.token)
+    assert.match(game.token, /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i)
+
+    const byToken = await request('GET', `/games/${game.token}`)
+    assert.equal(byToken.status, 200)
+    assert.equal(byToken.body.game.id, game.id)
 
     const list = await request('GET', '/games')
     assert.equal(list.status, 200)
@@ -165,7 +169,7 @@ describe('API', () => {
 
     const invite = await request('GET', `/games/${game.id}/invite`)
     assert.equal(invite.status, 200)
-    assert.ok(invite.body.commonUrl.endsWith(`/game/${game.id}`))
+    assert.ok(invite.body.commonUrl.endsWith(`/game/${game.token}`))
     assert.equal(invite.body.participants.length, 3)
     assert.ok(invite.body.participants.every((person) => person.url.includes('/join/')))
 

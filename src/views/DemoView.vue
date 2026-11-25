@@ -13,7 +13,7 @@ function back() {
 }
 
 function openGame(game) {
-  router.push(`/game/${game.id}`)
+  router.push(`/game/${game.token}`)
 }
 </script>
 

@@ -14,6 +14,15 @@ function getGame(id) {
   return game
 }
 
+function resolveGameId(raw) {
+  const value = String(raw)
+  const game = /^\d+$/.test(value)
+    ? gamesRepository.findById(Number(value))
+    : gamesRepository.findByToken(value)
+  if (!game) fail(404, 'Игра не найдена')
+  return game.id
+}
+
 function inviteToken() {
   return randomUUID().replace(/-/g, '').slice(0, 16)
 }
@@ -42,7 +51,7 @@ gamesRouter.post('/', validateBody(schemas.createGame), (req, res) => {
   const theme = db.prepare('SELECT id FROM themes WHERE id = ?').get(themeId)
   if (!theme) fail(400, 'Неизвестная тема оформления')
 
-  const token = randomUUID().slice(0, 8)
+  const token = randomUUID()
   const result = db
     .prepare(`
       INSERT INTO games (token, title, budget, exchange_date, rules, theme_id)
@@ -61,7 +70,7 @@ gamesRouter.post('/', validateBody(schemas.createGame), (req, res) => {
 })
 
 gamesRouter.get('/:id', (req, res) => {
-  const id = Number(req.params.id)
+  const id = resolveGameId(req.params.id)
   const game = getGame(id)
 
   res.json({
@@ -75,7 +84,7 @@ gamesRouter.get('/:id', (req, res) => {
 })
 
 gamesRouter.post('/:id/participants', validateBody(schemas.participant), (req, res) => {
-  const id = Number(req.params.id)
+  const id = resolveGameId(req.params.id)
   getGame(id)
   const name = req.body.name
 
@@ -95,13 +104,13 @@ gamesRouter.post('/:id/participants', validateBody(schemas.participant), (req, r
 })
 
 gamesRouter.get('/:id/participants', (req, res) => {
-  const id = Number(req.params.id)
+  const id = resolveGameId(req.params.id)
   getGame(id)
   res.json(db.prepare('SELECT * FROM participants WHERE game_id = ? ORDER BY id').all(id))
 })
 
 gamesRouter.post('/:id/participants/bulk', validateBody(schemas.participantBulk), (req, res) => {
-  const id = Number(req.params.id)
+  const id = resolveGameId(req.params.id)
   getGame(id)
   const seen = new Set()
   const names = req.body.names
@@ -130,7 +139,7 @@ gamesRouter.post('/:id/participants/bulk', validateBody(schemas.participantBulk)
 })
 
 gamesRouter.patch('/:id/participants/:participantId', validateBody(schemas.participantUpdate), (req, res) => {
-  const id = Number(req.params.id)
+  const id = resolveGameId(req.params.id)
   getGame(id)
   const participantId = Number(req.params.participantId)
   const participant = db
@@ -165,7 +174,7 @@ gamesRouter.patch('/:id/participants/:participantId', validateBody(schemas.parti
 })
 
 gamesRouter.get('/:id/invite', (req, res) => {
-  const id = Number(req.params.id)
+  const id = resolveGameId(req.params.id)
   const game = getGame(id)
   const domain = String(process.env.DOMAIN || '')
     .replace(/^https?:\/\//, '')
@@ -173,7 +182,7 @@ gamesRouter.get('/:id/invite', (req, res) => {
     .replace(/:\d+$/, '')
 
   res.json({
-    commonUrl: `https://${domain}/game/${game.id}`,
+    commonUrl: `https://${domain}/game/${game.token}`,
     participants: db
       .prepare('SELECT id, name, invite_token, filled FROM participants WHERE game_id = ? ORDER BY id')
       .all(id)
@@ -185,7 +194,7 @@ gamesRouter.get('/:id/invite', (req, res) => {
 })
 
 gamesRouter.post('/:id/exclusions', validateBody(schemas.exclusion), (req, res) => {
-  const id = Number(req.params.id)
+  const id = resolveGameId(req.params.id)
   getGame(id)
   const { fromId, toId } = req.body
   const participants = db.prepare('SELECT id FROM participants WHERE game_id = ?').all(id)
@@ -201,13 +210,13 @@ gamesRouter.post('/:id/exclusions', validateBody(schemas.exclusion), (req, res) 
 })
 
 gamesRouter.get('/:id/exclusions', (req, res) => {
-  const id = Number(req.params.id)
+  const id = resolveGameId(req.params.id)
   getGame(id)
   res.json(db.prepare('SELECT from_id, to_id FROM exclusions WHERE game_id = ?').all(id))
 })
 
 gamesRouter.delete('/:id/exclusions/:fromId/:toId', (req, res) => {
-  const id = Number(req.params.id)
+  const id = resolveGameId(req.params.id)
   getGame(id)
   db.prepare('DELETE FROM exclusions WHERE game_id = ? AND from_id = ? AND to_id = ?').run(
     id,
@@ -218,7 +227,7 @@ gamesRouter.delete('/:id/exclusions/:fromId/:toId', (req, res) => {
 })
 
 gamesRouter.post('/:id/draw', (req, res) => {
-  const id = Number(req.params.id)
+  const id = resolveGameId(req.params.id)
   getGame(id)
   const participants = db.prepare('SELECT id, name FROM participants WHERE game_id = ? ORDER BY id').all(id)
   if (participants.length < 2) fail(400, 'Для жеребьёвки нужно минимум два участника')
@@ -249,7 +258,7 @@ gamesRouter.post('/:id/draw', (req, res) => {
 })
 
 gamesRouter.post('/:id/draw/new', (req, res) => {
-  const id = Number(req.params.id)
+  const id = resolveGameId(req.params.id)
   getGame(id)
   const participants = db.prepare('SELECT id FROM participants WHERE game_id = ? ORDER BY id').all(id)
   const pairs = db.prepare('SELECT from_id, to_id FROM pairs WHERE game_id = ?').all(id)
@@ -286,7 +295,7 @@ gamesRouter.post('/:id/draw/new', (req, res) => {
 })
 
 gamesRouter.get('/:id/pairs', (req, res) => {
-  const id = Number(req.params.id)
+  const id = resolveGameId(req.params.id)
   getGame(id)
   res.json(
     db
@@ -303,7 +312,7 @@ gamesRouter.get('/:id/pairs', (req, res) => {
 })
 
 gamesRouter.post('/:id/pairs/reset', (req, res) => {
-  const id = Number(req.params.id)
+  const id = resolveGameId(req.params.id)
   getGame(id)
   db.transaction(() => {
     db.prepare('DELETE FROM pairs WHERE game_id = ?').run(id)
@@ -313,7 +322,7 @@ gamesRouter.post('/:id/pairs/reset', (req, res) => {
 })
 
 gamesRouter.post('/:id/pairs', validateBody(schemas.pair), (req, res) => {
-  const id = Number(req.params.id)
+  const id = resolveGameId(req.params.id)
   getGame(id)
   const { fromId, toId } = req.body
   const participantIds = new Set(db.prepare('SELECT id FROM participants WHERE game_id = ?').all(id).map((person) => person.id))
@@ -350,7 +359,7 @@ gamesRouter.post('/:id/pairs', validateBody(schemas.pair), (req, res) => {
 })
 
 gamesRouter.post('/:id/reveal', validateBody(schemas.reveal), (req, res) => {
-  const id = Number(req.params.id)
+  const id = resolveGameId(req.params.id)
   getGame(id)
   const fromId = req.body.fromId
   const pair = db.prepare('SELECT * FROM pairs WHERE game_id = ? AND from_id = ?').get(id, fromId)
@@ -361,13 +370,13 @@ gamesRouter.post('/:id/reveal', validateBody(schemas.reveal), (req, res) => {
 })
 
 gamesRouter.get('/:id/events', (req, res) => {
-  const id = Number(req.params.id)
+  const id = resolveGameId(req.params.id)
   getGame(id)
   res.json(db.prepare('SELECT * FROM events WHERE game_id = ? ORDER BY id DESC').all(id))
 })
 
 gamesRouter.get('/:id/notifications', (req, res) => {
-  const id = Number(req.params.id)
+  const id = resolveGameId(req.params.id)
   getGame(id)
   res.json(
     db
@@ -383,13 +392,13 @@ gamesRouter.get('/:id/notifications', (req, res) => {
 })
 
 gamesRouter.get('/:id/questions', (req, res) => {
-  const id = Number(req.params.id)
+  const id = resolveGameId(req.params.id)
   getGame(id)
   res.json(db.prepare('SELECT * FROM questions WHERE game_id = ? ORDER BY position, id').all(id))
 })
 
 gamesRouter.post('/:id/questions', validateBody(schemas.questionCreate), (req, res) => {
-  const id = Number(req.params.id)
+  const id = resolveGameId(req.params.id)
   getGame(id)
   const { title, hint, type, required, position } = req.body
 
@@ -404,7 +413,7 @@ gamesRouter.post('/:id/questions', validateBody(schemas.questionCreate), (req, r
 })
 
 gamesRouter.patch('/:id/questions/:questionId', validateBody(schemas.questionUpdate), (req, res) => {
-  const id = Number(req.params.id)
+  const id = resolveGameId(req.params.id)
   getGame(id)
   const questionId = Number(req.params.questionId)
   const question = db.prepare('SELECT * FROM questions WHERE id = ? AND game_id = ?').get(questionId, id)
@@ -423,7 +432,7 @@ gamesRouter.patch('/:id/questions/:questionId', validateBody(schemas.questionUpd
 })
 
 gamesRouter.delete('/:id/questions/:questionId', (req, res) => {
-  const id = Number(req.params.id)
+  const id = resolveGameId(req.params.id)
   getGame(id)
   const questionId = Number(req.params.questionId)
   const result = db.prepare('DELETE FROM questions WHERE id = ? AND game_id = ?').run(questionId, id)
@@ -433,7 +442,7 @@ gamesRouter.delete('/:id/questions/:questionId', (req, res) => {
 })
 
 gamesRouter.get('/:id/messages', (req, res) => {
-  const id = Number(req.params.id)
+  const id = resolveGameId(req.params.id)
   getGame(id)
   res.json(
     db.prepare(`
@@ -448,7 +457,7 @@ gamesRouter.get('/:id/messages', (req, res) => {
 })
 
 gamesRouter.post('/:id/messages', validateBody(schemas.message), (req, res) => {
-  const id = Number(req.params.id)
+  const id = resolveGameId(req.params.id)
   getGame(id)
   const { body } = req.body
   const fromId = req.body.fromId ?? null
@@ -465,7 +474,7 @@ gamesRouter.post('/:id/messages', validateBody(schemas.message), (req, res) => {
 })
 
 gamesRouter.get('/:id/organizers', (req, res) => {
-  const id = Number(req.params.id)
+  const id = resolveGameId(req.params.id)
   getGame(id)
   res.json(
     db.prepare(`
@@ -479,7 +488,7 @@ gamesRouter.get('/:id/organizers', (req, res) => {
 })
 
 gamesRouter.post('/:id/organizers', validateBody(schemas.organizer), (req, res) => {
-  const id = Number(req.params.id)
+  const id = resolveGameId(req.params.id)
   getGame(id)
   const token = req.body.token
   const user = db.prepare('SELECT id FROM users WHERE token = ?').get(token)
@@ -499,7 +508,7 @@ gamesRouter.post('/:id/organizers', validateBody(schemas.organizer), (req, res) 
 })
 
 gamesRouter.delete('/:id/organizers/:organizerId', (req, res) => {
-  const id = Number(req.params.id)
+  const id = resolveGameId(req.params.id)
   getGame(id)
   const organizerId = Number(req.params.organizerId)
   const result = db.prepare('DELETE FROM organizers WHERE id = ? AND game_id = ?').run(organizerId, id)

@@ -5,6 +5,10 @@ export const gamesRepository = {
     return db.prepare('SELECT * FROM games WHERE id = ?').get(id)
   },
 
+  findByToken(token) {
+    return db.prepare('SELECT * FROM games WHERE token = ?').get(token)
+  },
+
   list() {
     return db
       .prepare(`

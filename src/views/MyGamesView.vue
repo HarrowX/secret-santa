@@ -44,7 +44,7 @@ load()
             :key="game.id"
             type="button"
             class="rounded-xl border border-white/15 bg-white/5 p-4 text-left transition hover:bg-white/10"
-            @click="router.push(`/game/${game.id}`)"
+            @click="router.push(`/game/${game.token}`)"
           >
             <span class="block font-semibold">{{ game.title }}</span>
             <span class="mt-1 block text-xs opacity-60">{{ game.budget || 'без бюджета' }} · {{ game.exchange_date || 'дата не задана' }}</span>

@@ -44,7 +44,7 @@ async function load(id) {
   }
 }
 
-watch(() => route.params.id, load, { immediate: true })
+watch(() => route.params.token, load, { immediate: true })
 
 function participantName(id) {
   return data.value?.participants.find((person) => person.id === id)?.name ?? 'Участник'
@@ -70,7 +70,7 @@ async function runAction(action) {
   actionError.value = ''
   try {
     await action()
-    await load(route.params.id)
+    await load(route.params.token)
   } catch (requestError) {
     actionError.value = requestError.message
   } finally {
@@ -82,18 +82,18 @@ function addParticipant() {
   const name = newParticipant.value.trim()
   if (!name) return
   newParticipant.value = ''
-  return runAction(() => api.games.addParticipant(route.params.id, { name }))
+  return runAction(() => api.games.addParticipant(route.params.token, { name }))
 }
 
 function addParticipants() {
   const names = bulkNames.value.trim()
   if (!names) return
   bulkNames.value = ''
-  return runAction(() => api.games.addParticipants(route.params.id, { names }))
+  return runAction(() => api.games.addParticipants(route.params.token, { names }))
 }
 
 function updateParticipant(participantId, body) {
-  return runAction(() => api.games.updateParticipant(route.params.id, participantId, body))
+  return runAction(() => api.games.updateParticipant(route.params.token, participantId, body))
 }
 
 async function copyLink(value) {
@@ -113,11 +113,11 @@ function addExclusion() {
   }
   exclusionFrom.value = ''
   exclusionTo.value = ''
-  return runAction(() => api.games.addExclusion(route.params.id, { fromId, toId }))
+  return runAction(() => api.games.addExclusion(route.params.token, { fromId, toId }))
 }
 
 function removeExclusion(fromId, toId) {
-  return runAction(() => api.games.removeExclusion(route.params.id, fromId, toId))
+  return runAction(() => api.games.removeExclusion(route.params.token, fromId, toId))
 }
 
 function setPair() {
@@ -129,23 +129,23 @@ function setPair() {
   }
   manualFrom.value = ''
   manualTo.value = ''
-  return runAction(() => api.games.setPair(route.params.id, { fromId, toId }))
+  return runAction(() => api.games.setPair(route.params.token, { fromId, toId }))
 }
 
 function resetPairs() {
-  return runAction(() => api.games.resetPairs(route.params.id))
+  return runAction(() => api.games.resetPairs(route.params.token))
 }
 
 function draw() {
-  return runAction(() => api.games.draw(route.params.id))
+  return runAction(() => api.games.draw(route.params.token))
 }
 
 function drawNew() {
-  return runAction(() => api.games.drawNew(route.params.id))
+  return runAction(() => api.games.drawNew(route.params.token))
 }
 
 function reveal(pair) {
-  return runAction(() => api.games.reveal(route.params.id, pair.from_id))
+  return runAction(() => api.games.reveal(route.params.token, pair.from_id))
 }
 </script>
 
@@ -160,7 +160,7 @@ function reveal(pair) {
     </button>
 
     <div class="mt-8">
-      <p class="text-xs font-semibold uppercase tracking-[0.3em] opacity-60">Игра #{{ route.params.id }}</p>
+      <p class="text-xs font-semibold uppercase tracking-[0.3em] opacity-60">Игра · {{ route.params.token.slice(0, 8) }}</p>
       <h1 class="mt-2 text-3xl font-bold tracking-tight sm:text-4xl">{{ data?.game.title ?? 'Загрузка игры' }}</h1>
     </div>
 

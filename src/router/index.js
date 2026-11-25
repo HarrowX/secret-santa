@@ -11,7 +11,7 @@ const router = createRouter({
   routes: [
     { path: '/', name: 'landing', component: LandingView },
     { path: '/demo', name: 'demo', component: DemoView },
-    { path: '/game/:id', name: 'game', component: GameView },
+    { path: '/game/:token', name: 'game', component: GameView },
     { path: '/join/:token', name: 'join', component: JoinView },
     { path: '/my', name: 'my', component: MyGamesView },
     { path: '/randomizer', name: 'randomizer', component: RandomizerView },
