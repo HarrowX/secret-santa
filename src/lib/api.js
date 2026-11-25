@@ -46,6 +46,11 @@ export const api = {
     addParticipant: (id, body) =>
       request(`/games/${encodeURIComponent(id)}/participants`, { method: 'POST', body: JSON.stringify(body) }),
     draw: (id) => request(`/games/${encodeURIComponent(id)}/draw`, { method: 'POST' }),
+    reveal: (id, fromId) =>
+      request(`/games/${encodeURIComponent(id)}/reveal`, {
+        method: 'POST',
+        body: JSON.stringify({ fromId }),
+      }),
     pairs: (id) => request(`/games/${encodeURIComponent(id)}/pairs`),
     events: (id) => request(`/games/${encodeURIComponent(id)}/events`),
     questions: (id) => request(`/games/${encodeURIComponent(id)}/questions`),
@@ -72,4 +77,10 @@ export const api = {
     get: (slug) => request(`/tenants/${encodeURIComponent(slug)}`),
     create: (body) => request('/tenants', { method: 'POST', body: JSON.stringify(body) }),
   },
+}
+
+export async function ensureSession() {
+  const { user } = await api.auth.session()
+  if (user) return user
+  return (await api.auth.createSession()).user
 }
