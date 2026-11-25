@@ -119,7 +119,8 @@ CREATE TABLE IF NOT EXISTS themes (
   tag TEXT,
   accent TEXT,
   night TEXT,
-  day TEXT
+  day TEXT,
+  glow TEXT
 );
 
 CREATE TABLE IF NOT EXISTS past_pairs (

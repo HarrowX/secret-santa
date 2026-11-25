@@ -12,6 +12,7 @@ import { invitesRouter } from './routes/invites.js'
 import { meRouter } from './routes/me.js'
 import { randomizerRouter } from './routes/randomizer.js'
 import { tenantsRouter } from './routes/tenants.js'
+import { themesRouter } from './routes/themes.js'
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
 
@@ -37,6 +38,7 @@ export function createApp() {
   app.use('/api/me', meRouter)
   app.use('/api/randomizer', randomizerRouter)
   app.use('/api/tenants', tenantsRouter)
+  app.use('/api/themes', themesRouter)
 
   app.use((error, req, res, _next) => {
     if (error instanceof HttpError) {

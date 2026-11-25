@@ -27,15 +27,21 @@ for (const column of ['notes', 'preferred']) {
   }
 }
 
+const themeColumns = db.prepare('PRAGMA table_info(themes)').all()
+if (!themeColumns.some((column) => column.name === 'glow')) {
+  db.exec('ALTER TABLE themes ADD COLUMN glow TEXT')
+}
+
 const insertTheme = db.prepare(`
-  INSERT INTO themes (id, name, tag, accent, night, day)
-  VALUES (@id, @name, @tag, @accent, @night, @day)
+  INSERT INTO themes (id, name, tag, accent, night, day, glow)
+  VALUES (@id, @name, @tag, @accent, @night, @day, @glow)
   ON CONFLICT(id) DO UPDATE SET
     name = excluded.name,
     tag = excluded.tag,
     accent = excluded.accent,
     night = excluded.night,
-    day = excluded.day
+    day = excluded.day,
+    glow = excluded.glow
 `)
 
 db.transaction(() => {

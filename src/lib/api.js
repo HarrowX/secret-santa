@@ -113,6 +113,9 @@ export const api = {
         body: JSON.stringify(body),
       }),
   },
+  themes: {
+    list: () => request('/themes'),
+  },
   tenants: {
     current: () => request('/tenants/current'),
     list: () => request('/tenants'),

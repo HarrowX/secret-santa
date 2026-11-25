@@ -76,6 +76,17 @@ describe('API', () => {
     assert.deepEqual(response.body, { status: 'ok' })
   })
 
+  it('отдаёт все темы оформления из базы', async () => {
+    const response = await request('GET', '/themes')
+    assert.equal(response.status, 200)
+    assert.equal(response.body.length, 10)
+    assert.deepEqual(
+      response.body.map((theme) => theme.id),
+      ['winter', 'halloween', 'alpine', 'egypt', 'pixel', 'sakura', 'space', 'cyberpunk', 'valley', 'tropical'],
+    )
+    assert.ok(response.body.every((theme) => theme.glow))
+  })
+
   it('создаёт игру и возвращает её в списке', async () => {
     const game = await createGame('Зима')
     assert.equal(game.theme_id, 'winter')
