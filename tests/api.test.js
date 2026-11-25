@@ -386,6 +386,67 @@ describe('API', () => {
     assert.equal(invalid.status, 400)
   })
 
+  it('проводит анкету участника с валидацией и лимитом вопросов', async () => {
+    const game = await createGame()
+    const people = await addParticipants(game.id, ['Аня', 'Борис'])
+
+    const age = await request('POST', `/games/${game.id}/questions`, {
+      title: 'Возраст',
+      type: 'number',
+      required: true,
+      position: 1,
+    })
+    assert.equal(age.status, 201)
+    const hobbies = await request('POST', `/games/${game.id}/questions`, {
+      title: 'Хобби',
+      hint: 'Книги, Спорт',
+      type: 'multi',
+      position: 2,
+    })
+    assert.equal(hobbies.status, 201)
+
+    const missing = await request('PUT', `/games/${game.id}/participants/${people[0].id}/answers`, {
+      answers: [],
+    })
+    assert.equal(missing.status, 400)
+    assert.match(missing.body.error.message, /обязателен/)
+
+    const invalid = await request('PUT', `/games/${game.id}/participants/${people[0].id}/answers`, {
+      answers: [{ questionId: age.body.id, value: 'тридцать' }],
+    })
+    assert.equal(invalid.status, 400)
+    assert.match(invalid.body.error.message, /требует число/)
+
+    const saved = await request('PUT', `/games/${game.id}/participants/${people[0].id}/answers`, {
+      answers: [
+        { questionId: age.body.id, value: '30' },
+        { questionId: hobbies.body.id, value: 'Книги, Спорт' },
+      ],
+    })
+    assert.equal(saved.status, 200)
+    assert.equal(saved.body.length, 2)
+
+    const mine = await request('GET', `/games/${game.id}/participants/${people[0].id}/answers`)
+    assert.equal(mine.body.length, 2)
+    assert.equal(mine.body[0].value, '30')
+
+    const all = await request('GET', `/games/${game.id}/answers`)
+    assert.equal(all.body.length, 2)
+    assert.equal(all.body[0].question_title, 'Возраст')
+    assert.equal(all.body[0].participant_name, 'Аня')
+
+    for (let index = 2; index < 10; index += 1) {
+      const extra = await request('POST', `/games/${game.id}/questions`, {
+        title: `Вопрос ${index}`,
+        position: index,
+      })
+      assert.equal(extra.status, 201)
+    }
+    const limit = await request('POST', `/games/${game.id}/questions`, { title: 'Одиннадцатый' })
+    assert.equal(limit.status, 400)
+    assert.match(limit.body.error.message, /10 вопросов/)
+  })
+
   it('управляет вопросами, сообщениями, организаторами и поддоменами', async () => {
     const game = await createGame()
     const people = await addParticipants(game.id, ['Аня', 'Борис'])

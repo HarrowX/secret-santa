@@ -3,6 +3,7 @@ import { ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { api } from '../lib/api'
 import { usePreferencesStore } from '../stores/preferences'
+import QuestionnaireForm from '../components/QuestionnaireForm.vue'
 
 const route = useRoute()
 const preferences = usePreferencesStore()
@@ -12,6 +13,9 @@ const wishlist = ref('')
 const address = ref('')
 const notes = ref('')
 const preferred = ref('')
+const questions = ref([])
+const answers = ref([])
+const questionnaireBusy = ref(false)
 const error = ref('')
 const loading = ref(true)
 const submitting = ref(false)
@@ -33,6 +37,11 @@ watch(
       notes.value = response.participant.notes ?? ''
       preferred.value = response.participant.preferred ?? ''
       preferences.setTheme(response.game.themeId)
+      questions.value = await api.games.questions(response.game.id)
+      answers.value = await api.games.participantAnswers(
+        response.game.id,
+        response.participant.id,
+      )
     } catch (requestError) {
       error.value = requestError.message
     } finally {
@@ -60,6 +69,24 @@ async function accept() {
     submitting.value = false
   }
 }
+
+async function saveAnswers(payload) {
+  questionnaireBusy.value = true
+  error.value = ''
+  try {
+    await api.games.saveAnswers(invite.value.game.id, invite.value.participant.id, {
+      answers: payload,
+    })
+    answers.value = await api.games.participantAnswers(
+      invite.value.game.id,
+      invite.value.participant.id,
+    )
+  } catch (requestError) {
+    error.value = requestError.message
+  } finally {
+    questionnaireBusy.value = false
+  }
+}
 </script>
 
 <template>
@@ -72,6 +99,20 @@ async function accept() {
     <div v-else-if="invite" class="mt-6 rounded-3xl border border-white/10 bg-white/5 p-6 backdrop-blur">
       <h1 class="text-2xl font-bold">{{ invite.game.title }}</h1>
       <p class="mt-2 opacity-70">{{ invite.participant.name }}, ваше участие подтверждено организатором.</p>
+
+      <div class="mt-6 rounded-2xl border border-white/10 bg-white/5 p-5">
+        <h2 class="font-bold">Анкета</h2>
+        <div class="mt-3">
+          <QuestionnaireForm
+            :questions="questions"
+            :answers="answers"
+            :busy="questionnaireBusy"
+            :accent="preferences.theme.accent"
+            :editable="true"
+            @save="saveAnswers"
+          />
+        </div>
+      </div>
 
       <form v-if="!done && !invite.participant.filled" class="mt-6 grid gap-3" @submit.prevent="accept">
         <label class="grid gap-1 text-sm">

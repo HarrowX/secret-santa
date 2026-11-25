@@ -4,6 +4,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { api } from '../lib/api'
 import { usePreferencesStore } from '../stores/preferences'
 import ParticipantCard from '../components/ParticipantCard.vue'
+import QuestionnaireForm from '../components/QuestionnaireForm.vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -11,6 +12,7 @@ const preferences = usePreferencesStore()
 const data = ref(null)
 const invite = ref(null)
 const notifications = ref([])
+const answers = ref([])
 const error = ref('')
 const actionError = ref('')
 const loading = ref(true)
@@ -26,6 +28,11 @@ const exclusionFrom = ref('')
 const exclusionTo = ref('')
 const manualFrom = ref('')
 const manualTo = ref('')
+const questionTitle = ref('')
+const questionHint = ref('')
+const questionType = ref('text')
+const questionRequired = ref(false)
+const questionCount = computed(() => data.value?.questions.length ?? 0)
 
 async function load(id) {
   loading.value = true
@@ -33,11 +40,13 @@ async function load(id) {
   data.value = null
   invite.value = null
   notifications.value = []
+  answers.value = []
   try {
     data.value = await api.games.get(id)
     preferences.setTheme(data.value.game.theme_id)
     invite.value = await api.games.invite(id)
     notifications.value = await api.games.notifications(id)
+    answers.value = await api.games.answers(id)
   } catch (requestError) {
     error.value = requestError.message
   } finally {
@@ -103,6 +112,27 @@ async function copyLink(value) {
   } catch {
     actionError.value = 'Не удалось скопировать ссылку'
   }
+}
+
+function addQuestion() {
+  const title = questionTitle.value.trim()
+  if (!title || questionCount.value >= 10) return
+  const body = {
+    title,
+    hint: questionHint.value.trim(),
+    type: questionType.value,
+    required: questionRequired.value,
+    position: questionCount.value,
+  }
+  questionTitle.value = ''
+  questionHint.value = ''
+  questionType.value = 'text'
+  questionRequired.value = false
+  return runAction(() => api.games.addQuestion(route.params.token, body))
+}
+
+function deleteQuestion(questionId) {
+  return runAction(() => api.games.deleteQuestion(route.params.token, questionId))
 }
 
 function addExclusion() {
@@ -268,6 +298,83 @@ function reveal(pair) {
             <span class="text-xs opacity-50">{{ person.filled ? 'подтвердил' : 'ожидаем' }}</span>
           </div>
           <p v-if="!invite.participants.length" class="opacity-50">Добавьте участников, чтобы получить персональные ссылки</p>
+        </div>
+      </div>
+
+      <div class="rounded-2xl border border-white/10 bg-white/5 p-5">
+        <h2 class="font-bold">Анкета организатора</h2>
+        <p class="mt-1 text-sm opacity-60">До 10 вопросов; ответы видны Санте и организатору</p>
+        <form class="mt-4 grid gap-2 sm:grid-cols-[2fr_2fr_1fr_auto_auto]" @submit.prevent="addQuestion">
+          <input
+            v-model="questionTitle"
+            type="text"
+            maxlength="120"
+            placeholder="Название вопроса"
+            class="rounded-xl border border-white/15 bg-white/5 px-3 py-2 text-sm outline-none focus:border-white/40"
+          />
+          <input
+            v-model="questionHint"
+            type="text"
+            maxlength="200"
+            placeholder="Подсказка или варианты через запятую"
+            class="rounded-xl border border-white/15 bg-white/5 px-3 py-2 text-sm outline-none focus:border-white/40"
+          />
+          <select
+            v-model="questionType"
+            class="rounded-xl border border-white/15 bg-slate-900/80 px-3 py-2 text-sm outline-none focus:border-white/40"
+          >
+            <option value="text">Текст</option>
+            <option value="number">Число</option>
+            <option value="boolean">Да/Нет</option>
+            <option value="single">Один выбор</option>
+            <option value="multi">Несколько</option>
+          </select>
+          <label class="flex items-center gap-2 text-xs opacity-70">
+            <input v-model="questionRequired" type="checkbox" class="h-4 w-4" />
+            Обязательно
+          </label>
+          <button
+            type="submit"
+            class="rounded-xl border border-white/20 px-4 py-2 text-sm font-semibold transition hover:bg-white/10 disabled:opacity-50"
+            :disabled="busy || !questionTitle.trim() || questionCount >= 10"
+          >
+            Добавить вопрос
+          </button>
+        </form>
+        <ul class="mt-3 grid gap-1 text-sm opacity-70">
+          <li v-for="question in data.questions" :key="question.id" class="flex items-center justify-between gap-3">
+            <span>{{ question.title }} · {{ question.type }}</span>
+            <button
+              type="button"
+              class="text-xs underline opacity-70 transition hover:opacity-100 disabled:opacity-50"
+              :disabled="busy"
+              @click="deleteQuestion(question.id)"
+            >
+              Удалить
+            </button>
+          </li>
+          <li v-if="!data.questions.length" class="opacity-50">Вопросов пока нет</li>
+        </ul>
+        <div class="mt-4 grid gap-2 text-sm">
+          <p class="font-semibold">Ответы</p>
+          <details
+            v-for="person in data.participants"
+            :key="person.id"
+            class="rounded-xl border border-white/10 bg-white/5 p-3"
+          >
+            <summary class="cursor-pointer font-semibold">
+              {{ person.name }} — {{ answers.filter((item) => item.participant_id === person.id).length }} ответов
+            </summary>
+            <div class="mt-3">
+              <QuestionnaireForm
+                :questions="data.questions"
+                :answers="answers.filter((item) => item.participant_id === person.id).map(({ question_id, value }) => ({ question_id, value }))"
+                :accent="preferences.theme.accent"
+                :editable="false"
+              />
+            </div>
+          </details>
+          <p v-if="!data.participants.length" class="opacity-50">Добавьте участников, чтобы увидеть ответы</p>
         </div>
       </div>
 

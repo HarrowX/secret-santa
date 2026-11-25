@@ -401,6 +401,8 @@ gamesRouter.post('/:id/questions', validateBody(schemas.questionCreate), (req, r
   const id = resolveGameId(req.params.id)
   getGame(id)
   const { title, hint, type, required, position } = req.body
+  const count = db.prepare('SELECT COUNT(*) AS count FROM questions WHERE game_id = ?').get(id).count
+  if (count >= 10) fail(400, 'Можно добавить не больше 10 вопросов')
 
   const result = db
     .prepare(`
@@ -439,6 +441,95 @@ gamesRouter.delete('/:id/questions/:questionId', (req, res) => {
   if (!result.changes) fail(404, 'Вопрос не найден')
   addEvent(id, 'settings', 'Вопрос удалён')
   res.json({ ok: true })
+})
+
+gamesRouter.get('/:id/answers', (req, res) => {
+  const id = resolveGameId(req.params.id)
+  getGame(id)
+  res.json(
+    db
+      .prepare(`
+        SELECT answers.*, questions.title AS question_title, participants.name AS participant_name
+        FROM answers
+        JOIN questions ON questions.id = answers.question_id
+        JOIN participants ON participants.id = answers.participant_id
+        WHERE questions.game_id = ?
+        ORDER BY questions.position, questions.id, participants.id
+      `)
+      .all(id),
+  )
+})
+
+gamesRouter.get('/:id/participants/:participantId/answers', (req, res) => {
+  const id = resolveGameId(req.params.id)
+  getGame(id)
+  const participantId = Number(req.params.participantId)
+  const participant = db
+    .prepare('SELECT id FROM participants WHERE id = ? AND game_id = ?')
+    .get(participantId, id)
+  if (!participant) fail(404, 'Участник не найден')
+
+  res.json(
+    db
+      .prepare(`
+        SELECT answers.question_id, answers.value
+        FROM answers
+        JOIN questions ON questions.id = answers.question_id
+        WHERE answers.participant_id = ? AND questions.game_id = ?
+        ORDER BY questions.position, questions.id
+      `)
+      .all(participantId, id),
+  )
+})
+
+gamesRouter.put('/:id/participants/:participantId/answers', validateBody(schemas.answersSave), (req, res) => {
+  const id = resolveGameId(req.params.id)
+  getGame(id)
+  const participantId = Number(req.params.participantId)
+  const participant = db
+    .prepare('SELECT id FROM participants WHERE id = ? AND game_id = ?')
+    .get(participantId, id)
+  if (!participant) fail(404, 'Участник не найден')
+
+  const questions = db.prepare('SELECT * FROM questions WHERE game_id = ?').all(id)
+  const allowed = new Map(questions.map((question) => [question.id, question]))
+  const values = new Map()
+  for (const answer of req.body.answers) {
+    const question = allowed.get(answer.questionId)
+    if (!question) fail(400, 'Вопрос не относится к этой игре')
+    if (values.has(answer.questionId)) fail(400, 'Дублирующий ответ')
+    if (question.type === 'number' && answer.value && Number.isNaN(Number(answer.value))) {
+      fail(400, `Вопрос «${question.title}» требует число`)
+    }
+    if (question.type === 'boolean' && answer.value && !['да', 'нет', 'true', 'false', '1', '0'].includes(answer.value.toLowerCase())) {
+      fail(400, `Вопрос «${question.title}» требует да/нет`)
+    }
+    values.set(answer.questionId, answer.value)
+  }
+  for (const question of questions) {
+    if (question.required && !values.get(question.id)) fail(400, `Вопрос «${question.title}» обязателен`)
+  }
+
+  db.transaction(() => {
+    db.prepare('DELETE FROM answers WHERE participant_id = ?').run(participantId)
+    const insert = db.prepare(`
+      INSERT INTO answers (question_id, participant_id, value) VALUES (?, ?, ?)
+    `)
+    for (const [questionId, value] of values) insert.run(questionId, participantId, value)
+    addNotification(id, participantId, { answers: req.body.answers })
+  })()
+
+  res.json(
+    db
+      .prepare(`
+        SELECT answers.question_id, answers.value
+        FROM answers
+        JOIN questions ON questions.id = answers.question_id
+        WHERE answers.participant_id = ? AND questions.game_id = ?
+        ORDER BY questions.position, questions.id
+      `)
+      .all(participantId, id),
+  )
 })
 
 gamesRouter.get('/:id/messages', (req, res) => {

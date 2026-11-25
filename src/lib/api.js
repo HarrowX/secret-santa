@@ -82,6 +82,14 @@ export const api = {
     questions: (id) => request(`/games/${encodeURIComponent(id)}/questions`),
     addQuestion: (id, body) =>
       request(`/games/${encodeURIComponent(id)}/questions`, { method: 'POST', body: JSON.stringify(body) }),
+    answers: (id) => request(`/games/${encodeURIComponent(id)}/answers`),
+    participantAnswers: (id, participantId) =>
+      request(`/games/${encodeURIComponent(id)}/participants/${participantId}/answers`),
+    saveAnswers: (id, participantId, body) =>
+      request(`/games/${encodeURIComponent(id)}/participants/${participantId}/answers`, {
+        method: 'PUT',
+        body: JSON.stringify(body),
+      }),
     updateQuestion: (id, questionId, body) =>
       request(`/games/${encodeURIComponent(id)}/questions/${questionId}`, {
         method: 'PATCH',
