@@ -1,4 +1,6 @@
 <script setup>
+import { domain } from '../config'
+
 defineProps({
   accent: String,
 })
@@ -9,7 +11,7 @@ const features = [
   {
     title: 'Своё пространство',
     text: 'Персональный адрес игры и оформление, которое чувствуется как ваше.',
-    hint: 'company.santa-secret.ru',
+    hint: domain,
   },
   {
     title: 'Все темы оформления',
@@ -40,7 +42,7 @@ const features = [
 </script>
 
 <template>
-  <section class="mx-auto max-w-6xl px-5 py-14">
+  <section id="features" class="mx-auto max-w-6xl px-5 py-14">
     <div class="rounded-3xl border border-white/10 bg-white/5 p-6 backdrop-blur">
       <div class="grid gap-6 text-center sm:grid-cols-3">
         <div>

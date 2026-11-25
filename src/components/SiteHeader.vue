@@ -15,7 +15,7 @@ const links = [
   { label: 'На главную', target: 'landing' },
   { label: 'Создать игру', target: 'demo' },
   { label: 'Быстрая жеребьёвка', target: 'demo' },
-  { label: 'Возможности', target: 'landing' },
+  { label: 'Возможности', target: 'features' },
 ]
 
 function go(target) {

@@ -1,5 +1,6 @@
 <script setup>
 import { computed, ref } from 'vue'
+import { domain } from '../config'
 import { participants as seedParticipants, history as seedHistory } from '../data/demo'
 
 defineProps({
@@ -132,7 +133,7 @@ function save() {
       <div>
         <p class="text-xs font-semibold uppercase tracking-[0.3em] opacity-60">Кабинет организатора</p>
         <h1 class="mt-2 text-3xl font-black tracking-tight sm:text-4xl">Новогодняя вечеринка</h1>
-        <p class="mt-2 text-sm opacity-60">company.santa-secret.ru · до 1 500 ₽ · обмен 25 декабря</p>
+        <p class="mt-2 text-sm opacity-60">{{ domain }} · до 1 500 ₽ · обмен 25 декабря</p>
       </div>
       <button
         type="button"
@@ -200,7 +201,7 @@ function save() {
           <div class="rounded-3xl border border-white/10 bg-white/5 p-6 backdrop-blur">
             <h3 class="text-lg font-bold">Пространство игры</h3>
             <p class="mt-3 text-sm opacity-65">Ваш адрес</p>
-            <p class="mt-1 font-semibold" :style="{ color: accent }">company.santa-secret.ru</p>
+            <p class="mt-1 font-semibold" :style="{ color: accent }">{{ domain }}</p>
             <p class="mt-4 text-sm opacity-65">Анкета</p>
             <p class="mt-1 font-semibold">10 вопросов · 4 типа ответов</p>
           </div>

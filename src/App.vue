@@ -1,22 +1,23 @@
 <script setup>
-import { computed, ref } from 'vue'
+import { computed } from 'vue'
+import { useRoute, useRouter, RouterView } from 'vue-router'
+import { storeToRefs } from 'pinia'
 import SiteHeader from './components/SiteHeader.vue'
-import HeroSection from './components/HeroSection.vue'
-import ThemeShowcase from './components/ThemeShowcase.vue'
-import StepsSection from './components/StepsSection.vue'
-import FeatureSection from './components/FeatureSection.vue'
-import CtaSection from './components/CtaSection.vue'
-import OrganizerDemo from './components/OrganizerDemo.vue'
 import SiteFooter from './components/SiteFooter.vue'
-import { themes } from './data/themes'
+import { usePreferencesStore } from './stores/preferences'
 
-const themeId = ref('winter')
-const mode = ref('night')
-const page = ref('landing')
+const route = useRoute()
+const router = useRouter()
+const preferences = usePreferencesStore()
+const { theme, isDay, background } = storeToRefs(preferences)
 
-const theme = computed(() => themes.find((item) => item.id === themeId.value) ?? themes[0])
-const isDay = computed(() => mode.value === 'day')
-const background = computed(() => (isDay.value ? theme.value.day : theme.value.night))
+const page = computed(() => (route.name === 'demo' || route.name === 'game' ? 'demo' : 'landing'))
+
+function navigate(target) {
+  if (target === 'demo') router.push('/demo')
+  else if (target === 'features') router.push({ path: '/', hash: '#features' })
+  else router.push('/')
+}
 </script>
 
 <template>
@@ -25,17 +26,10 @@ const background = computed(() => (isDay.value ? theme.value.day : theme.value.n
     :class="isDay ? 'text-slate-900' : 'text-slate-100'"
     :style="{ background, '--accent': theme.accent }"
   >
-    <SiteHeader :page="page" :accent="theme.accent" :is-day="isDay" @navigate="page = $event" />
+    <SiteHeader :page="page" :accent="theme.accent" :is-day="isDay" @navigate="navigate" />
 
     <main>
-      <template v-if="page === 'landing'">
-        <HeroSection :theme="theme" :accent="theme.accent" @open-demo="page = 'demo'" />
-        <ThemeShowcase v-model:theme-id="themeId" v-model:mode="mode" :themes="themes" />
-        <StepsSection :accent="theme.accent" />
-        <FeatureSection :accent="theme.accent" @open-demo="page = 'demo'" />
-        <CtaSection :accent="theme.accent" @open-demo="page = 'demo'" />
-      </template>
-      <OrganizerDemo v-else :accent="theme.accent" @back="page = 'landing'" />
+      <RouterView />
     </main>
 
     <SiteFooter :accent="theme.accent" :is-day="isDay" />
