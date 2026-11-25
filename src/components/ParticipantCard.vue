@@ -11,7 +11,7 @@ const props = defineProps({
   receiverName: String,
 })
 
-const emit = defineEmits(['save'])
+const emit = defineEmits(['save', 'remove'])
 
 const initials = computed(() =>
   (props.person.name ?? '')
@@ -140,14 +140,24 @@ function save() {
           class="rounded-lg border border-white/15 bg-white/5 px-3 py-2 text-sm outline-none focus:border-white/40"
         ></textarea>
       </label>
-      <button
-        type="submit"
-        class="rounded-full px-4 py-2 text-xs font-bold transition hover:opacity-80 disabled:opacity-50"
-        :style="{ background: accent, color: '#0b1120' }"
-        :disabled="busy"
-      >
-        Сохранить карточку
-      </button>
+      <div class="flex flex-wrap gap-2">
+        <button
+          type="submit"
+          class="rounded-full px-4 py-2 text-xs font-bold transition hover:opacity-80 disabled:opacity-50"
+          :style="{ background: accent, color: '#0b1120' }"
+          :disabled="busy"
+        >
+          Сохранить карточку
+        </button>
+        <button
+          type="button"
+          class="rounded-full border border-white/20 px-4 py-2 text-xs opacity-70 transition hover:bg-white/10 disabled:opacity-50"
+          :disabled="busy"
+          @click="emit('remove', person.id)"
+        >
+          Удалить участника
+        </button>
+      </div>
     </form>
   </div>
 </template>

@@ -106,6 +106,11 @@ function updateParticipant(participantId, body) {
   return runAction(() => api.games.updateParticipant(route.params.token, participantId, body))
 }
 
+function removeParticipant(participant) {
+  if (!window.confirm(`Удалить ${participant.name} и перестроить пары?`)) return
+  return runAction(() => api.games.removeParticipant(route.params.token, participant.id))
+}
+
 async function copyLink(value) {
   try {
     await navigator.clipboard.writeText(value)
@@ -176,6 +181,7 @@ function drawNew() {
 }
 
 function reveal(pair) {
+  if (!window.confirm('Да, раскрыть эту пару?')) return
   return runAction(() => api.games.reveal(route.params.token, pair.from_id))
 }
 </script>
@@ -469,12 +475,33 @@ function reveal(pair) {
               :busy="busy"
               :receiver-name="receiverFor(person.id)"
               @save="updateParticipant(person.id, $event)"
+              @remove="removeParticipant(person)"
             />
             <p v-if="!data.participants.length" class="text-sm opacity-50">Пока никто не присоединился</p>
           </div>
         </div>
         <div class="rounded-2xl border border-white/10 bg-white/5 p-5">
-          <h2 class="font-bold">Пары</h2>
+          <div class="flex flex-wrap items-center justify-between gap-2">
+            <h2 class="font-bold">Пары</h2>
+            <div class="flex gap-2">
+              <button
+                type="button"
+                class="rounded-full border border-white/20 px-3 py-1 text-xs transition hover:bg-white/10 disabled:opacity-50"
+                :disabled="busy || data.participants.length < 2"
+                @click="draw"
+              >
+                Перемешать заново
+              </button>
+              <button
+                type="button"
+                class="rounded-full border border-white/20 px-3 py-1 text-xs transition hover:bg-white/10 disabled:opacity-50"
+                :disabled="busy || !data.pairs.length"
+                @click="resetPairs"
+              >
+                Очистить пары
+              </button>
+            </div>
+          </div>
           <ol class="mt-3 grid gap-2 text-sm opacity-80">
             <li v-for="pair in data.pairs" :key="pair.id" class="flex flex-wrap items-center gap-2">
               <span>{{ participantName(pair.from_id) }} → {{ participantName(pair.to_id) }}</span>

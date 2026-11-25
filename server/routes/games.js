@@ -173,6 +173,51 @@ gamesRouter.patch('/:id/participants/:participantId', validateBody(schemas.parti
   res.json(updated)
 })
 
+gamesRouter.delete('/:id/participants/:participantId', (req, res) => {
+  const id = resolveGameId(req.params.id)
+  getGame(id)
+  const participantId = Number(req.params.participantId)
+  const participant = db
+    .prepare('SELECT id FROM participants WHERE id = ? AND game_id = ?')
+    .get(participantId, id)
+  if (!participant) fail(404, 'Участник не найден')
+
+  const remaining = db
+    .prepare('SELECT id FROM participants WHERE game_id = ? AND id <> ? ORDER BY id')
+    .all(id, participantId)
+    .map((person) => person.id)
+  const remainingSet = new Set(remaining)
+  const exclusions = new Set(
+    db
+      .prepare('SELECT from_id, to_id FROM exclusions WHERE game_id = ?')
+      .all(id)
+      .filter((item) => remainingSet.has(item.from_id) && remainingSet.has(item.to_id))
+      .map((item) => `${item.from_id}:${item.to_id}`),
+  )
+
+  db.transaction(() => {
+    db.prepare('DELETE FROM participants WHERE id = ?').run(participantId)
+    db.prepare('DELETE FROM pairs WHERE game_id = ?').run(id)
+    if (remaining.length >= 2) {
+      const solution = drawPairs({ ids: remaining, exclusions })
+      if (solution) {
+        const insert = db.prepare(`
+          INSERT INTO pairs (game_id, from_id, to_id, manual) VALUES (?, ?, ?, 0)
+        `)
+        for (const [from, to] of solution) insert.run(id, from, to)
+      } else {
+        addEvent(id, 'draw', 'Не удалось перестроить пары после удаления участника')
+      }
+    }
+    addEvent(id, 'settings', 'Участник удалён, пары перестроены')
+  })()
+
+  res.json({
+    ok: true,
+    pairs: db.prepare('SELECT * FROM pairs WHERE game_id = ? ORDER BY from_id').all(id),
+  })
+})
+
 gamesRouter.get('/:id/invite', (req, res) => {
   const id = resolveGameId(req.params.id)
   const game = getGame(id)

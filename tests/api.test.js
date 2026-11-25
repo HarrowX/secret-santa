@@ -386,6 +386,22 @@ describe('API', () => {
     assert.equal(invalid.status, 400)
   })
 
+  it('удаляет участника и перестраивает пары', async () => {
+    const game = await createGame()
+    await addParticipants(game.id, ['Аня', 'Борис', 'Вика'])
+    const drawn = await request('POST', `/games/${game.id}/draw`)
+    assert.equal(drawn.body.length, 3)
+
+    const removedPerson = drawn.body[0].from_id
+    const removed = await request('DELETE', `/games/${game.id}/participants/${removedPerson}`)
+    assert.equal(removed.status, 200)
+    assert.equal(removed.body.pairs.length, 2)
+    assert.ok(removed.body.pairs.every((pair) => pair.from_id !== removedPerson && pair.to_id !== removedPerson))
+
+    const missing = await request('DELETE', `/games/${game.id}/participants/${removedPerson}`)
+    assert.equal(missing.status, 404)
+  })
+
   it('проводит анкету участника с валидацией и лимитом вопросов', async () => {
     const game = await createGame()
     const people = await addParticipants(game.id, ['Аня', 'Борис'])

@@ -55,6 +55,10 @@ export const api = {
         method: 'PATCH',
         body: JSON.stringify(body),
       }),
+    removeParticipant: (id, participantId) =>
+      request(`/games/${encodeURIComponent(id)}/participants/${participantId}`, {
+        method: 'DELETE',
+      }),
     invite: (id) => request(`/games/${encodeURIComponent(id)}/invite`),
     addExclusion: (id, body) =>
       request(`/games/${encodeURIComponent(id)}/exclusions`, {
