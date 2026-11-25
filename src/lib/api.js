@@ -102,6 +102,9 @@ export const api = {
     games: () => request('/me/games'),
     exchanges: () => request('/me/exchanges'),
   },
+  randomizer: {
+    draw: (names) => request('/randomizer', { method: 'POST', body: JSON.stringify({ names }) }),
+  },
   invites: {
     get: (token) => request(`/invites/${encodeURIComponent(token)}`),
     accept: (token, body) =>

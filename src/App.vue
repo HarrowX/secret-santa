@@ -19,6 +19,7 @@ const page = computed(() => {
 function navigate(target) {
   if (target === 'demo') router.push('/demo')
   else if (target === 'my') router.push('/my')
+  else if (target === 'randomizer') router.push('/randomizer')
   else if (target === 'features') router.push({ path: '/', hash: '#features' })
   else router.push('/')
 }

@@ -18,6 +18,7 @@ export const schemas = {
     .strict(),
   participant: z.object({ name: text.max(80) }).strict(),
   participantBulk: z.object({ names: text.max(1000) }).strict(),
+  randomizer: z.object({ names: text.max(5000) }).strict(),
   participantUpdate: z
     .object({
       name: text.max(80).optional(),

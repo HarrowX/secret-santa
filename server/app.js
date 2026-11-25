@@ -10,6 +10,7 @@ import { authRouter } from './routes/auth.js'
 import { gamesRouter } from './routes/games.js'
 import { invitesRouter } from './routes/invites.js'
 import { meRouter } from './routes/me.js'
+import { randomizerRouter } from './routes/randomizer.js'
 import { tenantsRouter } from './routes/tenants.js'
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
@@ -34,6 +35,7 @@ export function createApp() {
   app.use('/api/games', gamesRouter)
   app.use('/api/invites', invitesRouter)
   app.use('/api/me', meRouter)
+  app.use('/api/randomizer', randomizerRouter)
   app.use('/api/tenants', tenantsRouter)
 
   app.use((error, req, res, _next) => {

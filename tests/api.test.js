@@ -357,6 +357,20 @@ describe('API', () => {
     assert.equal(unauthorized.status, 401)
   })
 
+  it('быстро распределяет пары без создания игры', async () => {
+    const response = await request('POST', '/randomizer', { names: 'Аня, Борис, Вика, Аня' })
+    assert.equal(response.status, 200)
+    assert.equal(response.body.length, 3)
+    assert.ok(response.body.every((pair) => pair.from !== pair.to))
+    assert.deepEqual(
+      new Set(response.body.map((pair) => pair.to)),
+      new Set(['Аня', 'Борис', 'Вика']),
+    )
+
+    const invalid = await request('POST', '/randomizer', { names: 'Аня' })
+    assert.equal(invalid.status, 400)
+  })
+
   it('управляет вопросами, сообщениями, организаторами и поддоменами', async () => {
     const game = await createGame()
     const people = await addParticipants(game.id, ['Аня', 'Борис'])
