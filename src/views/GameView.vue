@@ -8,18 +8,22 @@ const route = useRoute()
 const router = useRouter()
 const preferences = usePreferencesStore()
 const data = ref(null)
+const invite = ref(null)
 const error = ref('')
 const actionError = ref('')
 const loading = ref(true)
 const busy = ref(false)
 const newParticipant = ref('')
+const bulkNames = ref('')
 
 async function load(id) {
   loading.value = true
   error.value = ''
   data.value = null
+  invite.value = null
   try {
     data.value = await api.games.get(id)
+    invite.value = await api.games.invite(id)
   } catch (requestError) {
     error.value = requestError.message
   } finally {
@@ -51,6 +55,21 @@ function addParticipant() {
   if (!name) return
   newParticipant.value = ''
   return runAction(() => api.games.addParticipant(route.params.id, { name }))
+}
+
+function addParticipants() {
+  const names = bulkNames.value.trim()
+  if (!names) return
+  bulkNames.value = ''
+  return runAction(() => api.games.addParticipants(route.params.id, { names }))
+}
+
+async function copyLink(value) {
+  try {
+    await navigator.clipboard.writeText(value)
+  } catch {
+    actionError.value = 'Не удалось скопировать ссылку'
+  }
 }
 
 function draw() {
@@ -128,7 +147,48 @@ function reveal(pair) {
             Добавить
           </button>
         </form>
+        <form class="mt-3 grid gap-2 sm:grid-cols-[1fr_auto]" @submit.prevent="addParticipants">
+          <input
+            v-model="bulkNames"
+            type="text"
+            maxlength="1000"
+            placeholder="Аня, Борис, Вика — через запятую"
+            class="w-full rounded-xl border border-white/15 bg-white/5 px-4 py-2 text-sm outline-none placeholder:text-current/40 focus:border-white/40"
+          />
+          <button
+            type="submit"
+            class="rounded-xl border border-white/20 px-4 py-2 text-sm font-semibold transition hover:bg-white/10 disabled:opacity-50"
+            :disabled="busy || !bulkNames.trim()"
+          >
+            Добавить список
+          </button>
+        </form>
         <p v-if="actionError" role="alert" class="mt-3 text-sm text-rose-300">{{ actionError }}</p>
+      </div>
+
+      <div v-if="invite" class="rounded-2xl border border-white/10 bg-white/5 p-5">
+        <h2 class="font-bold">Приглашения</h2>
+        <div class="mt-3 grid gap-3 text-sm">
+          <button
+            type="button"
+            class="truncate rounded-xl border border-white/15 bg-white/5 px-4 py-2 text-left transition hover:bg-white/10"
+            @click="copyLink(invite.commonUrl)"
+          >
+            <span class="opacity-50">Общая ссылка: </span>{{ invite.commonUrl }}
+          </button>
+          <div v-for="person in invite.participants" :key="person.id" class="flex flex-wrap items-center gap-2">
+            <span class="min-w-24 font-semibold">{{ person.name }}</span>
+            <button
+              type="button"
+              class="min-w-0 flex-1 truncate rounded-xl border border-white/15 bg-white/5 px-4 py-2 text-left transition hover:bg-white/10"
+              @click="copyLink(person.url)"
+            >
+              {{ person.url }}
+            </button>
+            <span class="text-xs opacity-50">{{ person.filled ? 'подтвердил' : 'ожидаем' }}</span>
+          </div>
+          <p v-if="!invite.participants.length" class="opacity-50">Добавьте участников, чтобы получить персональные ссылки</p>
+        </div>
       </div>
 
       <div class="grid gap-4 lg:grid-cols-2">

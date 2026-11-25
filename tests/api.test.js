@@ -113,6 +113,45 @@ describe('API', () => {
     assert.ok(response.body.error.message)
   })
 
+  it('добавляет участников списком и обрабатывает персональные приглашения', async () => {
+    const game = await createGame('Приглашения')
+    const bulk = await request('POST', `/games/${game.id}/participants/bulk`, {
+      names: 'Аня, Борис, Аня,\nВика',
+    })
+    assert.equal(bulk.status, 201)
+    assert.equal(bulk.body.added, 3)
+
+    const invite = await request('GET', `/games/${game.id}/invite`)
+    assert.equal(invite.status, 200)
+    assert.ok(invite.body.commonUrl.endsWith(`/game/${game.id}`))
+    assert.equal(invite.body.participants.length, 3)
+    assert.ok(invite.body.participants.every((person) => person.url.includes('/join/')))
+
+    const person = invite.body.participants.find((item) => item.name === 'Аня')
+    const opened = await request('GET', `/invites/${person.invite_token}`)
+    assert.equal(opened.status, 200)
+    assert.equal(opened.body.participant.name, 'Аня')
+    assert.equal(opened.body.game.id, game.id)
+
+    const accepted = await request('POST', `/invites/${person.invite_token}/accept`, {
+      email: 'anya@example.test',
+    })
+    assert.equal(accepted.status, 200)
+    const updated = await request('GET', `/games/${game.id}`)
+    const stored = updated.body.participants.find((item) => item.id === person.id)
+    assert.equal(stored.email, 'anya@example.test')
+    assert.equal(stored.filled, 1)
+
+    const patched = await request('PATCH', `/games/${game.id}/participants/${person.id}`, {
+      name: 'Анна',
+    })
+    assert.equal(patched.status, 200)
+    assert.equal(patched.body.name, 'Анна')
+
+    const empty = await request('POST', `/games/${game.id}/participants/bulk`, { names: '   ' })
+    assert.equal(empty.status, 400)
+  })
+
   it('распределяет круговые пары и сохраняет ручное назначение', async () => {
     const game = await createGame()
     const people = await addParticipants(game.id, ['Аня', 'Борис', 'Вера'])

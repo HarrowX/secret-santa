@@ -45,6 +45,17 @@ export const api = {
     create: (body) => request('/games', { method: 'POST', body: JSON.stringify(body) }),
     addParticipant: (id, body) =>
       request(`/games/${encodeURIComponent(id)}/participants`, { method: 'POST', body: JSON.stringify(body) }),
+    addParticipants: (id, body) =>
+      request(`/games/${encodeURIComponent(id)}/participants/bulk`, {
+        method: 'POST',
+        body: JSON.stringify(body),
+      }),
+    updateParticipant: (id, participantId, body) =>
+      request(`/games/${encodeURIComponent(id)}/participants/${participantId}`, {
+        method: 'PATCH',
+        body: JSON.stringify(body),
+      }),
+    invite: (id) => request(`/games/${encodeURIComponent(id)}/invite`),
     draw: (id) => request(`/games/${encodeURIComponent(id)}/draw`, { method: 'POST' }),
     reveal: (id, fromId) =>
       request(`/games/${encodeURIComponent(id)}/reveal`, {
@@ -71,6 +82,14 @@ export const api = {
       request(`/games/${encodeURIComponent(id)}/organizers`, { method: 'POST', body: JSON.stringify(body) }),
     removeOrganizer: (id, organizerId) =>
       request(`/games/${encodeURIComponent(id)}/organizers/${organizerId}`, { method: 'DELETE' }),
+  },
+  invites: {
+    get: (token) => request(`/invites/${encodeURIComponent(token)}`),
+    accept: (token, body) =>
+      request(`/invites/${encodeURIComponent(token)}/accept`, {
+        method: 'POST',
+        body: JSON.stringify(body),
+      }),
   },
   tenants: {
     list: () => request('/tenants'),

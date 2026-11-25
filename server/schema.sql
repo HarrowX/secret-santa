@@ -38,6 +38,7 @@ CREATE TABLE IF NOT EXISTS participants (
   user_id INTEGER REFERENCES users(id) ON DELETE SET NULL,
   name TEXT NOT NULL,
   email TEXT,
+  invite_token TEXT UNIQUE,
   wishlist TEXT,
   address TEXT,
   filled INTEGER NOT NULL DEFAULT 0,

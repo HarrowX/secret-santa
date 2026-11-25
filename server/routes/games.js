@@ -14,6 +14,10 @@ function getGame(id) {
   return game
 }
 
+function inviteToken() {
+  return randomUUID().replace(/-/g, '').slice(0, 16)
+}
+
 function addEvent(gameId, kind, text, actor = null) {
   db.prepare('INSERT INTO events (game_id, kind, text, actor) VALUES (?, ?, ?, ?)').run(
     gameId,
@@ -70,7 +74,9 @@ gamesRouter.post('/:id/participants', validateBody(schemas.participant), (req, r
 
   let result
   try {
-    result = db.prepare('INSERT INTO participants (game_id, name) VALUES (?, ?)').run(id, name)
+    result = db
+      .prepare('INSERT INTO participants (game_id, name, invite_token) VALUES (?, ?, ?)')
+      .run(id, name, inviteToken())
   } catch (error) {
     if (String(error.message).includes('UNIQUE')) fail(409, 'Участник с таким именем уже есть')
     throw error
@@ -85,6 +91,75 @@ gamesRouter.get('/:id/participants', (req, res) => {
   const id = Number(req.params.id)
   getGame(id)
   res.json(db.prepare('SELECT * FROM participants WHERE game_id = ? ORDER BY id').all(id))
+})
+
+gamesRouter.post('/:id/participants/bulk', validateBody(schemas.participantBulk), (req, res) => {
+  const id = Number(req.params.id)
+  getGame(id)
+  const seen = new Set()
+  const names = req.body.names
+    .split(/[,\n]/)
+    .map((name) => name.trim())
+    .filter((name) => {
+      const key = name.toLocaleLowerCase('ru')
+      if (!name || seen.has(key)) return false
+      seen.add(key)
+      return true
+    })
+  if (!names.length) fail(400, 'Список имён пуст')
+
+  const insert = db.prepare(`
+    INSERT OR IGNORE INTO participants (game_id, name, invite_token) VALUES (?, ?, ?)
+  `)
+  let added = 0
+  db.transaction(() => {
+    for (const name of names) added += insert.run(id, name, inviteToken()).changes
+  })()
+  addEvent(id, 'join', `Добавлено участников: ${added}`)
+  res.status(201).json({
+    added,
+    participants: db.prepare('SELECT * FROM participants WHERE game_id = ? ORDER BY id').all(id),
+  })
+})
+
+gamesRouter.patch('/:id/participants/:participantId', validateBody(schemas.participantUpdate), (req, res) => {
+  const id = Number(req.params.id)
+  getGame(id)
+  const participantId = Number(req.params.participantId)
+  const participant = db
+    .prepare('SELECT * FROM participants WHERE id = ? AND game_id = ?')
+    .get(participantId, id)
+  if (!participant) fail(404, 'Участник не найден')
+
+  const name = req.body.name ?? participant.name
+  const email = req.body.email === undefined ? participant.email : req.body.email
+  try {
+    db.prepare('UPDATE participants SET name = ?, email = ? WHERE id = ?').run(name, email, participantId)
+  } catch (error) {
+    if (String(error.message).includes('UNIQUE')) fail(409, 'Участник с таким именем уже есть')
+    throw error
+  }
+  res.json(db.prepare('SELECT * FROM participants WHERE id = ?').get(participantId))
+})
+
+gamesRouter.get('/:id/invite', (req, res) => {
+  const id = Number(req.params.id)
+  const game = getGame(id)
+  const domain = String(process.env.DOMAIN || '')
+    .replace(/^https?:\/\//, '')
+    .replace(/\/.*$/, '')
+    .replace(/:\d+$/, '')
+
+  res.json({
+    commonUrl: `https://${domain}/game/${game.id}`,
+    participants: db
+      .prepare('SELECT id, name, invite_token, filled FROM participants WHERE game_id = ? ORDER BY id')
+      .all(id)
+      .map((person) => ({
+        ...person,
+        url: `https://${domain}/join/${person.invite_token}`,
+      })),
+  })
 })
 
 gamesRouter.post('/:id/exclusions', validateBody(schemas.exclusion), (req, res) => {

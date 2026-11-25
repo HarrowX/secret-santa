@@ -16,6 +16,17 @@ export const schemas = {
     })
     .strict(),
   participant: z.object({ name: text.max(80) }).strict(),
+  participantBulk: z.object({ names: text.max(1000) }).strict(),
+  participantUpdate: z
+    .object({
+      name: text.max(80).optional(),
+      email: z.string().trim().toLowerCase().email().nullable().optional(),
+    })
+    .strict()
+    .refine((value) => Object.keys(value).length > 0, 'Нет полей для обновления'),
+  inviteAccept: z
+    .object({ email: z.string().trim().toLowerCase().email().nullable().optional() })
+    .strict(),
   exclusion: z.object({ fromId: identifier, toId: identifier }).strict(),
   pair: z.object({ fromId: identifier, toId: identifier }).strict(),
   reveal: z.object({ fromId: identifier }).strict(),
