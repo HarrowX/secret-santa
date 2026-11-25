@@ -715,6 +715,64 @@ describe('API', () => {
     assert.equal(reserved.status, 409)
   })
 
+  it('импортирует прошлые пары без раскрытия и исключает их', async () => {
+    const anna = await request('POST', '/auth/session', {})
+    const boris = await request('POST', '/auth/session', {})
+
+    async function join(gameId, name, session) {
+      await addParticipants(gameId, [name], cookieHeader(anna))
+      const invite = await request('GET', `/games/${gameId}/invite`, undefined, cookieHeader(anna))
+      const person = invite.body.participants.find((item) => item.name === name)
+      const accepted = await request(
+        'POST',
+        `/invites/${person.invite_token}/accept`,
+        {},
+        cookieHeader(session),
+      )
+      assert.equal(accepted.status, 200)
+    }
+
+    const past = await createGame('Прошлая игра', cookieHeader(anna))
+    await join(past.id, 'Аня', anna)
+    await join(past.id, 'Борис', boris)
+    const pastDraw = await request('POST', `/games/${past.id}/draw`, undefined, cookieHeader(anna))
+    assert.equal(pastDraw.status, 200)
+
+    const current = await createGame('Новая игра', cookieHeader(anna))
+    await join(current.id, 'Аня', anna)
+    await join(current.id, 'Борис', boris)
+
+    const pastGames = await request('GET', '/me/past-games', undefined, cookieHeader(anna))
+    assert.ok(pastGames.body.some((item) => item.id === past.id))
+
+    const imported = await request(
+      'POST',
+      `/games/${current.id}/past-pairs/import`,
+      { pastGameId: past.id },
+      cookieHeader(anna),
+    )
+    assert.equal(imported.status, 201)
+    assert.equal(imported.body.imported, 2)
+
+    const loaded = await request('GET', `/games/${current.id}`, undefined, cookieHeader(anna))
+    assert.equal(loaded.body.pastPairsCount, 2)
+    assert.equal(loaded.body.pastPairs, undefined)
+
+    db.prepare(`
+      INSERT OR IGNORE INTO past_pairs (game_id, from_token, to_token)
+      VALUES (?, ?, ?)
+    `).run(current.id, boris.body.user.token, anna.body.user.token)
+
+    const blocked = await request(
+      'POST',
+      `/games/${current.id}/draw`,
+      undefined,
+      cookieHeader(anna),
+    )
+    assert.equal(blocked.status, 409)
+    assert.match(blocked.body.error.message, /ограничениями/)
+  })
+
   it('ведёт прогресс и отправляет массовые напоминания', async () => {
     const owner = await request('POST', '/auth/session', {})
     const game = await createGame('Прогресс', cookieHeader(owner))

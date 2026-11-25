@@ -52,6 +52,14 @@ describe('drawPairs', () => {
     }
   })
 
+  it('исключает прошлые пары', () => {
+    const past = new Set(['1:2', '2:1', '3:4', '4:3'])
+    for (let attempt = 0; attempt < 20; attempt += 1) {
+      const pairs = drawPairs({ ids, past })
+      assert.ok([...pairs].every(([from, to]) => !past.has(`${from}:${to}`)))
+    }
+  })
+
   it('сохраняет ручные назначения', () => {
     const manual = new Map([[1, 3]])
     for (let attempt = 0; attempt < 20; attempt += 1) {

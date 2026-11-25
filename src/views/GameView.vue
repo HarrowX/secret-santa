@@ -15,6 +15,8 @@ const notifications = ref([])
 const answers = ref([])
 const organizers = ref([])
 const reminders = ref([])
+const pastGames = ref([])
+const pastGameId = ref('')
 const reminderBody = ref('')
 const reminderRecipients = ref([])
 const giftParticipant = ref('')
@@ -77,6 +79,7 @@ async function load(id) {
   answers.value = []
   organizers.value = []
   reminders.value = []
+  pastGames.value = []
   try {
     data.value = await api.games.get(id)
     preferences.setTheme(data.value.game.theme_id)
@@ -85,6 +88,11 @@ async function load(id) {
     answers.value = await api.games.answers(id)
     organizers.value = await api.games.organizers(id)
     reminders.value = await api.games.reminders(id)
+    try {
+      pastGames.value = await api.me.pastGames()
+    } catch {
+      pastGames.value = []
+    }
   } catch (requestError) {
     error.value = requestError.message
   } finally {
@@ -247,6 +255,14 @@ function drawNew() {
 function reveal(pair) {
   if (!window.confirm('Да, раскрыть эту пару?')) return
   return runAction(() => api.games.reveal(route.params.token, pair.from_id))
+}
+
+function importPastPairs() {
+  if (!pastGameId.value) return
+  return runAction(async () => {
+    await api.games.importPastPairs(route.params.token, Number(pastGameId.value))
+    pastGameId.value = ''
+  })
 }
 
 function markGift(kind) {
@@ -574,6 +590,35 @@ function sendReminder() {
           </details>
           <p v-if="!data.participants.length" class="opacity-50">Добавьте участников, чтобы увидеть ответы</p>
         </div>
+      </div>
+
+      <div class="rounded-2xl border border-white/10 bg-white/5 p-5">
+        <h2 class="font-bold">Прошлые игры</h2>
+        <p class="mt-1 text-sm opacity-60">
+          Импортированные пары исключаются автоматически; имена прошлых получателей не раскрываются
+        </p>
+        <p class="mt-2 text-sm">Импортировано пар: {{ data.pastPairsCount }}</p>
+        <form class="mt-3 flex flex-wrap gap-2" @submit.prevent="importPastPairs">
+          <select
+            v-model="pastGameId"
+            class="min-w-48 flex-1 rounded-xl border border-white/15 bg-slate-900/80 px-3 py-2 text-sm outline-none"
+          >
+            <option value="" disabled>Выберите прошлую игру</option>
+            <option v-for="game in pastGames" :key="game.id" :value="game.id">
+              {{ game.title }} · {{ game.exchange_date || 'без даты' }}
+            </option>
+          </select>
+          <button
+            type="submit"
+            class="rounded-xl border border-white/20 px-4 py-2 text-sm font-semibold transition hover:bg-white/10 disabled:opacity-50"
+            :disabled="busy || !pastGameId"
+          >
+            Импортировать пары
+          </button>
+        </form>
+        <p v-if="!pastGames.length" class="mt-2 text-sm opacity-50">
+          Войдите и поучаствуйте в игре, чтобы увидеть здесь прошлые игры
+        </p>
       </div>
 
       <div class="rounded-2xl border border-white/10 bg-white/5 p-5">

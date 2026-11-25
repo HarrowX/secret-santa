@@ -22,6 +22,22 @@ meRouter.get('/games', (req, res) => {
   )
 })
 
+meRouter.get('/past-games', (req, res) => {
+  if (!req.user) fail(401, 'Нужен активный вход')
+
+  res.json(
+    db
+      .prepare(`
+        SELECT DISTINCT g.id, g.token, g.title, g.exchange_date
+        FROM games g
+        JOIN participants p ON p.game_id = g.id
+        WHERE p.user_id = ?
+        ORDER BY g.id DESC
+      `)
+      .all(req.user.id),
+  )
+})
+
 meRouter.get('/exchanges', (req, res) => {
   if (!req.user) fail(401, 'Нужен активный вход')
 

@@ -75,6 +75,7 @@ export const schemas = {
       toId: identifier.optional().nullable(),
     })
     .strict(),
+  pastPairsImport: z.object({ pastGameId: identifier }).strict(),
   reminder: z
     .object({
       body: text.max(1000),

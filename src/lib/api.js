@@ -107,6 +107,11 @@ export const api = {
     addMessage: (id, body) =>
       request(`/games/${encodeURIComponent(id)}/messages`, { method: 'POST', body: JSON.stringify(body) }),
     reminders: (id) => request(`/games/${encodeURIComponent(id)}/reminders`),
+    importPastPairs: (id, pastGameId) =>
+      request(`/games/${encodeURIComponent(id)}/past-pairs/import`, {
+        method: 'POST',
+        body: JSON.stringify({ pastGameId }),
+      }),
     addReminder: (id, body) =>
       request(`/games/${encodeURIComponent(id)}/reminders`, { method: 'POST', body: JSON.stringify(body) }),
     markGift: (id, participantId, kind) =>
@@ -128,6 +133,7 @@ export const api = {
   },
   me: {
     games: () => request('/me/games'),
+    pastGames: () => request('/me/past-games'),
     exchanges: () => request('/me/exchanges'),
   },
   randomizer: {

@@ -94,6 +94,25 @@ function gameProgress(gameId) {
   }
 }
 
+function pastPairsFor(gameId) {
+  const identities = db
+    .prepare(`
+      SELECT participants.id, COALESCE(users.token, participants.invite_token) AS identity
+      FROM participants
+      LEFT JOIN users ON users.id = participants.user_id
+      WHERE participants.game_id = ?
+    `)
+    .all(gameId)
+  const idsByToken = new Map(identities.map((person) => [person.identity, person.id]))
+  return new Set(
+    db
+      .prepare('SELECT from_token, to_token FROM past_pairs WHERE game_id = ?')
+      .all(gameId)
+      .map((pair) => `${idsByToken.get(pair.from_token)}:${idsByToken.get(pair.to_token)}`)
+      .filter((value) => !value.includes('undefined')),
+  )
+}
+
 const reminderRateLimit = rateLimit({ windowMs: 60_000, max: 10 })
 
 gamesRouter.get('/', (_req, res) => {
@@ -130,6 +149,7 @@ gamesRouter.get('/:id', (req, res) => {
   res.json({
     game,
     progress: gameProgress(id),
+    pastPairsCount: db.prepare('SELECT COUNT(*) AS total FROM past_pairs WHERE game_id = ?').get(id).total,
     participants: db.prepare('SELECT * FROM participants WHERE game_id = ? ORDER BY id').all(id),
     questions: db.prepare('SELECT * FROM questions WHERE game_id = ? ORDER BY position, id').all(id),
     exclusions: db.prepare('SELECT from_id, to_id FROM exclusions WHERE game_id = ?').all(id),
@@ -274,11 +294,18 @@ gamesRouter.delete('/:id/participants/:participantId', (req, res) => {
       .map((item) => `${item.from_id}:${item.to_id}`),
   )
 
+  const past = new Set(
+    [...pastPairsFor(id)]
+      .map((value) => value.split(':').map(Number))
+      .filter(([from, to]) => remainingSet.has(from) && remainingSet.has(to))
+      .map(([from, to]) => `${from}:${to}`),
+  )
+
   db.transaction(() => {
     db.prepare('DELETE FROM participants WHERE id = ?').run(participantId)
     db.prepare('DELETE FROM pairs WHERE game_id = ?').run(id)
     if (remaining.length >= 2) {
-      const solution = drawPairs({ ids: remaining, exclusions })
+      const solution = drawPairs({ ids: remaining, exclusions, past })
       if (solution) {
         const insert = db.prepare(`
           INSERT INTO pairs (game_id, from_id, to_id, manual) VALUES (?, ?, ?, 0)
@@ -311,6 +338,57 @@ gamesRouter.get('/:id/invite', (req, res) => {
       })),
   })
 })
+
+gamesRouter.post(
+  '/:id/past-pairs/import',
+  validateBody(schemas.pastPairsImport),
+  (req, res) => {
+    const id = resolveGameId(req.params.id)
+    getGame(id)
+    requireOrganizer(id, req.user)
+    const pastGameId = Number(req.body.pastGameId)
+    getGame(pastGameId)
+    const belongs = db
+      .prepare(`
+        SELECT 1 AS ok FROM participants WHERE game_id = ? AND user_id = ?
+        UNION
+        SELECT 1 AS ok FROM organizers WHERE game_id = ? AND user_id = ?
+      `)
+      .get(pastGameId, req.user.id, pastGameId, req.user.id)
+    if (!belongs) fail(403, 'Прошлая игра недоступна для импорта')
+
+    const rows = db
+      .prepare(`
+        SELECT
+          COALESCE(fromUser.token, fromParticipant.invite_token) AS from_token,
+          COALESCE(toUser.token, toParticipant.invite_token) AS to_token,
+          COALESCE(g.exchange_date, datetime('now')) AS played_at
+        FROM pairs
+        JOIN participants fromParticipant ON fromParticipant.id = pairs.from_id
+        JOIN participants toParticipant ON toParticipant.id = pairs.to_id
+        LEFT JOIN users fromUser ON fromUser.id = fromParticipant.user_id
+        LEFT JOIN users toUser ON toUser.id = toParticipant.user_id
+        JOIN games g ON g.id = pairs.game_id
+        WHERE pairs.game_id = ?
+      `)
+      .all(pastGameId)
+    if (!rows.length) fail(400, 'В прошлой игре нет распределённых пар')
+
+    const insert = db.prepare(`
+      INSERT OR IGNORE INTO past_pairs (game_id, from_token, to_token, played_at)
+      VALUES (?, ?, ?, ?)
+    `)
+    const result = db.transaction(() => {
+      let imported = 0
+      for (const row of rows) {
+        imported += insert.run(id, row.from_token, row.to_token, row.played_at).changes
+      }
+      return imported
+    })()
+    addEvent(id, 'settings', `Импортировано прошлых пар: ${result}`, req.user?.id ?? null)
+    res.status(201).json({ imported: result, total: rows.length })
+  },
+)
 
 gamesRouter.post('/:id/exclusions', validateBody(schemas.exclusion), (req, res) => {
   const id = resolveGameId(req.params.id)
@@ -366,7 +444,7 @@ gamesRouter.post('/:id/draw', (req, res) => {
     ),
   )
 
-  const solution = drawPairs({ ids, exclusions, manual })
+  const solution = drawPairs({ ids, exclusions, manual, past: pastPairsFor(id) })
   if (!solution) fail(409, 'Не удалось распределить пары с текущими ограничениями')
 
   db.transaction(() => {
@@ -405,7 +483,14 @@ gamesRouter.post('/:id/draw/new', (req, res) => {
       .map((item) => [item.from_id, item.to_id]),
   )
 
-  const solution = drawPairs({ ids: pending, exclusions, manual })
+  const pendingIds = new Set(pending)
+  const past = new Set(
+    [...pastPairsFor(id)]
+      .map((value) => value.split(':'))
+      .filter(([from, to]) => pendingIds.has(Number(from)) && pendingIds.has(Number(to)))
+      .map(([from, to]) => `${from}:${to}`),
+  )
+  const solution = drawPairs({ ids: pending, exclusions, manual, past })
   if (!solution) fail(409, 'Не удалось распределить пары для новых участников')
 
   db.transaction(() => {
