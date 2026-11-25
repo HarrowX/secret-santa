@@ -8,7 +8,8 @@ const emit = defineEmits(['open-demo'])
 </script>
 
 <template>
-  <section class="mx-auto grid max-w-6xl gap-12 px-5 py-14 lg:grid-cols-[1.05fr_.95fr] lg:items-center lg:py-20">
+  <section class="relative mx-auto grid max-w-6xl gap-12 px-5 py-14 lg:grid-cols-[1.05fr_.95fr] lg:items-center lg:py-20">
+    <div class="pointer-events-none absolute inset-0 opacity-[0.12]" style="background-image: radial-gradient(currentColor 1px, transparent 1px); background-size: 28px 28px;"></div>
     <div>
       <span class="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-4 py-1.5 text-xs font-medium backdrop-blur">
         <span class="h-2 w-2 rounded-full" :style="{ background: accent }"></span>
