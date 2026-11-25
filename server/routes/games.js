@@ -12,6 +12,7 @@ import {
 } from '../permissions.js'
 import { gamesRepository } from '../repositories/games.js'
 import { drawPairs } from '../services/draw.js'
+import { trackMetric } from '../services/metrics.js'
 import { schemas, validateBody } from '../validation.js'
 
 export const gamesRouter = Router()
@@ -65,12 +66,53 @@ function publicLink(req, path) {
   return `${appBaseUrl()}${path}`
 }
 
-function addNotification(gameId, participantId, payload) {
+function addNotification(gameId, participantId, payload, kind = 'card_updated') {
   db.prepare(
     `
     INSERT INTO notifications (game_id, participant_id, kind, payload) VALUES (?, ?, ?, ?)
   `,
-  ).run(gameId, participantId, 'card_updated', JSON.stringify(payload))
+  ).run(gameId, participantId, kind, JSON.stringify(payload))
+}
+
+function notifyParticipants(gameId, kind, payload) {
+  const participants = db.prepare('SELECT id FROM participants WHERE game_id = ?').all(gameId)
+  for (const participant of participants) addNotification(gameId, participant.id, payload, kind)
+}
+
+function inviteTokenFromRequest(req) {
+  return req.get?.('x-invite-token') ?? req.query?.inviteToken ?? req.body?.inviteToken ?? null
+}
+
+function assertTenantGame(req, gameId) {
+  if (req.tenant?.game && req.tenant.game.id !== gameId) {
+    fail(403, 'Игра недоступна на этом поддомене')
+  }
+}
+
+function participantByInvite(req, gameId) {
+  assertTenantGame(req, gameId)
+  const token = inviteTokenFromRequest(req)
+  const participant = db.prepare('SELECT * FROM participants WHERE game_id = ? AND invite_token = ?').get(gameId, token)
+  if (!participant) fail(403, 'Нет доступа к игре')
+  return participant
+}
+
+function chatCounterparty(gameId, participantId) {
+  const revealed = db
+    .prepare(
+      `
+      SELECT from_id, to_id FROM pairs
+      WHERE game_id = ? AND (from_id = ? OR to_id = ?) AND revealed_at IS NOT NULL
+      ORDER BY id LIMIT 1
+    `,
+    )
+    .get(gameId, participantId, participantId)
+  if (revealed) return revealed.from_id === participantId ? revealed.to_id : revealed.from_id
+  const anyPair = db
+    .prepare('SELECT 1 FROM pairs WHERE game_id = ? AND (from_id = ? OR to_id = ?) LIMIT 1')
+    .get(gameId, participantId, participantId)
+  if (!anyPair) fail(403, 'У вас ещё нет пары')
+  fail(403, 'Пара ещё не раскрыта')
 }
 
 function addEvent(gameId, kind, text, actor = null) {
@@ -133,6 +175,12 @@ function pastPairsFor(gameId) {
 }
 
 const reminderRateLimit = rateLimit({ name: 'reminder', windowMs: 60_000, max: 10 })
+const chatRateLimit = rateLimit({
+  name: 'chat',
+  windowMs: 60_000,
+  max: 30,
+  key: (req) => `${req.ip || req.socket.remoteAddress || 'unknown'}:${req.params.id ?? ''}`,
+})
 const drawRateLimit = rateLimit({
   name: 'draw',
   windowMs: 60_000,
@@ -150,6 +198,9 @@ gamesRouter.post('/', validateBody(schemas.createGame), (req, res) => {
   if (!theme) fail(400, 'Неизвестная тема оформления')
 
   const token = randomUUID()
+  const returning = req.user
+    ? Boolean(db.prepare('SELECT 1 FROM organizers WHERE user_id = ? LIMIT 1').get(req.user.id))
+    : false
   const result = db
     .prepare(
       `
@@ -162,6 +213,8 @@ gamesRouter.post('/', validateBody(schemas.createGame), (req, res) => {
   const id = Number(result.lastInsertRowid)
   db.prepare('INSERT INTO organizers (game_id, user_id, role) VALUES (?, ?, ?)').run(id, req.user?.id ?? null, 'owner')
   addEvent(id, 'settings', 'Игра создана', req.user?.id ?? null)
+  trackMetric('game_created', { gameId: id, userId: req.user?.id ?? null })
+  if (returning) trackMetric('organizer_return', { gameId: id, userId: req.user.id })
   res.status(201).json(getGame(id))
 })
 
@@ -211,6 +264,7 @@ gamesRouter.post('/:id/participants', validateBody(schemas.participant), (req, r
 
   const participant = db.prepare('SELECT * FROM participants WHERE id = ?').get(result.lastInsertRowid)
   addEvent(id, 'join', `${name} присоединился к игре`, name)
+  trackMetric('participant_invited', { gameId: id, userId: req.user?.id ?? null })
   res.status(201).json(participant)
 })
 
@@ -255,6 +309,9 @@ gamesRouter.post('/:id/participants/bulk', validateBody(schemas.participantBulk)
     for (const name of names) added += insert.run(id, name, inviteToken()).changes
   })()
   addEvent(id, 'join', `Добавлено участников: ${added}`, req.user?.id ?? null)
+  for (let index = 0; index < added; index += 1) {
+    trackMetric('participant_invited', { gameId: id, userId: req.user?.id ?? null })
+  }
   res.status(201).json({
     added,
     participants: db.prepare('SELECT * FROM participants WHERE game_id = ? ORDER BY id').all(id),
@@ -304,6 +361,7 @@ function markGift(kind) {
     const column = kind === 'sent' ? 'gift_sent_at' : 'gift_received_at'
     db.prepare(`UPDATE participants SET ${column} = datetime('now') WHERE id = ?`).run(participantId)
     addEvent(id, 'settings', kind === 'sent' ? 'Подарок отправлен' : 'Подарок получен', req.user?.id ?? null)
+    if (kind === 'sent') trackMetric('gift_sent', { gameId: id, userId: req.user?.id ?? null })
     res.json({ ok: true })
   }
 }
@@ -353,6 +411,7 @@ gamesRouter.delete('/:id/participants/:participantId', (req, res) => {
       }
     }
     addEvent(id, 'settings', 'Участник удалён, пары перестроены', req.user?.id ?? null)
+    notifyParticipants(id, 'draw_changed', { text: 'Состав участников изменён, пары перестроены' })
   })()
 
   res.json({
@@ -484,6 +543,8 @@ gamesRouter.post('/:id/draw', drawRateLimit, (req, res) => {
     const insert = db.prepare('INSERT INTO pairs (game_id, from_id, to_id, manual) VALUES (?, ?, ?, ?)')
     for (const [from, to] of solution) insert.run(id, from, to, manual.has(from) ? 1 : 0)
     addEvent(id, 'draw', 'Проведена жеребьёвка', req.user?.id ?? null)
+    trackMetric('draw_completed', { gameId: id, userId: req.user?.id ?? null })
+    notifyParticipants(id, 'draw_changed', { text: 'Распределение пар обновлено' })
   })()
 
   res.json(db.prepare('SELECT * FROM pairs WHERE game_id = ? ORDER BY from_id').all(id))
@@ -528,6 +589,8 @@ gamesRouter.post('/:id/draw/new', drawRateLimit, (req, res) => {
     const insert = db.prepare('INSERT INTO pairs (game_id, from_id, to_id, manual) VALUES (?, ?, ?, ?)')
     for (const [from, to] of solution) insert.run(id, from, to, manual.has(from) ? 1 : 0)
     addEvent(id, 'draw', `Дополнительно распределено участников: ${pending.length}`, req.user?.id ?? null)
+    trackMetric('draw_completed', { gameId: id, userId: req.user?.id ?? null })
+    notifyParticipants(id, 'draw_changed', { text: 'Распределение пар обновлено' })
   })()
 
   res.json(db.prepare('SELECT * FROM pairs WHERE game_id = ? ORDER BY from_id').all(id))
@@ -558,6 +621,7 @@ gamesRouter.post('/:id/pairs/reset', drawRateLimit, (req, res) => {
   db.transaction(() => {
     db.prepare('DELETE FROM pairs WHERE game_id = ?').run(id)
     addEvent(id, 'settings', 'Распределение пар сброшено', req.user?.id ?? null)
+    notifyParticipants(id, 'draw_changed', { text: 'Распределение пар сброшено' })
   })()
   res.json([])
 })
@@ -597,6 +661,7 @@ gamesRouter.post('/:id/pairs', validateBody(schemas.pair), (req, res) => {
       )
     }
     addEvent(id, 'settings', 'Распределение пар изменено вручную', req.user?.id ?? null)
+    notifyParticipants(id, 'draw_changed', { text: 'Распределение пар изменено' })
   })()
 
   res.json(db.prepare('SELECT * FROM pairs WHERE game_id = ? ORDER BY from_id').all(id))
@@ -610,6 +675,8 @@ gamesRouter.post('/:id/reveal', validateBody(schemas.reveal), (req, res) => {
   if (!pair) fail(404, 'Пара не найдена')
   db.prepare(`UPDATE pairs SET revealed_at = datetime('now') WHERE id = ?`).run(pair.id)
   addEvent(id, 'draw', 'Организатор раскрыл пару', req.user?.id ?? null)
+  addNotification(id, pair.from_id, { text: 'Ваша пара раскрыта' }, 'pair_revealed')
+  addNotification(id, pair.to_id, { text: 'Ваша пара раскрыта' }, 'pair_revealed')
   res.json(db.prepare('SELECT * FROM pairs WHERE id = ?').get(pair.id))
 })
 
@@ -620,20 +687,36 @@ gamesRouter.get('/:id/events', (req, res) => {
 })
 
 gamesRouter.get('/:id/notifications', (req, res) => {
-  const id = loadGame(req)
-  requireOrganizer(id, req.user)
+  const id = resolveGameId(req.params.id)
+  assertTenantGame(req, id)
+  if (canManageGame(req, id)) {
+    res.json(
+      db
+        .prepare(
+          `
+          SELECT n.id, n.kind, n.payload, n.sent_at, n.created_at, p.name AS participant_name
+          FROM notifications n
+          LEFT JOIN participants p ON p.id = n.participant_id
+          WHERE n.game_id = ?
+          ORDER BY n.id DESC
+        `,
+        )
+        .all(id),
+    )
+    return
+  }
+  const participant = participantByInvite(req, id)
   res.json(
     db
       .prepare(
         `
-        SELECT n.id, n.kind, n.payload, n.sent_at, n.created_at, p.name AS participant_name
+        SELECT n.id, n.kind, n.payload, n.sent_at, n.created_at
         FROM notifications n
-        LEFT JOIN participants p ON p.id = n.participant_id
-        WHERE n.game_id = ?
+        WHERE n.game_id = ? AND n.participant_id = ?
         ORDER BY n.id DESC
       `,
       )
-      .all(id),
+      .all(id, participant.id),
   )
 })
 
@@ -827,6 +910,41 @@ gamesRouter.post('/:id/messages', validateBody(schemas.message), (req, res) => {
     .run(id, fromId, toId, body)
   addEvent(id, 'message', 'Отправлено сообщение', req.user?.id ?? null)
   res.status(201).json(db.prepare('SELECT * FROM messages WHERE id = ?').get(result.lastInsertRowid))
+})
+
+gamesRouter.get('/:id/chat', (req, res) => {
+  const id = resolveGameId(req.params.id)
+  const participant = participantByInvite(req, id)
+  const counterparty = chatCounterparty(id, participant.id)
+  const messages = db
+    .prepare(
+      `
+      SELECT id, body, image_url, created_at, from_id
+      FROM chat_messages
+      WHERE game_id = ? AND ((from_id = ? AND to_id = ?) OR (from_id = ? AND to_id = ?))
+      ORDER BY id
+    `,
+    )
+    .all(id, participant.id, counterparty, counterparty, participant.id)
+    .map((message) => ({
+      id: message.id,
+      body: message.body,
+      imageUrl: message.image_url,
+      mine: message.from_id === participant.id,
+      createdAt: message.created_at,
+    }))
+  res.json(messages)
+})
+
+gamesRouter.post('/:id/chat', chatRateLimit, validateBody(schemas.chatMessage), (req, res) => {
+  const id = resolveGameId(req.params.id)
+  const participant = participantByInvite(req, id)
+  const counterparty = chatCounterparty(id, participant.id)
+  const result = db
+    .prepare('INSERT INTO chat_messages (game_id, from_id, to_id, body, image_url) VALUES (?, ?, ?, ?, ?)')
+    .run(id, participant.id, counterparty, req.body.body, req.body.imageUrl ?? null)
+  addNotification(id, counterparty, { text: 'Новое анонимное сообщение' }, 'chat_message')
+  res.status(201).json(db.prepare('SELECT * FROM chat_messages WHERE id = ?').get(result.lastInsertRowid))
 })
 
 gamesRouter.get('/:id/reminders', (req, res) => {

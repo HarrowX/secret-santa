@@ -121,6 +121,16 @@ CREATE TABLE IF NOT EXISTS messages (
   created_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
 
+CREATE TABLE IF NOT EXISTS chat_messages (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  game_id INTEGER NOT NULL REFERENCES games(id) ON DELETE CASCADE,
+  from_id INTEGER NOT NULL REFERENCES participants(id) ON DELETE CASCADE,
+  to_id INTEGER NOT NULL REFERENCES participants(id) ON DELETE CASCADE,
+  body TEXT NOT NULL DEFAULT '',
+  image_url TEXT,
+  created_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
 CREATE TABLE IF NOT EXISTS support_requests (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   user_id INTEGER REFERENCES users(id) ON DELETE SET NULL,
@@ -167,8 +177,29 @@ CREATE TABLE IF NOT EXISTS tenants (
   created_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
 
+CREATE TABLE IF NOT EXISTS metrics (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  game_id INTEGER REFERENCES games(id) ON DELETE CASCADE,
+  user_id INTEGER REFERENCES users(id) ON DELETE SET NULL,
+  kind TEXT NOT NULL,
+  created_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+CREATE TABLE IF NOT EXISTS monitoring_checks (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  host TEXT NOT NULL,
+  ok INTEGER NOT NULL,
+  status INTEGER,
+  latency_ms INTEGER NOT NULL,
+  error TEXT,
+  created_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
 CREATE INDEX IF NOT EXISTS idx_games_token ON games(token);
 CREATE INDEX IF NOT EXISTS idx_participants_game ON participants(game_id);
 CREATE INDEX IF NOT EXISTS idx_pairs_game ON pairs(game_id);
 CREATE INDEX IF NOT EXISTS idx_events_game ON events(game_id);
 CREATE INDEX IF NOT EXISTS idx_messages_game ON messages(game_id);
+CREATE INDEX IF NOT EXISTS idx_chat_game ON chat_messages(game_id);
+CREATE INDEX IF NOT EXISTS idx_metrics_kind ON metrics(kind);
+CREATE INDEX IF NOT EXISTS idx_monitoring_host ON monitoring_checks(host);

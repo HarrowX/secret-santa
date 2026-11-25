@@ -6,7 +6,7 @@ import { csrfMiddleware } from './middlewares/csrf.js'
 import { rateLimit } from './middlewares/rateLimit.js'
 import { requestLogger } from './middlewares/logger.js'
 import { tenantMiddleware } from './middlewares/tenant.js'
-import { HttpError } from './http-error.js'
+import { fail, HttpError } from './http-error.js'
 import { authRouter } from './routes/auth.js'
 import { gamesRouter } from './routes/games.js'
 import { invitesRouter } from './routes/invites.js'
@@ -16,11 +16,14 @@ import { randomizerRouter } from './routes/randomizer.js'
 import { supportRouter } from './routes/support.js'
 import { tenantsRouter } from './routes/tenants.js'
 import { themesRouter } from './routes/themes.js'
+import { metricsSummary } from './services/metrics.js'
+import { latestChecks, recordError, recentErrors } from './services/monitoring.js'
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
 
 export function createApp() {
   const app = express()
+  if (process.env.TRUST_PROXY === 'true') app.set('trust proxy', 1)
 
   app.use(requestLogger)
   app.use(express.json())
@@ -34,6 +37,16 @@ export function createApp() {
 
   app.get('/api/message', (_req, res) => {
     res.json({ message: 'Привет из Secret Santa API' })
+  })
+
+  app.get('/api/metrics', (_req, res) => {
+    res.json(metricsSummary())
+  })
+
+  app.get('/api/monitoring', (req, res) => {
+    const token = process.env.MONITORING_TOKEN
+    if (!token || req.get('x-monitoring-token') !== token) fail(401, 'Нет доступа к мониторингу')
+    res.json({ errors: recentErrors(), checks: latestChecks() })
   })
 
   app.use('/api/auth', rateLimit({ name: 'auth', windowMs: 60_000, max: 20 }), authRouter)
@@ -51,9 +64,9 @@ export function createApp() {
       res.status(error.status).json({ error: { message: error.message } })
       return
     }
-    console.log(
-      JSON.stringify({ level: 'error', msg: 'request_failed', path: req.originalUrl.split('?')[0], name: error.name }),
-    )
+    const pathname = req.originalUrl.split('?')[0]
+    recordError({ type: 'request_failed', path: pathname, name: error.name })
+    console.log(JSON.stringify({ level: 'error', msg: 'request_failed', path: pathname, name: error.name }))
     res.status(500).json({ error: { message: 'Внутренняя ошибка сервера' } })
   })
 

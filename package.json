@@ -16,7 +16,9 @@
     "format:fix": "prettier --write \"src/**/*.{js,vue,css}\" \"server/**/*.js\" \"tests/**/*.js\" \"*.{js,json,md}\"",
     "typecheck": "vue-tsc --noEmit",
     "start": "NODE_ENV=production node --env-file-if-exists=.env server/index.js",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "db:migrate": "node scripts/migrate.js",
+    "db:backup": "node scripts/backup-db.js"
   },
   "dependencies": {
     "better-sqlite3": "^13.2.0",

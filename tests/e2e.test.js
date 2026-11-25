@@ -216,4 +216,65 @@ describe('E2E', () => {
     assert.ok(stored.gift_sent_at)
     assert.ok(stored.gift_received_at)
   })
+
+  it('полный цикл игры проходит без регистрации и обязательного email', async () => {
+    const organizer = createClient()
+    const participant = createClient()
+
+    const session = await organizer.request('POST', '/auth/session', {})
+    assert.equal(session.status, 201)
+    assert.equal(session.body.user.email, null)
+
+    const created = await organizer.request('POST', '/games', { title: 'Анонимный цикл', themeId: 'winter' })
+    assert.equal(created.status, 201)
+    const game = created.body
+
+    const added = await organizer.request('POST', `/games/${game.token}/participants/bulk`, {
+      names: 'Аня, Борис, Вика',
+    })
+    assert.equal(added.status, 201)
+
+    const question = await organizer.request('POST', `/games/${game.token}/questions`, {
+      title: 'Хобби',
+      required: true,
+    })
+    assert.equal(question.status, 201)
+
+    const invite = await organizer.request('GET', `/games/${game.token}/invite`)
+    const anna = invite.body.participants.find((person) => person.name === 'Аня')
+
+    const accepted = await participant.request('POST', `/invites/${anna.invite_token}/accept`, {
+      wishlist: 'Настолки',
+    })
+    assert.equal(accepted.status, 200)
+    assert.equal(accepted.body.participant.user_id, null)
+    assert.equal(accepted.body.participant.email, null)
+
+    const answers = await participant.request(
+      'PUT',
+      `/games/${game.token}/participants/${anna.id}/answers`,
+      { answers: [{ questionId: question.body.id, value: 'Настолки' }] },
+      { 'x-invite-token': anna.invite_token },
+    )
+    assert.equal(answers.status, 200)
+
+    const draw = await organizer.request('POST', `/games/${game.token}/draw`)
+    assert.equal(draw.status, 200)
+    assert.equal(draw.body.length, 3)
+
+    const reveal = await organizer.request('POST', `/games/${game.token}/reveal`, { fromId: anna.id })
+    assert.equal(reveal.status, 200)
+
+    const message = await participant.request(
+      'POST',
+      `/games/${game.token}/chat`,
+      { body: 'Спасибо за игру!' },
+      { 'x-invite-token': anna.invite_token },
+    )
+    assert.equal(message.status, 201)
+
+    const sent = await organizer.request('POST', `/games/${game.token}/participants/${anna.id}/gift-sent`)
+    assert.equal(sent.status, 200)
+    assert.equal(db.prepare('SELECT COUNT(*) AS total FROM users WHERE email IS NOT NULL').get().total, 0)
+  })
 })

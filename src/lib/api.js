@@ -127,6 +127,14 @@ export const api = {
     messages: (id) => request(`/games/${encodeURIComponent(id)}/messages`),
     addMessage: (id, body) =>
       request(`/games/${encodeURIComponent(id)}/messages`, { method: 'POST', body: JSON.stringify(body) }),
+    chat: (id, inviteToken) =>
+      request(`/games/${encodeURIComponent(id)}/chat`, { headers: inviteHeaders(inviteToken) }),
+    sendChat: (id, body, inviteToken) =>
+      request(`/games/${encodeURIComponent(id)}/chat`, {
+        method: 'POST',
+        body: JSON.stringify(body),
+        headers: inviteHeaders(inviteToken),
+      }),
     reminders: (id) => request(`/games/${encodeURIComponent(id)}/reminders`),
     importPastPairs: (id, pastGameId) =>
       request(`/games/${encodeURIComponent(id)}/past-pairs/import`, {

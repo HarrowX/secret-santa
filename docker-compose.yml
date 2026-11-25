@@ -1,0 +1,55 @@
+services:
+  app:
+    build: .
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      NODE_ENV: production
+      PORT: 3000
+      DB_PATH: /data/secret-santa.sqlite
+      BACKUP_DIR: /data/backups
+      TRUST_PROXY: "true"
+    volumes:
+      - santa-data:/data
+    expose:
+      - "3000"
+
+  proxy:
+    build:
+      context: .
+      dockerfile: Dockerfile.caddy
+    restart: unless-stopped
+    environment:
+      DOMAIN: ${DOMAIN:-santa.local}
+      CLOUDFLARE_API_TOKEN: ${CLOUDFLARE_API_TOKEN:-}
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - caddy-data:/data
+      - caddy-config:/config
+      - ./${CADDYFILE:-Caddyfile.internal}:/etc/caddy/Caddyfile:ro
+    depends_on:
+      - app
+
+  backup:
+    build: .
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      DB_PATH: /data/secret-santa.sqlite
+      BACKUP_DIR: /data/backups
+      BACKUP_INTERVAL_SECONDS: ${BACKUP_INTERVAL_SECONDS:-86400}
+    volumes:
+      - santa-data:/data
+    entrypoint:
+      - sh
+      - -c
+      - while true; do npm run db:backup; sleep "$${BACKUP_INTERVAL_SECONDS}"; done
+    depends_on:
+      - app
+
+volumes:
+  santa-data:
+  caddy-data:
+  caddy-config:

@@ -6,6 +6,14 @@ const optionalLongText = z.string().trim().max(2000).nullable().optional()
 const identifier = z.coerce.number().int().positive()
 const questionTypes = ['text', 'number', 'boolean', 'single', 'multi']
 
+function isImageUrl(value) {
+  try {
+    return ['http:', 'https:'].includes(new URL(value).protocol)
+  } catch {
+    return false
+  }
+}
+
 export const schemas = {
   createGame: z
     .object({
@@ -74,6 +82,14 @@ export const schemas = {
       toId: identifier.optional().nullable(),
     })
     .strict(),
+  chatMessage: z
+    .object({
+      body: z.string().trim().max(1000).optional().default(''),
+      imageUrl: z.string().trim().max(500).url().optional().nullable(),
+    })
+    .strict()
+    .refine((value) => Boolean(value.body || value.imageUrl), 'Пустое сообщение')
+    .refine((value) => !value.imageUrl || isImageUrl(value.imageUrl), 'Недопустимая ссылка на изображение'),
   support: z
     .object({
       email: z.string().trim().toLowerCase().email().max(160).optional().default(''),

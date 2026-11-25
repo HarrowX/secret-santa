@@ -49,7 +49,7 @@ meRouter.get('/exchanges', (req, res) => {
     .prepare(
       `
       SELECT g.id AS game_id, g.token AS game_token, g.title, g.budget, g.exchange_date, g.rules,
-        p.id AS participant_id, p.name AS player_name,
+        p.id AS participant_id, p.invite_token AS invite_token, p.name AS player_name,
         recipient.id AS receiver_id, recipient.name AS receiver_name,
         recipient.wishlist, recipient.address, recipient.notes, recipient.preferred,
         pairs.revealed_at

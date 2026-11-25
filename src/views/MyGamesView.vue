@@ -3,6 +3,7 @@ import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { api, ensureSession } from '../lib/api'
 import { usePreferencesStore } from '../stores/preferences'
+import ChatPanel from '../components/ChatPanel.vue'
 
 const router = useRouter()
 const preferences = usePreferencesStore()
@@ -205,6 +206,12 @@ load()
               <p v-if="exchange.wishlist" class="mt-2 opacity-80">Желания: {{ exchange.wishlist }}</p>
               <p v-if="exchange.address" class="mt-1 opacity-80">Адрес: {{ exchange.address }}</p>
               <p v-if="exchange.notes" class="mt-1 opacity-80">Заметки: {{ exchange.notes }}</p>
+              <ChatPanel
+                v-if="exchange.invite_token"
+                :game-token="exchange.game_token"
+                :invite-token="exchange.invite_token"
+                :accent="preferences.theme.accent"
+              />
             </template>
           </div>
           <p v-if="!exchanges.length" class="text-sm opacity-50">Пары появятся после жеребьёвки.</p>

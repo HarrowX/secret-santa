@@ -977,4 +977,136 @@ describe('API', () => {
     assert.equal(statuses.filter((status) => status === 200).length, 10)
     assert.equal(statuses.at(-1), 429)
   })
+
+  it('считает метрики воронки без персональных данных', async () => {
+    const owner = await request('POST', '/auth/session', {})
+    const headers = cookieHeader(owner)
+    await createGame('Первая игра', headers)
+    const game = await createGame('Вторая игра', headers)
+    await request('POST', `/games/${game.token}/participants/bulk`, { names: 'Аня, Борис, Вика' }, headers)
+    await request('POST', `/games/${game.token}/draw`, undefined, headers)
+    await request(
+      'POST',
+      `/games/${game.token}/participants/${db.prepare('SELECT id FROM participants WHERE game_id = ? LIMIT 1').get(game.id).id}/gift-sent`,
+      undefined,
+      headers,
+    )
+
+    const response = await request('GET', '/metrics')
+    assert.equal(response.status, 200)
+    const counts = Object.fromEntries(response.body.stages.map((stage) => [stage.key, stage.count]))
+    assert.deepEqual(counts, {
+      game_created: 2,
+      participant_invited: 1,
+      draw_completed: 1,
+      gift_sent: 1,
+      organizer_return: 1,
+    })
+    assert.deepEqual(
+      response.body.stages.map((stage) => stage.conversion),
+      [100, 50, 50, 50, 50],
+    )
+    assert.ok(!JSON.stringify(response.body).includes(owner.body.user.token))
+  })
+
+  it('проводит анонимный чат только между раскрытыми парами', async () => {
+    const owner = await request('POST', '/auth/session', {})
+    const headers = cookieHeader(owner)
+    const game = await createGame('Чат', headers)
+    const [anna, boris] = await addParticipants(game.token, ['Аня', 'Борис'], headers)
+    const invite = await request('GET', `/games/${game.token}/invite`, undefined, headers)
+    const annaToken = invite.body.participants.find((person) => person.id === anna.id).invite_token
+    const borisToken = invite.body.participants.find((person) => person.id === boris.id).invite_token
+
+    const tooEarly = await request('GET', `/games/${game.token}/chat`, undefined, {
+      'x-invite-token': annaToken,
+      'x-test-no-cookies': true,
+    })
+    assert.equal(tooEarly.status, 403)
+
+    const drawn = await request('POST', `/games/${game.token}/draw`, undefined, headers)
+    assert.equal(drawn.status, 200)
+    const fromAnna = drawn.body.find((pair) => pair.from_id === anna.id)
+    const revealed = await request('POST', `/games/${game.token}/reveal`, { fromId: anna.id }, headers)
+    assert.equal(revealed.status, 200)
+    assert.equal(fromAnna.to_id, boris.id)
+
+    const sent = await request(
+      'POST',
+      `/games/${game.token}/chat`,
+      { body: 'Привет!', imageUrl: 'https://example.test/gift.png' },
+      { 'x-invite-token': annaToken, 'x-test-no-cookies': true },
+    )
+    assert.equal(sent.status, 201)
+
+    const annaChat = await request('GET', `/games/${game.token}/chat`, undefined, {
+      'x-invite-token': annaToken,
+      'x-test-no-cookies': true,
+    })
+    assert.equal(annaChat.status, 200)
+    assert.equal(annaChat.body.length, 1)
+    assert.equal(annaChat.body[0].mine, true)
+    assert.equal(annaChat.body[0].body, 'Привет!')
+    assert.equal(annaChat.body[0].imageUrl, 'https://example.test/gift.png')
+
+    const borisChat = await request('GET', `/games/${game.token}/chat`, undefined, {
+      'x-invite-token': borisToken,
+      'x-test-no-cookies': true,
+    })
+    assert.equal(borisChat.body.length, 1)
+    assert.equal(borisChat.body[0].mine, false)
+    assert.ok(!JSON.stringify(borisChat.body).includes('Аня'))
+    assert.ok(!JSON.stringify(borisChat.body).includes('Борис'))
+
+    const empty = await request(
+      'POST',
+      `/games/${game.token}/chat`,
+      {},
+      {
+        'x-invite-token': annaToken,
+        'x-test-no-cookies': true,
+      },
+    )
+    assert.equal(empty.status, 400)
+    const invalidUrl = await request(
+      'POST',
+      `/games/${game.token}/chat`,
+      { imageUrl: 'ftp://example.test/gift.png' },
+      { 'x-invite-token': annaToken, 'x-test-no-cookies': true },
+    )
+    assert.equal(invalidUrl.status, 400)
+
+    const notifications = await request('GET', `/games/${game.token}/notifications`, undefined, {
+      'x-invite-token': borisToken,
+      'x-test-no-cookies': true,
+    })
+    assert.ok(notifications.body.some((item) => item.kind === 'pair_revealed'))
+    assert.ok(notifications.body.some((item) => item.kind === 'chat_message'))
+  })
+
+  it('применяет изменения жеребьёвки только после сохранения и уведомляет участников', async () => {
+    const owner = await request('POST', '/auth/session', {})
+    const headers = cookieHeader(owner)
+    const game = await createGame('Сохранение пар', headers)
+    const [anna, boris] = await addParticipants(game.token, ['Аня', 'Борис'], headers)
+    const invite = await request('GET', `/games/${game.token}/invite`, undefined, headers)
+    const annaToken = invite.body.participants.find((person) => person.id === anna.id).invite_token
+
+    await request('POST', `/games/${game.token}/exclusions`, { fromId: anna.id, toId: boris.id }, headers)
+    await request('POST', `/games/${game.token}/exclusions`, { fromId: boris.id, toId: anna.id }, headers)
+    const impossible = await request('POST', `/games/${game.token}/draw`, undefined, headers)
+    assert.equal(impossible.status, 409)
+    const unchanged = await request('GET', `/games/${game.token}`, undefined, headers)
+    assert.deepEqual(unchanged.body.pairs, [])
+
+    await request('DELETE', `/games/${game.token}/exclusions/${anna.id}/${boris.id}`, undefined, headers)
+    await request('DELETE', `/games/${game.token}/exclusions/${boris.id}/${anna.id}`, undefined, headers)
+    const saved = await request('POST', `/games/${game.token}/draw`, undefined, headers)
+    assert.equal(saved.status, 200)
+    const notifications = await request('GET', `/games/${game.token}/notifications`, undefined, {
+      'x-invite-token': annaToken,
+      'x-test-no-cookies': true,
+    })
+    assert.ok(notifications.body.some((item) => item.kind === 'draw_changed'))
+  })
 })
