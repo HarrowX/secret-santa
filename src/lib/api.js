@@ -98,6 +98,10 @@ export const api = {
     removeOrganizer: (id, organizerId) =>
       request(`/games/${encodeURIComponent(id)}/organizers/${organizerId}`, { method: 'DELETE' }),
   },
+  me: {
+    games: () => request('/me/games'),
+    exchanges: () => request('/me/exchanges'),
+  },
   invites: {
     get: (token) => request(`/invites/${encodeURIComponent(token)}`),
     accept: (token, body) =>

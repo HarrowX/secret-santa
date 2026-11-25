@@ -330,6 +330,33 @@ describe('API', () => {
     assert.equal(afterLogout.body.user, null)
   })
 
+  it('показывает пользователю его игры и раскрытый обмен', async () => {
+    const session = await request('POST', '/auth/session', {})
+    const headers = cookieHeader(session)
+    const game = await createGame('Мой кабинет')
+    const [person] = await addParticipants(game.id, ['Аня', 'Борис'])
+    const invite = await request('GET', `/games/${game.id}/invite`)
+    const token = invite.body.participants[0].invite_token
+    const accepted = await request('POST', `/invites/${token}/accept`, { wishlist: 'Книги' }, headers)
+    assert.equal(accepted.body.participant.user_id, session.body.user.id)
+    await request('POST', `/games/${game.id}/draw`)
+    await request('POST', `/games/${game.id}/reveal`, { fromId: person.id })
+
+    const myGames = await request('GET', '/me/games', undefined, headers)
+    assert.equal(myGames.status, 200)
+    assert.equal(myGames.body.length, 1)
+    assert.equal(myGames.body[0].title, 'Мой кабинет')
+
+    const exchanges = await request('GET', '/me/exchanges', undefined, headers)
+    assert.equal(exchanges.status, 200)
+    assert.equal(exchanges.body.length, 1)
+    assert.equal(exchanges.body[0].receiver_name, 'Борис')
+    assert.ok(exchanges.body[0].revealed_at)
+
+    const unauthorized = await request('GET', '/me/games')
+    assert.equal(unauthorized.status, 401)
+  })
+
   it('управляет вопросами, сообщениями, организаторами и поддоменами', async () => {
     const game = await createGame()
     const people = await addParticipants(game.id, ['Аня', 'Борис'])

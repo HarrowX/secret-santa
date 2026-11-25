@@ -3,6 +3,7 @@ import LandingView from '../views/LandingView.vue'
 import DemoView from '../views/DemoView.vue'
 import GameView from '../views/GameView.vue'
 import JoinView from '../views/JoinView.vue'
+import MyGamesView from '../views/MyGamesView.vue'
 
 const router = createRouter({
   history: createWebHistory(),
@@ -11,6 +12,7 @@ const router = createRouter({
     { path: '/demo', name: 'demo', component: DemoView },
     { path: '/game/:id', name: 'game', component: GameView },
     { path: '/join/:token', name: 'join', component: JoinView },
+    { path: '/my', name: 'my', component: MyGamesView },
     { path: '/:pathMatch(.*)*', redirect: '/' },
   ],
   scrollBehavior(to, _from, savedPosition) {

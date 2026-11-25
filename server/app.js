@@ -9,6 +9,7 @@ import { HttpError } from './http-error.js'
 import { authRouter } from './routes/auth.js'
 import { gamesRouter } from './routes/games.js'
 import { invitesRouter } from './routes/invites.js'
+import { meRouter } from './routes/me.js'
 import { tenantsRouter } from './routes/tenants.js'
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
@@ -32,6 +33,7 @@ export function createApp() {
   app.use('/api/auth', rateLimit({ windowMs: 60_000, max: 20 }), authRouter)
   app.use('/api/games', gamesRouter)
   app.use('/api/invites', invitesRouter)
+  app.use('/api/me', meRouter)
   app.use('/api/tenants', tenantsRouter)
 
   app.use((error, req, res, _next) => {

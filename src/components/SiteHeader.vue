@@ -14,6 +14,7 @@ const menuOpen = ref(false)
 const links = [
   { label: 'На главную', target: 'landing' },
   { label: 'Создать игру', target: 'demo' },
+  { label: 'Мои игры', target: 'my' },
   { label: 'Быстрая жеребьёвка', target: 'demo' },
   { label: 'Возможности', target: 'features' },
 ]
