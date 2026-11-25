@@ -77,6 +77,7 @@ export const api = {
       }),
     pairs: (id) => request(`/games/${encodeURIComponent(id)}/pairs`),
     events: (id) => request(`/games/${encodeURIComponent(id)}/events`),
+    notifications: (id) => request(`/games/${encodeURIComponent(id)}/notifications`),
     questions: (id) => request(`/games/${encodeURIComponent(id)}/questions`),
     addQuestion: (id, body) =>
       request(`/games/${encodeURIComponent(id)}/questions`, { method: 'POST', body: JSON.stringify(body) }),

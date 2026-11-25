@@ -148,6 +148,11 @@ describe('API', () => {
     assert.equal(accepted.body.participant.wishlist, 'Книги и настолки')
     assert.equal(accepted.body.participant.notes, 'Только не сладости')
     assert.equal(accepted.body.participant.filled, 1)
+
+    const notifications = await request('GET', `/games/${game.id}/notifications`)
+    assert.ok(notifications.body.length >= 2)
+    assert.equal(notifications.body[0].kind, 'card_updated')
+    assert.equal(JSON.parse(notifications.body[0].payload).wishlist, 'Книги и настолки')
   })
 
   it('добавляет участников списком и обрабатывает персональные приглашения', async () => {

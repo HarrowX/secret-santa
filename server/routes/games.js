@@ -18,6 +18,12 @@ function inviteToken() {
   return randomUUID().replace(/-/g, '').slice(0, 16)
 }
 
+function addNotification(gameId, participantId, payload) {
+  db.prepare(`
+    INSERT INTO notifications (game_id, participant_id, kind, payload) VALUES (?, ?, ?, ?)
+  `).run(gameId, participantId, 'card_updated', JSON.stringify(payload))
+}
+
 function addEvent(gameId, kind, text, actor = null) {
   db.prepare('INSERT INTO events (game_id, kind, text, actor) VALUES (?, ?, ?, ?)').run(
     gameId,
@@ -153,7 +159,9 @@ gamesRouter.patch('/:id/participants/:participantId', validateBody(schemas.parti
     if (String(error.message).includes('UNIQUE')) fail(409, 'Участник с таким именем уже есть')
     throw error
   }
-  res.json(db.prepare('SELECT * FROM participants WHERE id = ?').get(participantId))
+  const updated = db.prepare('SELECT * FROM participants WHERE id = ?').get(participantId)
+  addNotification(id, participantId, updated)
+  res.json(updated)
 })
 
 gamesRouter.get('/:id/invite', (req, res) => {
@@ -319,6 +327,22 @@ gamesRouter.get('/:id/events', (req, res) => {
   const id = Number(req.params.id)
   getGame(id)
   res.json(db.prepare('SELECT * FROM events WHERE game_id = ? ORDER BY id DESC').all(id))
+})
+
+gamesRouter.get('/:id/notifications', (req, res) => {
+  const id = Number(req.params.id)
+  getGame(id)
+  res.json(
+    db
+      .prepare(`
+        SELECT n.id, n.kind, n.payload, n.sent_at, n.created_at, p.name AS participant_name
+        FROM notifications n
+        LEFT JOIN participants p ON p.id = n.participant_id
+        WHERE n.game_id = ?
+        ORDER BY n.id DESC
+      `)
+      .all(id),
+  )
 })
 
 gamesRouter.get('/:id/questions', (req, res) => {

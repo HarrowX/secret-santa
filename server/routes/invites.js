@@ -65,10 +65,11 @@ invitesRouter.post('/:token/accept', validateBody(schemas.inviteAccept), (req, r
     `${participant.name} подтвердил участие`,
     participant.name,
   )
-  res.json({
-    ok: true,
-    participant: db.prepare('SELECT * FROM participants WHERE id = ?').get(participant.id),
-  })
+  const updated = db.prepare('SELECT * FROM participants WHERE id = ?').get(participant.id)
+  db.prepare(`
+    INSERT INTO notifications (game_id, participant_id, kind, payload) VALUES (?, ?, ?, ?)
+  `).run(participant.game_id, participant.id, 'card_updated', JSON.stringify(updated))
+  res.json({ ok: true, participant: updated })
 })
 
 invitesRouter.use((error, _req, res, next) => {

@@ -10,6 +10,7 @@ const router = useRouter()
 const preferences = usePreferencesStore()
 const data = ref(null)
 const invite = ref(null)
+const notifications = ref([])
 const error = ref('')
 const actionError = ref('')
 const loading = ref(true)
@@ -26,9 +27,11 @@ async function load(id) {
   error.value = ''
   data.value = null
   invite.value = null
+  notifications.value = []
   try {
     data.value = await api.games.get(id)
     invite.value = await api.games.invite(id)
+    notifications.value = await api.games.notifications(id)
   } catch (requestError) {
     error.value = requestError.message
   } finally {
@@ -40,6 +43,16 @@ watch(() => route.params.id, load, { immediate: true })
 
 function participantName(id) {
   return data.value?.participants.find((person) => person.id === id)?.name ?? 'Участник'
+}
+
+function notificationText(item) {
+  try {
+    const payload = JSON.parse(item.payload)
+    const detail = payload.wishlist || payload.address || payload.notes || 'карточка обновлена'
+    return `${item.participant_name ?? 'Участник'}: ${detail}`
+  } catch {
+    return `${item.participant_name ?? 'Участник'}: карточка обновлена`
+  }
 }
 
 async function runAction(action) {
@@ -347,12 +360,21 @@ function reveal(pair) {
         </div>
       </div>
 
-      <div class="rounded-2xl border border-white/10 bg-white/5 p-5">
-        <h2 class="font-bold">История</h2>
-        <ol class="mt-3 grid gap-2 text-sm opacity-70">
-          <li v-for="item in data.events" :key="item.id">{{ item.created_at }} · {{ item.text }}</li>
-          <li v-if="!data.events.length" class="opacity-50">Событий пока нет</li>
-        </ol>
+      <div class="grid gap-4 lg:grid-cols-2">
+        <div class="rounded-2xl border border-white/10 bg-white/5 p-5">
+          <h2 class="font-bold">История</h2>
+          <ol class="mt-3 grid gap-2 text-sm opacity-70">
+            <li v-for="item in data.events" :key="item.id">{{ item.created_at }} · {{ item.text }}</li>
+            <li v-if="!data.events.length" class="opacity-50">Событий пока нет</li>
+          </ol>
+        </div>
+        <div class="rounded-2xl border border-white/10 bg-white/5 p-5">
+          <h2 class="font-bold">Уведомления об изменениях карточек</h2>
+          <ol class="mt-3 grid gap-2 text-sm opacity-70">
+            <li v-for="item in notifications" :key="item.id">{{ item.created_at }} · {{ notificationText(item) }}</li>
+            <li v-if="!notifications.length" class="opacity-50">Карточки ещё не менялись</li>
+          </ol>
+        </div>
       </div>
     </div>
   </section>
