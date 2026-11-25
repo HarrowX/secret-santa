@@ -2,7 +2,7 @@ import { gamesRepository } from '../repositories/games.js'
 import { tenantsRepository } from '../repositories/tenants.js'
 
 function hostname(host) {
-  return String(host || '').split(':')[0].toLowerCase()
+  return String(host || '').replace(/^https?:\/\//, '').split(':')[0].toLowerCase()
 }
 
 export function resolveTenant(host, configuredDomain) {

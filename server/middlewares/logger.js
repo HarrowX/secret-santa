@@ -2,6 +2,7 @@ export function requestLogger(req, res, next) {
   const started = Date.now()
 
   res.on('finish', () => {
+    if (process.env.NODE_ENV === 'test') return
     console.log(
       JSON.stringify({
         level: 'info',

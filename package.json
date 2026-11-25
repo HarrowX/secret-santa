@@ -8,6 +8,8 @@
     "dev:server": "node --watch server/index.js",
     "dev:client": "vite",
     "build": "vite build",
+    "test": "node --test",
+    "test:watch": "node --test --watch",
     "start": "NODE_ENV=production node server/index.js",
     "preview": "vite preview"
   },
