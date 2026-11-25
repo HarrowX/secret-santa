@@ -101,6 +101,7 @@ export const schemas = {
     .object({
       slug: z.string().regex(/^[a-z0-9-]{3,32}$/, 'Неверный поддомен'),
       gameId: identifier,
+      gameToken: text.max(80).optional().nullable(),
       domain: z.string().trim().max(200).optional().nullable(),
     })
     .strict(),

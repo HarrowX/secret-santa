@@ -50,7 +50,7 @@ function createClient() {
   }
 
   return {
-    async request(method, target, body) {
+    async request(method, target, body, extraHeaders = {}) {
       const cookie = [...cookies].map(([name, value]) => `${name}=${value}`).join('; ')
       const unsafe = !['GET', 'HEAD', 'OPTIONS'].includes(method)
       const csrf = cookies.get('santa_csrf')
@@ -60,6 +60,7 @@ function createClient() {
           'Content-Type': 'application/json',
           ...(cookie ? { Cookie: cookie } : {}),
           ...(unsafe && csrf ? { 'x-csrf-token': csrf } : {}),
+          ...extraHeaders,
         },
         body: body === undefined ? undefined : JSON.stringify(body),
       })
@@ -88,20 +89,20 @@ describe('E2E', () => {
     assert.equal(created.status, 201)
     const game = created.body
 
-    const added = await organizer.request('POST', `/games/${game.id}/participants/bulk`, {
+    const added = await organizer.request('POST', `/games/${game.token}/participants/bulk`, {
       names: 'Аня, Борис, Вика',
     })
     assert.equal(added.status, 201)
     assert.equal(added.body.added, 3)
 
-    const question = await organizer.request('POST', `/games/${game.id}/questions`, {
+    const question = await organizer.request('POST', `/games/${game.token}/questions`, {
       title: 'Хобби',
       required: true,
       position: 1,
     })
     assert.equal(question.status, 201)
 
-    const invite = await organizer.request('GET', `/games/${game.id}/invite`)
+    const invite = await organizer.request('GET', `/games/${game.token}/invite`)
     assert.equal(invite.status, 200)
     const anya = invite.body.participants.find((person) => person.name === 'Аня')
     assert.match(anya.url, /\/join\//)
@@ -115,37 +116,40 @@ describe('E2E', () => {
     assert.equal(accepted.status, 200)
     assert.equal(accepted.body.participant.user_id, inviteeSession.body.user.id)
 
-    const answers = await invitee.request('PUT', `/games/${game.id}/participants/${anya.id}/answers`, {
-      answers: [{ questionId: question.body.id, value: 'Книги и настолки' }],
-    })
+    const answers = await invitee.request(
+      'PUT',
+      `/games/${game.token}/participants/${anya.id}/answers`,
+      { answers: [{ questionId: question.body.id, value: 'Книги и настолки' }] },
+      { 'x-invite-token': anya.invite_token },
+    )
     assert.equal(answers.status, 200)
 
-    const draw = await organizer.request('POST', `/games/${game.id}/draw`)
+    const draw = await organizer.request('POST', `/games/${game.token}/draw`)
     assert.equal(draw.status, 200)
     assert.equal(draw.body.length, 3)
 
-    const pairs = await organizer.request('GET', `/games/${game.id}/pairs`)
+    const pairs = await organizer.request('GET', `/games/${game.token}/pairs`)
     assert.equal(pairs.status, 200)
     assert.equal(pairs.body.length, 3)
 
-    const loaded = await organizer.request('GET', `/games/${game.id}`)
+    const loaded = await organizer.request('GET', `/games/${game.token}`)
     assert.equal(loaded.status, 200)
     assert.equal(loaded.body.progress.joined, 33)
     assert.ok(loaded.body.progress.filled > 0)
 
-    const events = await organizer.request('GET', `/games/${game.id}/events`)
+    const events = await organizer.request('GET', `/games/${game.token}/events`)
     assert.ok(events.body.some((event) => event.kind === 'draw'))
 
-    const reminder = await organizer.request('POST', `/games/${game.id}/reminders`, {
+    const reminder = await organizer.request('POST', `/games/${game.token}/reminders`, {
       recipientIds: [anya.id],
       body: 'Напоминаю о подарке',
     })
     assert.equal(reminder.status, 201)
 
-    const reminders = await organizer.request('GET', `/games/${game.id}/reminders`)
+    const reminders = await organizer.request('GET', `/games/${game.token}/reminders`)
     assert.equal(reminders.body.length, 1)
 
-    const organizerInvite = await organizer.request('POST', `/games/${game.id}/organizers/invite`)
+    const organizerInvite = await organizer.request('POST', `/games/${game.token}/organizers/invite`)
     assert.equal(organizerInvite.status, 201)
     assert.match(organizerInvite.body.url, /\/organizer\//)
   })
@@ -161,11 +165,13 @@ describe('E2E', () => {
     assert.equal(created.status, 201)
     const game = created.body
 
-    const added = await organizer.request('POST', `/games/${game.id}/participants/bulk`, { names: 'Аня, Борис' })
+    const added = await organizer.request('POST', `/games/${game.token}/participants/bulk`, { names: 'Аня, Борис' })
     assert.equal(added.status, 201)
 
-    const invite = await organizer.request('GET', `/games/${game.id}/invite`)
+    const invite = await organizer.request('GET', `/games/${game.token}/invite`)
     const anya = invite.body.participants.find((person) => person.name === 'Аня')
+    const boris = invite.body.participants.find((person) => person.name === 'Борис')
+    await organizer.request('PATCH', `/games/${game.token}/participants/${boris.id}`, { wishlist: 'Пазлы' })
 
     const session = await participant.request('POST', '/auth/session', {})
     assert.equal(session.status, 201)
@@ -183,26 +189,29 @@ describe('E2E', () => {
     const beforeDraw = await participant.request('GET', '/me/exchanges')
     assert.equal(beforeDraw.body.length, 0)
 
-    const draw = await organizer.request('POST', `/games/${game.id}/draw`)
+    const draw = await organizer.request('POST', `/games/${game.token}/draw`)
     assert.equal(draw.status, 200)
 
     const hidden = await participant.request('GET', '/me/exchanges')
     assert.equal(hidden.body.length, 1)
     assert.equal(hidden.body[0].revealed_at, null)
+    assert.equal(hidden.body[0].wishlist, null)
+    assert.equal(hidden.body[0].address, null)
 
-    const reveal = await organizer.request('POST', `/games/${game.id}/reveal`, { fromId: anya.id })
+    const reveal = await organizer.request('POST', `/games/${game.token}/reveal`, { fromId: anya.id })
     assert.equal(reveal.status, 200)
 
     const revealed = await participant.request('GET', '/me/exchanges')
     assert.ok(revealed.body[0].revealed_at)
     assert.ok(revealed.body[0].receiver_name)
+    assert.ok(revealed.body[0].wishlist)
 
-    const sent = await organizer.request('POST', `/games/${game.id}/participants/${anya.id}/gift-sent`)
-    const received = await organizer.request('POST', `/games/${game.id}/participants/${anya.id}/gift-received`)
+    const sent = await organizer.request('POST', `/games/${game.token}/participants/${anya.id}/gift-sent`)
+    const received = await organizer.request('POST', `/games/${game.token}/participants/${anya.id}/gift-received`)
     assert.equal(sent.status, 200)
     assert.equal(received.status, 200)
 
-    const loaded = await organizer.request('GET', `/games/${game.id}`)
+    const loaded = await organizer.request('GET', `/games/${game.token}`)
     const stored = loaded.body.participants.find((person) => person.id === anya.id)
     assert.ok(stored.gift_sent_at)
     assert.ok(stored.gift_received_at)

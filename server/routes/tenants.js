@@ -1,6 +1,6 @@
 import { Router } from 'express'
 import { fail, HttpError } from '../http-error.js'
-import { requireOrganizer } from '../permissions.js'
+import { hasAcceptedOrganizer, requireOrganizer } from '../permissions.js'
 import { gamesRepository } from '../repositories/games.js'
 import { tenantsRepository } from '../repositories/tenants.js'
 import { schemas, validateBody } from '../validation.js'
@@ -29,6 +29,9 @@ tenantsRouter.post('/', validateBody(schemas.tenant), (req, res) => {
   const game = gamesRepository.findById(gameId)
   if (!game) fail(404, 'Игра не найдена')
   requireOrganizer(game.id, req.user)
+  if (!hasAcceptedOrganizer(game.id) && req.body.gameToken !== game.token) {
+    fail(403, 'Нужна ссылка на игру')
+  }
   const domain = req.body.domain ?? null
 
   try {
@@ -44,7 +47,8 @@ tenantsRouter.post('/', validateBody(schemas.tenant), (req, res) => {
 tenantsRouter.get('/:slug', (req, res) => {
   const tenant = tenantsRepository.findBySlug(req.params.slug)
   if (!tenant) fail(404, 'Поддомен не найден')
-  res.json({ tenant, game: gamesRepository.findById(tenant.game_id) })
+  const { token: _token, ...game } = gamesRepository.findById(tenant.game_id)
+  res.json({ tenant, game })
 })
 
 tenantsRouter.use((error, _req, res, next) => {

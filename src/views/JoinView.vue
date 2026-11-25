@@ -37,8 +37,8 @@ watch(
       notes.value = response.participant.notes ?? ''
       preferred.value = response.participant.preferred ?? ''
       preferences.setTheme(response.game.themeId)
-      questions.value = await api.games.questions(response.game.id)
-      answers.value = await api.games.participantAnswers(response.game.id, response.participant.id)
+      questions.value = await api.games.questions(response.game.id, route.params.token)
+      answers.value = await api.games.participantAnswers(response.game.id, response.participant.id, route.params.token)
     } catch (requestError) {
       error.value = requestError.message
     } finally {
@@ -71,10 +71,17 @@ async function saveAnswers(payload) {
   questionnaireBusy.value = true
   error.value = ''
   try {
-    await api.games.saveAnswers(invite.value.game.id, invite.value.participant.id, {
-      answers: payload,
-    })
-    answers.value = await api.games.participantAnswers(invite.value.game.id, invite.value.participant.id)
+    await api.games.saveAnswers(
+      invite.value.game.id,
+      invite.value.participant.id,
+      { answers: payload },
+      route.params.token,
+    )
+    answers.value = await api.games.participantAnswers(
+      invite.value.game.id,
+      invite.value.participant.id,
+      route.params.token,
+    )
   } catch (requestError) {
     error.value = requestError.message
   } finally {

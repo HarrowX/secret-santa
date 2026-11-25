@@ -10,6 +10,10 @@ function isUnsafeMethod(method) {
   return !['GET', 'HEAD', 'OPTIONS'].includes(method.toUpperCase())
 }
 
+function inviteHeaders(inviteToken) {
+  return inviteToken ? { 'x-invite-token': inviteToken } : {}
+}
+
 export class ApiError extends Error {
   constructor(status, message) {
     super(message)
@@ -98,16 +102,20 @@ export const api = {
     pairs: (id) => request(`/games/${encodeURIComponent(id)}/pairs`),
     events: (id) => request(`/games/${encodeURIComponent(id)}/events`),
     notifications: (id) => request(`/games/${encodeURIComponent(id)}/notifications`),
-    questions: (id) => request(`/games/${encodeURIComponent(id)}/questions`),
+    questions: (id, inviteToken) =>
+      request(`/games/${encodeURIComponent(id)}/questions`, { headers: inviteHeaders(inviteToken) }),
     addQuestion: (id, body) =>
       request(`/games/${encodeURIComponent(id)}/questions`, { method: 'POST', body: JSON.stringify(body) }),
     answers: (id) => request(`/games/${encodeURIComponent(id)}/answers`),
-    participantAnswers: (id, participantId) =>
-      request(`/games/${encodeURIComponent(id)}/participants/${participantId}/answers`),
-    saveAnswers: (id, participantId, body) =>
+    participantAnswers: (id, participantId, inviteToken) =>
+      request(`/games/${encodeURIComponent(id)}/participants/${participantId}/answers`, {
+        headers: inviteHeaders(inviteToken),
+      }),
+    saveAnswers: (id, participantId, body, inviteToken) =>
       request(`/games/${encodeURIComponent(id)}/participants/${participantId}/answers`, {
         method: 'PUT',
         body: JSON.stringify(body),
+        headers: inviteHeaders(inviteToken),
       }),
     updateQuestion: (id, questionId, body) =>
       request(`/games/${encodeURIComponent(id)}/questions/${questionId}`, {

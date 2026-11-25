@@ -1,6 +1,7 @@
 import { resolveTenant } from '../services/tenants.js'
 
 export function tenantMiddleware(req, _res, next) {
-  req.tenant = resolveTenant(req.headers.host, process.env.DOMAIN)
+  const host = req.get('x-forwarded-host') || req.headers.host
+  req.tenant = resolveTenant(host, process.env.DOMAIN_NAME || process.env.DOMAIN)
   next()
 }

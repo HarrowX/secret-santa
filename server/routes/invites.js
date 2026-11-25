@@ -41,6 +41,9 @@ invitesRouter.get('/:token', (req, res) => {
 invitesRouter.post('/:token/accept', validateBody(schemas.inviteAccept), (req, res) => {
   const participant = db.prepare('SELECT * FROM participants WHERE invite_token = ?').get(req.params.token)
   if (!participant) fail(404, 'Приглашение не найдено')
+  if (participant.user_id && participant.user_id !== req.user?.id) {
+    fail(409, 'Приглашение привязано к другому аккаунту')
+  }
 
   const value = (key) => (req.body[key] === undefined ? participant[key] : req.body[key])
   const userId = req.user?.id ?? participant.user_id

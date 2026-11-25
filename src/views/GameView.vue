@@ -83,6 +83,10 @@ async function load(id) {
   try {
     data.value = await api.games.get(id)
     preferences.setTheme(data.value.game.theme_id)
+    if (!data.value.canManage) {
+      error.value = 'Управление игрой доступно только организатору'
+      return
+    }
     invite.value = await api.games.invite(id)
     notifications.value = await api.games.notifications(id)
     answers.value = await api.games.answers(id)
@@ -398,13 +402,15 @@ function sendReminder() {
             class="truncate rounded-xl border border-white/15 bg-white/5 px-4 py-2 text-left transition hover:bg-white/10"
             @click="copyLink(invite.commonUrl)"
           >
-            <span class="opacity-50">Общая ссылка: </span>{{ invite.commonUrl }}
+            <span class="opacity-50">Общая ссылка на игру: </span>{{ invite.commonUrl }}
           </button>
+          <p v-if="invite.participants.length" class="opacity-50">Персональные ссылки-приглашения:</p>
           <div v-for="person in invite.participants" :key="person.id" class="flex flex-wrap items-center gap-2">
             <span class="min-w-24 font-semibold">{{ person.name }}</span>
             <button
               type="button"
               class="min-w-0 flex-1 truncate rounded-xl border border-white/15 bg-white/5 px-4 py-2 text-left transition hover:bg-white/10"
+              :aria-label="`Ссылка-приглашение для ${person.name}`"
               @click="copyLink(person.url)"
             >
               {{ person.url }}
@@ -412,7 +418,7 @@ function sendReminder() {
             <span class="text-xs opacity-50">{{ person.filled ? 'подтвердил' : 'ожидаем' }}</span>
           </div>
           <p v-if="!invite.participants.length" class="opacity-50">
-            Добавьте участников, чтобы получить персональные ссылки
+            Общая ссылка не является персональным приглашением. Добавьте участников, чтобы получить ссылки-приглашения
           </p>
         </div>
       </div>

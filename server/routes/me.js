@@ -45,24 +45,32 @@ meRouter.get('/past-games', (req, res) => {
 meRouter.get('/exchanges', (req, res) => {
   if (!req.user) fail(401, 'Нужен активный вход')
 
+  const exchanges = db
+    .prepare(
+      `
+      SELECT g.id AS game_id, g.token AS game_token, g.title, g.budget, g.exchange_date, g.rules,
+        p.id AS participant_id, p.name AS player_name,
+        recipient.id AS receiver_id, recipient.name AS receiver_name,
+        recipient.wishlist, recipient.address, recipient.notes, recipient.preferred,
+        pairs.revealed_at
+      FROM participants p
+      JOIN games g ON g.id = p.game_id
+      JOIN pairs ON pairs.from_id = p.id
+      JOIN participants recipient ON recipient.id = pairs.to_id
+      WHERE p.user_id = ?
+      ORDER BY g.id DESC
+    `,
+    )
+    .all(req.user.id)
+
   res.json(
-    db
-      .prepare(
-        `
-        SELECT g.id AS game_id, g.token AS game_token, g.title, g.budget, g.exchange_date, g.rules,
-          p.id AS participant_id, p.name AS player_name,
-          recipient.id AS receiver_id, recipient.name AS receiver_name,
-          recipient.wishlist, recipient.address, recipient.notes, recipient.preferred,
-          pairs.revealed_at
-        FROM participants p
-        JOIN games g ON g.id = p.game_id
-        JOIN pairs ON pairs.from_id = p.id
-        JOIN participants recipient ON recipient.id = pairs.to_id
-        WHERE p.user_id = ?
-        ORDER BY g.id DESC
-      `,
-      )
-      .all(req.user.id),
+    exchanges.map((exchange) => ({
+      ...exchange,
+      wishlist: exchange.revealed_at ? exchange.wishlist : null,
+      address: exchange.revealed_at ? exchange.address : null,
+      notes: exchange.revealed_at ? exchange.notes : null,
+      preferred: exchange.revealed_at ? exchange.preferred : null,
+    })),
   )
 })
 
