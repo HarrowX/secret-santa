@@ -13,6 +13,7 @@ async function request(path, options = {}) {
 
   try {
     response = await fetch(`${baseUrl}${path}`, {
+      credentials: 'include',
       ...options,
       headers: {
         'Content-Type': 'application/json',
@@ -31,6 +32,13 @@ async function request(path, options = {}) {
 }
 
 export const api = {
+  auth: {
+    session: () => request('/auth/session'),
+    createSession: () => request('/auth/session', { method: 'POST' }),
+    recover: (code) => request('/auth/recovery', { method: 'POST', body: JSON.stringify({ code }) }),
+    setEmail: (email) => request('/auth/email', { method: 'PATCH', body: JSON.stringify({ email }) }),
+    logout: () => request('/auth/logout', { method: 'POST' }),
+  },
   games: {
     list: () => request('/games'),
     get: (id) => request(`/games/${encodeURIComponent(id)}`),

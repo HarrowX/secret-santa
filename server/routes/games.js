@@ -1,19 +1,9 @@
 import { randomUUID } from 'node:crypto'
 import { Router } from 'express'
 import { db } from '../db.js'
+import { HttpError, fail } from '../http-error.js'
 
 export const gamesRouter = Router()
-
-class HttpError extends Error {
-  constructor(status, message) {
-    super(message)
-    this.status = status
-  }
-}
-
-function fail(status, message) {
-  throw new HttpError(status, message)
-}
 
 function getGame(id) {
   const game = db.prepare('SELECT * FROM games WHERE id = ?').get(id)
@@ -70,7 +60,11 @@ gamesRouter.post('/', (req, res) => {
     .run(token, cleanTitle, String(budget), String(exchangeDate), String(rules), themeId)
 
   const id = Number(result.lastInsertRowid)
-  db.prepare('INSERT INTO organizers (game_id, role) VALUES (?, ?)').run(id, 'owner')
+  db.prepare('INSERT INTO organizers (game_id, user_id, role) VALUES (?, ?, ?)').run(
+    id,
+    req.user?.id ?? null,
+    'owner',
+  )
   addEvent(id, 'settings', 'Игра создана')
   res.status(201).json(getGame(id))
 })
@@ -241,7 +235,7 @@ gamesRouter.post('/:id/reveal', (req, res) => {
   const fromId = Number(req.body?.fromId)
   const pair = db.prepare('SELECT * FROM pairs WHERE game_id = ? AND from_id = ?').get(id, fromId)
   if (!pair) fail(404, 'Пара не найдена')
-  db.prepare('UPDATE pairs SET revealed_at = datetime("now") WHERE id = ?').run(pair.id)
+  db.prepare(`UPDATE pairs SET revealed_at = datetime('now') WHERE id = ?`).run(pair.id)
   addEvent(id, 'draw', 'Организатор раскрыл пару')
   res.json(db.prepare('SELECT * FROM pairs WHERE id = ?').get(pair.id))
 })
