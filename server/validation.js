@@ -2,6 +2,7 @@ import { z } from 'zod'
 import { HttpError } from './http-error.js'
 
 const text = z.string().trim().min(1)
+const optionalLongText = z.string().trim().max(2000).nullable().optional()
 const identifier = z.coerce.number().int().positive()
 const questionTypes = ['text', 'number', 'boolean', 'single', 'multi']
 
@@ -21,11 +22,21 @@ export const schemas = {
     .object({
       name: text.max(80).optional(),
       email: z.string().trim().toLowerCase().email().nullable().optional(),
+      wishlist: optionalLongText,
+      address: optionalLongText,
+      notes: optionalLongText,
+      preferred: optionalLongText,
     })
     .strict()
     .refine((value) => Object.keys(value).length > 0, 'Нет полей для обновления'),
   inviteAccept: z
-    .object({ email: z.string().trim().toLowerCase().email().nullable().optional() })
+    .object({
+      email: z.string().trim().toLowerCase().email().nullable().optional(),
+      wishlist: optionalLongText,
+      address: optionalLongText,
+      notes: optionalLongText,
+      preferred: optionalLongText,
+    })
     .strict(),
   exclusion: z.object({ fromId: identifier, toId: identifier }).strict(),
   pair: z.object({ fromId: identifier, toId: identifier }).strict(),

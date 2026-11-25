@@ -21,6 +21,11 @@ if (!participantColumns.some((column) => column.name === 'invite_token')) {
 }
 db.exec(`UPDATE participants SET invite_token = lower(hex(randomblob(12))) WHERE invite_token IS NULL`)
 db.exec('CREATE UNIQUE INDEX IF NOT EXISTS idx_participants_invite_token ON participants(invite_token)')
+for (const column of ['notes', 'preferred']) {
+  if (!participantColumns.some((item) => item.name === column)) {
+    db.exec(`ALTER TABLE participants ADD COLUMN ${column} TEXT`)
+  }
+}
 
 const insertTheme = db.prepare(`
   INSERT INTO themes (id, name, tag, accent, night, day)

@@ -3,6 +3,7 @@ import { ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { api } from '../lib/api'
 import { usePreferencesStore } from '../stores/preferences'
+import ParticipantCard from '../components/ParticipantCard.vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -62,6 +63,10 @@ function addParticipants() {
   if (!names) return
   bulkNames.value = ''
   return runAction(() => api.games.addParticipants(route.params.id, { names }))
+}
+
+function updateParticipant(participantId, body) {
+  return runAction(() => api.games.updateParticipant(route.params.id, participantId, body))
 }
 
 async function copyLink(value) {
@@ -194,10 +199,17 @@ function reveal(pair) {
       <div class="grid gap-4 lg:grid-cols-2">
         <div class="rounded-2xl border border-white/10 bg-white/5 p-5">
           <h2 class="font-bold">Участники</h2>
-          <ul class="mt-3 grid gap-2 text-sm opacity-80">
-            <li v-for="person in data.participants" :key="person.id">• {{ person.name }}</li>
-            <li v-if="!data.participants.length" class="opacity-50">Пока никто не присоединился</li>
-          </ul>
+          <div class="mt-3 grid gap-2">
+            <ParticipantCard
+              v-for="person in data.participants"
+              :key="person.id"
+              :person="person"
+              :accent="preferences.theme.accent"
+              :busy="busy"
+              @save="updateParticipant(person.id, $event)"
+            />
+            <p v-if="!data.participants.length" class="text-sm opacity-50">Пока никто не присоединился</p>
+          </div>
         </div>
         <div class="rounded-2xl border border-white/10 bg-white/5 p-5">
           <h2 class="font-bold">Пары</h2>

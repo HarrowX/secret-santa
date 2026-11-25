@@ -113,6 +113,43 @@ describe('API', () => {
     assert.ok(response.body.error.message)
   })
 
+  it('сохраняет карточку участника и привязывает её к пользователю', async () => {
+    const game = await createGame('Карточка')
+    const [person] = await addParticipants(game.id, ['Вика'])
+    const session = await request('POST', '/auth/session', {})
+
+    const patched = await request(
+      'PATCH',
+      `/games/${game.id}/participants/${person.id}`,
+      {
+        name: 'Виктория',
+        email: 'vika@example.test',
+        wishlist: 'Книги',
+        address: 'Москва',
+        notes: 'Только не сладости',
+        preferred: 'Аня',
+      },
+      cookieHeader(session),
+    )
+    assert.equal(patched.status, 200)
+    assert.equal(patched.body.wishlist, 'Книги')
+    assert.equal(patched.body.preferred, 'Аня')
+
+    const invite = await request('GET', `/games/${game.id}/invite`)
+    const token = invite.body.participants[0].invite_token
+    const accepted = await request(
+      'POST',
+      `/invites/${token}/accept`,
+      { wishlist: 'Книги и настолки', address: 'Москва' },
+      cookieHeader(session),
+    )
+    assert.equal(accepted.status, 200)
+    assert.equal(accepted.body.participant.user_id, session.body.user.id)
+    assert.equal(accepted.body.participant.wishlist, 'Книги и настолки')
+    assert.equal(accepted.body.participant.notes, 'Только не сладости')
+    assert.equal(accepted.body.participant.filled, 1)
+  })
+
   it('добавляет участников списком и обрабатывает персональные приглашения', async () => {
     const game = await createGame('Приглашения')
     const bulk = await request('POST', `/games/${game.id}/participants/bulk`, {

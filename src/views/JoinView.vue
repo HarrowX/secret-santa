@@ -8,6 +8,10 @@ const route = useRoute()
 const preferences = usePreferencesStore()
 const invite = ref(null)
 const email = ref('')
+const wishlist = ref('')
+const address = ref('')
+const notes = ref('')
+const preferred = ref('')
 const error = ref('')
 const loading = ref(true)
 const submitting = ref(false)
@@ -24,6 +28,10 @@ watch(
       const response = await api.invites.get(token)
       invite.value = response
       email.value = response.participant.email ?? ''
+      wishlist.value = response.participant.wishlist ?? ''
+      address.value = response.participant.address ?? ''
+      notes.value = response.participant.notes ?? ''
+      preferred.value = response.participant.preferred ?? ''
       preferences.setTheme(response.game.themeId)
     } catch (requestError) {
       error.value = requestError.message
@@ -38,7 +46,13 @@ async function accept() {
   submitting.value = true
   error.value = ''
   try {
-    await api.invites.accept(route.params.token, { email: email.value || null })
+    await api.invites.accept(route.params.token, {
+      email: email.value || null,
+      wishlist: wishlist.value || null,
+      address: address.value || null,
+      notes: notes.value || null,
+      preferred: preferred.value || null,
+    })
     done.value = true
   } catch (requestError) {
     error.value = requestError.message
@@ -69,6 +83,46 @@ async function accept() {
             placeholder="Не обязательно"
             class="rounded-xl border border-white/15 bg-white/5 px-4 py-2.5 text-sm outline-none placeholder:text-current/40 focus:border-white/40"
           />
+        </label>
+        <label class="grid gap-1 text-sm">
+          <span class="text-xs font-semibold uppercase tracking-widest opacity-60">Желания</span>
+          <textarea
+            v-model="wishlist"
+            rows="2"
+            maxlength="2000"
+            placeholder="Что подарить"
+            class="rounded-xl border border-white/15 bg-white/5 px-4 py-2.5 text-sm outline-none placeholder:text-current/40 focus:border-white/40"
+          ></textarea>
+        </label>
+        <label class="grid gap-1 text-sm">
+          <span class="text-xs font-semibold uppercase tracking-widest opacity-60">Адрес доставки</span>
+          <input
+            v-model="address"
+            type="text"
+            maxlength="2000"
+            placeholder="По желанию"
+            class="rounded-xl border border-white/15 bg-white/5 px-4 py-2.5 text-sm outline-none placeholder:text-current/40 focus:border-white/40"
+          />
+        </label>
+        <label class="grid gap-1 text-sm">
+          <span class="text-xs font-semibold uppercase tracking-widest opacity-60">С кем хотите играть</span>
+          <input
+            v-model="preferred"
+            type="text"
+            maxlength="2000"
+            placeholder="Имена через запятую"
+            class="rounded-xl border border-white/15 bg-white/5 px-4 py-2.5 text-sm outline-none placeholder:text-current/40 focus:border-white/40"
+          />
+        </label>
+        <label class="grid gap-1 text-sm">
+          <span class="text-xs font-semibold uppercase tracking-widest opacity-60">Заметки организатору</span>
+          <textarea
+            v-model="notes"
+            rows="2"
+            maxlength="2000"
+            placeholder="Важные детали"
+            class="rounded-xl border border-white/15 bg-white/5 px-4 py-2.5 text-sm outline-none placeholder:text-current/40 focus:border-white/40"
+          ></textarea>
         </label>
         <button
           type="submit"

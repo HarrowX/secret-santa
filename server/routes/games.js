@@ -131,10 +131,23 @@ gamesRouter.patch('/:id/participants/:participantId', validateBody(schemas.parti
     .get(participantId, id)
   if (!participant) fail(404, 'Участник не найден')
 
-  const name = req.body.name ?? participant.name
-  const email = req.body.email === undefined ? participant.email : req.body.email
+  const value = (key) => (req.body[key] === undefined ? participant[key] : req.body[key])
   try {
-    db.prepare('UPDATE participants SET name = ?, email = ? WHERE id = ?').run(name, email, participantId)
+    db
+      .prepare(`
+        UPDATE participants
+        SET name = ?, email = ?, wishlist = ?, address = ?, notes = ?, preferred = ?
+        WHERE id = ?
+      `)
+      .run(
+        value('name'),
+        value('email'),
+        value('wishlist'),
+        value('address'),
+        value('notes'),
+        value('preferred'),
+        participantId,
+      )
   } catch (error) {
     if (String(error.message).includes('UNIQUE')) fail(409, 'Участник с таким именем уже есть')
     throw error
