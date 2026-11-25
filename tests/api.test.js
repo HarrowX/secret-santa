@@ -386,6 +386,35 @@ describe('API', () => {
     assert.equal(invalid.status, 400)
   })
 
+  it('формирует ссылки без пустого домена', async () => {
+    const game = await createGame()
+    await addParticipants(game.id, ['Аня'])
+    const original = process.env.DOMAIN
+    process.env.DOMAIN = ''
+    try {
+      const invite = await request('GET', `/games/${game.id}/invite`)
+      assert.equal(invite.status, 200)
+      assert.ok(invite.body.commonUrl.startsWith(`/game/${game.token}`))
+      assert.ok(invite.body.participants.every((person) => person.url.startsWith('/join/')))
+    } finally {
+      process.env.DOMAIN = original
+    }
+
+    const originalAppUrl = process.env.APP_URL
+    const originalDomainName = process.env.DOMAIN_NAME
+    process.env.APP_URL = 'http://${DOMAIN_NAME}:5173'
+    process.env.DOMAIN_NAME = 'santa.local'
+    try {
+      const invite = await request('GET', `/games/${game.id}/invite`)
+      assert.equal(invite.body.commonUrl, `http://santa.local:5173/game/${game.token}`)
+    } finally {
+      if (originalAppUrl === undefined) delete process.env.APP_URL
+      else process.env.APP_URL = originalAppUrl
+      if (originalDomainName === undefined) delete process.env.DOMAIN_NAME
+      else process.env.DOMAIN_NAME = originalDomainName
+    }
+  })
+
   it('удаляет участника и перестраивает пары', async () => {
     const game = await createGame()
     await addParticipants(game.id, ['Аня', 'Борис', 'Вика'])
@@ -461,6 +490,44 @@ describe('API', () => {
     const limit = await request('POST', `/games/${game.id}/questions`, { title: 'Одиннадцатый' })
     assert.equal(limit.status, 400)
     assert.match(limit.body.error.message, /10 вопросов/)
+  })
+
+  it('приглашает организатора по ссылке и защищает последнего организатора', async () => {
+    const game = await createGame()
+    const session = await request('POST', '/auth/session', {})
+    const invite = await request('POST', `/games/${game.id}/organizers/invite`)
+    assert.equal(invite.status, 201)
+    assert.match(invite.body.url, /https:\/\/santa\.local\/organizer\//)
+
+    const accepted = await request(
+      'POST',
+      `/organizer-invites/${invite.body.token}/accept`,
+      {},
+      cookieHeader(session),
+    )
+    assert.equal(accepted.status, 200)
+    assert.equal(accepted.body.id, game.id)
+
+    const organizers = await request('GET', `/games/${game.id}/organizers`)
+    assert.equal(organizers.body.length, 2)
+
+    const third = await request('POST', `/games/${game.id}/organizers/invite`)
+    assert.equal(third.status, 201)
+    const fourth = await request('POST', `/games/${game.id}/organizers/invite`)
+    assert.equal(fourth.status, 409)
+
+    const firstRemoval = await request(
+      'DELETE',
+      `/games/${game.id}/organizers/${organizers.body[0].id}`,
+    )
+    assert.equal(firstRemoval.status, 200)
+    const lastRemoval = await request(
+      'DELETE',
+      `/games/${game.id}/organizers/${organizers.body[1].id}`,
+    )
+    assert.equal(lastRemoval.status, 200)
+    const guard = await request('DELETE', `/games/${game.id}/organizers/${third.body.id}`)
+    assert.equal(guard.status, 409)
   })
 
   it('управляет вопросами, сообщениями, организаторами и поддоменами', async () => {

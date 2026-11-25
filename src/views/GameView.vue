@@ -13,6 +13,7 @@ const data = ref(null)
 const invite = ref(null)
 const notifications = ref([])
 const answers = ref([])
+const organizers = ref([])
 const error = ref('')
 const actionError = ref('')
 const loading = ref(true)
@@ -41,12 +42,14 @@ async function load(id) {
   invite.value = null
   notifications.value = []
   answers.value = []
+  organizers.value = []
   try {
     data.value = await api.games.get(id)
     preferences.setTheme(data.value.game.theme_id)
     invite.value = await api.games.invite(id)
     notifications.value = await api.games.notifications(id)
     answers.value = await api.games.answers(id)
+    organizers.value = await api.games.organizers(id)
   } catch (requestError) {
     error.value = requestError.message
   } finally {
@@ -109,6 +112,19 @@ function updateParticipant(participantId, body) {
 function removeParticipant(participant) {
   if (!window.confirm(`Удалить ${participant.name} и перестроить пары?`)) return
   return runAction(() => api.games.removeParticipant(route.params.token, participant.id))
+}
+
+function inviteOrganizer() {
+  return runAction(async () => {
+    const invite = await api.games.inviteOrganizer(route.params.token)
+    await navigator.clipboard.writeText(invite.url).catch(() => {})
+    return invite
+  })
+}
+
+function removeOrganizer(organizer) {
+  if (!window.confirm('Удалить организатора?')) return
+  return runAction(() => api.games.removeOrganizer(route.params.token, organizer.id))
 }
 
 async function copyLink(value) {
@@ -305,6 +321,46 @@ function reveal(pair) {
           </div>
           <p v-if="!invite.participants.length" class="opacity-50">Добавьте участников, чтобы получить персональные ссылки</p>
         </div>
+      </div>
+
+      <div class="rounded-2xl border border-white/10 bg-white/5 p-5">
+        <div class="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <h2 class="font-bold">Команда организаторов</h2>
+            <p class="mt-1 text-sm opacity-60">Максимум три организатора, включая создателя</p>
+          </div>
+          <button
+            type="button"
+            class="rounded-full border border-white/20 px-4 py-2 text-sm font-semibold transition hover:bg-white/10 disabled:opacity-50"
+            :disabled="busy || organizers.length >= 3"
+            @click="inviteOrganizer"
+          >
+            Пригласить помощника
+          </button>
+        </div>
+        <ul class="mt-3 grid gap-2 text-sm">
+          <li
+            v-for="organizer in organizers"
+            :key="organizer.id"
+            class="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-white/10 bg-white/5 px-4 py-2"
+          >
+            <span>
+              {{ organizer.user_email ?? (organizer.role === 'owner' ? 'Создатель (вход не выполнен)' : 'Приглашение ещё не принято') }}
+            </span>
+            <span class="flex items-center gap-3 text-xs opacity-60">
+              <span>{{ organizer.role === 'owner' ? 'создатель' : 'организатор' }}</span>
+              <button
+                type="button"
+                class="underline transition hover:opacity-100 disabled:opacity-50"
+                :disabled="busy || organizers.length <= 1"
+                @click="removeOrganizer(organizer)"
+              >
+                Удалить
+              </button>
+            </span>
+          </li>
+          <li v-if="!organizers.length" class="opacity-50">Организаторов пока нет</li>
+        </ul>
       </div>
 
       <div class="rounded-2xl border border-white/10 bg-white/5 p-5">

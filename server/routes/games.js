@@ -27,6 +27,29 @@ function inviteToken() {
   return randomUUID().replace(/-/g, '').slice(0, 16)
 }
 
+function cleanDomain(value) {
+  return String(value || '')
+    .trim()
+    .replace(/^https?:\/\//, '')
+    .replace(/\/.*$/, '')
+    .replace(/:\d+$/, '')
+}
+
+function appBaseUrl() {
+  const domain = cleanDomain(process.env.DOMAIN_NAME || process.env.DOMAIN)
+  const configured = String(process.env.APP_URL || process.env.app_url || '')
+    .trim()
+    .replace(/\$\{DOMAIN_NAME\}/g, domain)
+    .replace(/\$\{DOMAIN\}/g, domain)
+    .replace(/\/+$/, '')
+  if (configured) return configured
+  return domain ? `https://${domain}` : ''
+}
+
+function publicLink(req, path) {
+  return `${appBaseUrl()}${path}`
+}
+
 function addNotification(gameId, participantId, payload) {
   db.prepare(`
     INSERT INTO notifications (game_id, participant_id, kind, payload) VALUES (?, ?, ?, ?)
@@ -221,19 +244,14 @@ gamesRouter.delete('/:id/participants/:participantId', (req, res) => {
 gamesRouter.get('/:id/invite', (req, res) => {
   const id = resolveGameId(req.params.id)
   const game = getGame(id)
-  const domain = String(process.env.DOMAIN || '')
-    .replace(/^https?:\/\//, '')
-    .replace(/\/.*$/, '')
-    .replace(/:\d+$/, '')
-
   res.json({
-    commonUrl: `https://${domain}/game/${game.token}`,
+    commonUrl: publicLink(req, `/game/${game.token}`),
     participants: db
       .prepare('SELECT id, name, invite_token, filled FROM participants WHERE game_id = ? ORDER BY id')
       .all(id)
       .map((person) => ({
         ...person,
-        url: `https://${domain}/join/${person.invite_token}`,
+        url: publicLink(req, `/join/${person.invite_token}`),
       })),
   })
 })
@@ -643,13 +661,41 @@ gamesRouter.post('/:id/organizers', validateBody(schemas.organizer), (req, res) 
   res.status(201).json({ userId: user.id })
 })
 
+gamesRouter.post('/:id/organizers/invite', (req, res) => {
+  const id = resolveGameId(req.params.id)
+  getGame(id)
+  const count = db.prepare('SELECT COUNT(*) AS total FROM organizers WHERE game_id = ?').get(id).total
+  if (count >= 3) fail(409, 'Максимум три организатора')
+
+  const token = inviteToken()
+  const result = db
+    .prepare(`
+      INSERT INTO organizers (game_id, user_id, role, invited_token)
+      VALUES (?, NULL, 'organizer', ?)
+    `)
+    .run(id, token)
+  addEvent(id, 'settings', 'Создано приглашение организатора', req.user?.id ?? null)
+  res.status(201).json({
+    id: result.lastInsertRowid,
+    token,
+    url: publicLink(req, `/organizer/${token}`),
+  })
+})
+
 gamesRouter.delete('/:id/organizers/:organizerId', (req, res) => {
   const id = resolveGameId(req.params.id)
   getGame(id)
   const organizerId = Number(req.params.organizerId)
-  const result = db.prepare('DELETE FROM organizers WHERE id = ? AND game_id = ?').run(organizerId, id)
-  if (!result.changes) fail(404, 'Организатор не найден')
-  addEvent(id, 'settings', 'Организатор удалён')
+  const organizer = db
+    .prepare('SELECT id FROM organizers WHERE id = ? AND game_id = ?')
+    .get(organizerId, id)
+  if (!organizer) fail(404, 'Организатор не найден')
+
+  const count = db.prepare('SELECT COUNT(*) AS total FROM organizers WHERE game_id = ?').get(id).total
+  if (count <= 1) fail(409, 'Нельзя удалить последнего организатора')
+
+  db.prepare('DELETE FROM organizers WHERE id = ?').run(organizerId)
+  addEvent(id, 'settings', 'Организатор удалён', req.user?.id ?? null)
   res.json({ ok: true })
 })
 
