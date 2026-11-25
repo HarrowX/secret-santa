@@ -1,6 +1,7 @@
 import { Router } from 'express'
-import { db } from '../db.js'
 import { fail, HttpError } from '../http-error.js'
+import { gamesRepository } from '../repositories/games.js'
+import { tenantsRepository } from '../repositories/tenants.js'
 import { schemas, validateBody } from '../validation.js'
 
 export const tenantsRouter = Router()
@@ -14,37 +15,34 @@ function cleanSlug(value) {
 }
 
 tenantsRouter.get('/', (_req, res) => {
-  res.json(
-    db.prepare(`
-      SELECT tenants.*, games.title AS game_title
-      FROM tenants
-      JOIN games ON games.id = tenants.game_id
-      ORDER BY tenants.id DESC
-    `).all(),
-  )
+  res.json(tenantsRepository.list())
+})
+
+tenantsRouter.get('/current', (req, res) => {
+  res.json({ tenant: req.tenant ?? null })
 })
 
 tenantsRouter.post('/', validateBody(schemas.tenant), (req, res) => {
   const slug = cleanSlug(req.body.slug)
   const gameId = req.body.gameId
-  const game = db.prepare('SELECT id FROM games WHERE id = ?').get(gameId)
+  const game = gamesRepository.findById(gameId)
   if (!game) fail(404, 'Игра не найдена')
   const domain = req.body.domain ?? null
 
   try {
-    db.prepare('INSERT INTO tenants (slug, game_id, domain) VALUES (?, ?, ?)').run(slug, gameId, domain)
+    tenantsRepository.create({ slug, gameId, domain })
   } catch (error) {
     if (String(error.message).includes('UNIQUE')) fail(409, 'Поддомен уже занят')
     throw error
   }
 
-  res.status(201).json(db.prepare('SELECT * FROM tenants WHERE slug = ?').get(slug))
+  res.status(201).json(tenantsRepository.findBySlug(slug))
 })
 
 tenantsRouter.get('/:slug', (req, res) => {
-  const tenant = db.prepare('SELECT * FROM tenants WHERE slug = ?').get(req.params.slug)
+  const tenant = tenantsRepository.findBySlug(req.params.slug)
   if (!tenant) fail(404, 'Поддомен не найден')
-  res.json({ tenant, game: db.prepare('SELECT * FROM games WHERE id = ?').get(tenant.game_id) })
+  res.json({ tenant, game: gamesRepository.findById(tenant.game_id) })
 })
 
 tenantsRouter.use((error, _req, res, next) => {

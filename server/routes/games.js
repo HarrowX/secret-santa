@@ -2,12 +2,14 @@ import { randomUUID } from 'node:crypto'
 import { Router } from 'express'
 import { db } from '../db.js'
 import { HttpError, fail } from '../http-error.js'
+import { gamesRepository } from '../repositories/games.js'
+import { drawPairs } from '../services/draw.js'
 import { schemas, validateBody } from '../validation.js'
 
 export const gamesRouter = Router()
 
 function getGame(id) {
-  const game = db.prepare('SELECT * FROM games WHERE id = ?').get(id)
+  const game = gamesRepository.findById(id)
   if (!game) fail(404, 'Игра не найдена')
   return game
 }
@@ -21,24 +23,8 @@ function addEvent(gameId, kind, text, actor = null) {
   )
 }
 
-function shuffled(values) {
-  const result = [...values]
-  for (let index = result.length - 1; index > 0; index -= 1) {
-    const swap = Math.floor(Math.random() * (index + 1))
-    ;[result[index], result[swap]] = [result[swap], result[index]]
-  }
-  return result
-}
-
 gamesRouter.get('/', (_req, res) => {
-  const games = db
-    .prepare(`
-      SELECT g.*, (SELECT COUNT(*) FROM participants p WHERE p.game_id = g.id) AS participants_count
-      FROM games g
-      ORDER BY g.id DESC
-    `)
-    .all()
-  res.json(games)
+  res.json(gamesRepository.list())
 })
 
 gamesRouter.post('/', validateBody(schemas.createGame), (req, res) => {
@@ -141,21 +127,7 @@ gamesRouter.post('/:id/draw', (req, res) => {
     ),
   )
 
-  let solution = null
-  for (let attempt = 0; attempt < 200 && !solution; attempt += 1) {
-    const order = shuffled(ids)
-    const candidate = new Map(ids.map((from, index) => [from, order[(index + 1) % order.length]]))
-    const valid = ids.every((from) => {
-      const to = candidate.get(from)
-      return (
-        from !== to &&
-        !exclusions.has(`${from}:${to}`) &&
-        (!manual.has(from) || manual.get(from) === to)
-      )
-    })
-    if (valid) solution = candidate
-  }
-
+  const solution = drawPairs({ ids, exclusions, manual })
   if (!solution) fail(409, 'Не удалось распределить пары с текущими ограничениями')
 
   db.transaction(() => {
