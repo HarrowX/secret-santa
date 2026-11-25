@@ -2,16 +2,19 @@
 import { computed, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { api } from '../lib/api'
+import { domain } from '../config'
+import { themes } from '../data/themes'
+import { presets } from '../content/presets'
 import { usePreferencesStore } from '../stores/preferences'
 import ParticipantCard from '../components/ParticipantCard.vue'
 import QuestionnaireForm from '../components/QuestionnaireForm.vue'
+import NotificationsPanel from '../components/NotificationsPanel.vue'
 
 const route = useRoute()
 const router = useRouter()
 const preferences = usePreferencesStore()
 const data = ref(null)
 const invite = ref(null)
-const notifications = ref([])
 const answers = ref([])
 const organizers = ref([])
 const reminders = ref([])
@@ -25,14 +28,24 @@ const historyParticipant = ref('')
 const historyPeriod = ref('all')
 const lastOrganizerInvite = ref('')
 const error = ref('')
-const actionError = ref('')
+const errors = ref({})
 const loading = ref(true)
 const busy = ref(false)
 const newParticipant = ref('')
 const bulkNames = ref('')
+const settings = ref({
+  title: '',
+  rules: '',
+  budget: '',
+  exchangeDate: '',
+  format: '',
+  themeId: 'winter',
+})
+const tenantSlug = ref('')
+const tenantUrl = ref('')
 const pendingParticipants = computed(() => {
   if (!data.value) return []
-  const paired = new Set(data.value.pairs.flatMap((pair) => [pair.from_id, pair.to_id]))
+  const paired = new Set((data.value.pairs ?? []).flatMap((pair) => [pair.from_id, pair.to_id]))
   return data.value.participants.filter((person) => !paired.has(person.id))
 })
 const exclusionFrom = ref('')
@@ -43,7 +56,7 @@ const questionTitle = ref('')
 const questionHint = ref('')
 const questionType = ref('text')
 const questionRequired = ref(false)
-const questionCount = computed(() => data.value?.questions.length ?? 0)
+const questionCount = computed(() => data.value?.questions?.length ?? 0)
 const gameToken = computed(() => String(route.params.token ?? ''))
 const gameLabel = computed(() =>
   gameToken.value && gameToken.value !== 'undefined' ? gameToken.value.slice(0, 8) : 'демо',
@@ -65,9 +78,21 @@ const filteredEvents = computed(() => {
   })
 })
 
+function syncSettings(game) {
+  settings.value = {
+    title: game.title ?? '',
+    rules: game.rules ?? '',
+    budget: game.budget ?? '',
+    exchangeDate: game.exchange_date ?? '',
+    format: game.format ?? '',
+    themeId: game.theme_id ?? 'winter',
+  }
+}
+
 async function load(id) {
   loading.value = true
   error.value = ''
+  errors.value = {}
   data.value = null
   if (!id || id === 'undefined') {
     error.value = 'Игра не найдена'
@@ -75,20 +100,17 @@ async function load(id) {
     return
   }
   invite.value = null
-  notifications.value = []
   answers.value = []
   organizers.value = []
   reminders.value = []
   pastGames.value = []
+  tenantUrl.value = ''
   try {
-    data.value = await api.games.get(id)
+    data.value = await api.games.get(id, String(id))
     preferences.setTheme(data.value.game.theme_id)
-    if (!data.value.canManage) {
-      error.value = 'Управление игрой доступно только организатору'
-      return
-    }
+    syncSettings(data.value.game)
+    if (!data.value.canManage) return
     invite.value = await api.games.invite(id)
-    notifications.value = await api.games.notifications(id)
     answers.value = await api.games.answers(id)
     organizers.value = await api.games.organizers(id)
     reminders.value = await api.games.reminders(id)
@@ -115,62 +137,56 @@ function receiverFor(id) {
   return pair ? participantName(pair.to_id) : ''
 }
 
-function notificationText(item) {
-  try {
-    const payload = JSON.parse(item.payload)
-    const detail = payload.wishlist || payload.address || payload.notes || 'карточка обновлена'
-    return `${item.participant_name ?? 'Участник'}: ${detail}`
-  } catch {
-    return `${item.participant_name ?? 'Участник'}: карточка обновлена`
-  }
-}
-
-async function runAction(action) {
+async function runAction(key, action) {
   busy.value = true
-  actionError.value = ''
+  errors.value = { ...errors.value, [key]: '' }
   try {
     await action()
     await load(route.params.token)
   } catch (requestError) {
-    actionError.value = requestError.message
+    errors.value = { ...errors.value, [key]: requestError.message }
   } finally {
     busy.value = false
   }
+}
+
+function setError(key, message) {
+  errors.value = { ...errors.value, [key]: message }
 }
 
 function addParticipant() {
   const name = newParticipant.value.trim()
   if (!name) return
   newParticipant.value = ''
-  return runAction(() => api.games.addParticipant(route.params.token, { name }))
+  return runAction('participant', () => api.games.addParticipant(route.params.token, { name }))
 }
 
 function addParticipants() {
   const names = bulkNames.value.trim()
   if (!names) return
   bulkNames.value = ''
-  return runAction(() => api.games.addParticipants(route.params.token, { names }))
+  return runAction('bulk', () => api.games.addParticipants(route.params.token, { names }))
 }
 
 function updateParticipant(participantId, body) {
-  return runAction(() => api.games.updateParticipant(route.params.token, participantId, body))
+  return runAction('participant-card', () => api.games.updateParticipant(route.params.token, participantId, body))
 }
 
 function removeParticipant(participant) {
   if (!window.confirm(`Удалить ${participant.name} и перестроить пары?`)) return
-  return runAction(() => api.games.removeParticipant(route.params.token, participant.id))
+  return runAction('participant-card', () => api.games.removeParticipant(route.params.token, participant.id))
 }
 
 function inviteOrganizer() {
-  return runAction(async () => {
-    const invite = await api.games.inviteOrganizer(route.params.token)
-    lastOrganizerInvite.value = invite.url
+  return runAction('organizer', async () => {
+    const link = await api.games.inviteOrganizer(route.params.token)
+    lastOrganizerInvite.value = link.url
     try {
-      await navigator.clipboard.writeText(invite.url)
+      await navigator.clipboard.writeText(link.url)
     } catch {
-      actionError.value = 'Ссылка скопировать не удалось — скопируйте её вручную'
+      setError('organizer', 'Ссылка скопировать не удалось — скопируйте её вручную')
     }
-    return invite
+    return link
   })
 }
 
@@ -182,14 +198,14 @@ function canRemoveOrganizer(organizer) {
 function removeOrganizer(organizer) {
   const text = organizer.invited_token ? 'Отменить приглашение организатора?' : 'Удалить организатора?'
   if (!window.confirm(text)) return
-  return runAction(() => api.games.removeOrganizer(route.params.token, organizer.id))
+  return runAction('organizer', () => api.games.removeOrganizer(route.params.token, organizer.id))
 }
 
-async function copyLink(value) {
+async function copyLink(value, key = 'copy') {
   try {
     await navigator.clipboard.writeText(value)
   } catch {
-    actionError.value = 'Не удалось скопировать ссылку'
+    setError(key, 'Не удалось скопировать ссылку')
   }
 }
 
@@ -207,61 +223,61 @@ function addQuestion() {
   questionHint.value = ''
   questionType.value = 'text'
   questionRequired.value = false
-  return runAction(() => api.games.addQuestion(route.params.token, body))
+  return runAction('question', () => api.games.addQuestion(route.params.token, body))
 }
 
 function deleteQuestion(questionId) {
-  return runAction(() => api.games.deleteQuestion(route.params.token, questionId))
+  return runAction('question', () => api.games.deleteQuestion(route.params.token, questionId))
 }
 
 function addExclusion() {
   const fromId = Number(exclusionFrom.value)
   const toId = Number(exclusionTo.value)
   if (!fromId || !toId || fromId === toId) {
-    actionError.value = 'Выберите двух разных участников'
+    setError('exclusion', 'Выберите двух разных участников')
     return
   }
   exclusionFrom.value = ''
   exclusionTo.value = ''
-  return runAction(() => api.games.addExclusion(route.params.token, { fromId, toId }))
+  return runAction('exclusion', () => api.games.addExclusion(route.params.token, { fromId, toId }))
 }
 
 function removeExclusion(fromId, toId) {
-  return runAction(() => api.games.removeExclusion(route.params.token, fromId, toId))
+  return runAction('exclusion', () => api.games.removeExclusion(route.params.token, fromId, toId))
 }
 
 function setPair() {
   const fromId = Number(manualFrom.value)
   const toId = Number(manualTo.value)
   if (!fromId || !toId || fromId === toId) {
-    actionError.value = 'Выберите двух разных участников'
+    setError('pair', 'Выберите двух разных участников')
     return
   }
   manualFrom.value = ''
   manualTo.value = ''
-  return runAction(() => api.games.setPair(route.params.token, { fromId, toId }))
+  return runAction('pair', () => api.games.setPair(route.params.token, { fromId, toId }))
 }
 
 function resetPairs() {
-  return runAction(() => api.games.resetPairs(route.params.token))
+  return runAction('pairs', () => api.games.resetPairs(route.params.token))
 }
 
 function draw() {
-  return runAction(() => api.games.draw(route.params.token))
+  return runAction('pairs', () => api.games.draw(route.params.token))
 }
 
 function drawNew() {
-  return runAction(() => api.games.drawNew(route.params.token))
+  return runAction('pairs', () => api.games.drawNew(route.params.token))
 }
 
 function reveal(pair) {
   if (!window.confirm('Да, раскрыть эту пару?')) return
-  return runAction(() => api.games.reveal(route.params.token, pair.from_id))
+  return runAction('pairs', () => api.games.reveal(route.params.token, pair.from_id))
 }
 
 function importPastPairs() {
   if (!pastGameId.value) return
-  return runAction(async () => {
+  return runAction('past', async () => {
     await api.games.importPastPairs(route.params.token, Number(pastGameId.value))
     pastGameId.value = ''
   })
@@ -271,17 +287,51 @@ function markGift(kind) {
   const participantId = Number(giftParticipant.value)
   if (!participantId) return
   giftParticipant.value = ''
-  return runAction(() => api.games.markGift(route.params.token, participantId, kind))
+  return runAction('gift', () => api.games.markGift(route.params.token, participantId, kind))
 }
 
 function sendReminder() {
   const body = reminderBody.value.trim()
   const recipientIds = reminderRecipients.value.map(Number)
   if (!body || !recipientIds.length) return
-  return runAction(async () => {
+  return runAction('reminder', async () => {
     await api.games.addReminder(route.params.token, { body, recipientIds })
     reminderBody.value = ''
     reminderRecipients.value = []
+  })
+}
+
+function saveSettings() {
+  const title = settings.value.title.trim()
+  if (!title) {
+    setError('settings', 'Укажите название игры')
+    return
+  }
+  return runAction('settings', () =>
+    api.games.update(
+      route.params.token,
+      {
+        title,
+        rules: settings.value.rules,
+        budget: settings.value.budget,
+        exchangeDate: settings.value.exchangeDate,
+        format: settings.value.format,
+        themeId: settings.value.themeId,
+      },
+      String(route.params.token),
+    ),
+  )
+}
+
+function saveTenant() {
+  const slug = tenantSlug.value.trim()
+  if (!slug) {
+    setError('tenant', 'Укажите адрес игры')
+    return
+  }
+  return runAction('tenant', async () => {
+    const tenant = await api.tenants.create({ slug, gameId: data.value.game.id }, String(route.params.token))
+    tenantUrl.value = tenant.url ?? `${window.location.protocol}//${slug}.${domain}`
   })
 }
 </script>
@@ -301,6 +351,20 @@ function sendReminder() {
         Игра · {{ gameLabel }}<span v-if="data?.game.format"> · {{ data.game.format }}</span>
       </p>
       <h1 class="mt-2 text-3xl font-bold tracking-tight sm:text-4xl">{{ data?.game.title ?? 'Загрузка игры' }}</h1>
+    </div>
+
+    <div v-if="data?.game.rules" class="mt-6 rounded-2xl border border-white/10 bg-white/5 p-5">
+      <h2 class="font-bold">Правила игры</h2>
+      <p class="mt-2 whitespace-pre-wrap text-sm opacity-75">{{ data.game.rules }}</p>
+    </div>
+
+    <div
+      v-if="data && !data.canManage"
+      class="mt-4 rounded-2xl border border-white/15 bg-white/5 p-5 text-sm opacity-80"
+      role="status"
+    >
+      Это страница просмотра игры. Здесь видны название, правила, бюджет, дата, вопросы и прогресс. Чтобы заполнить
+      карточку, узнать пару и написать Санте, откройте персональную ссылку-приглашение — её отправил организатор.
     </div>
 
     <p v-if="loading" class="mt-8 rounded-2xl border border-white/10 bg-white/5 p-6 text-sm opacity-70">
@@ -332,7 +396,7 @@ function sendReminder() {
         </div>
       </div>
 
-      <div class="rounded-2xl border border-white/10 bg-white/5 p-5">
+      <div v-if="data.canManage" class="rounded-2xl border border-white/10 bg-white/5 p-5">
         <div class="flex flex-wrap items-end justify-between gap-3">
           <div>
             <h2 class="font-bold">Организатор</h2>
@@ -365,6 +429,7 @@ function sendReminder() {
             type="text"
             maxlength="80"
             placeholder="Имя участника"
+            aria-label="Имя участника"
             class="min-w-48 flex-1 rounded-xl border border-white/15 bg-white/5 px-4 py-2 text-sm outline-none placeholder:text-current/40 focus:border-white/40"
           />
           <button
@@ -381,6 +446,7 @@ function sendReminder() {
             type="text"
             maxlength="1000"
             placeholder="Аня, Борис, Вика — через запятую"
+            aria-label="Список имён через запятую"
             class="w-full rounded-xl border border-white/15 bg-white/5 px-4 py-2 text-sm outline-none placeholder:text-current/40 focus:border-white/40"
           />
           <button
@@ -391,7 +457,9 @@ function sendReminder() {
             Добавить список
           </button>
         </form>
-        <p v-if="actionError" role="alert" class="mt-3 text-sm text-rose-300">{{ actionError }}</p>
+        <p v-if="errors.pairs" role="alert" class="mt-3 text-sm text-rose-300">{{ errors.pairs }}</p>
+        <p v-if="errors.participant" role="alert" class="mt-2 text-sm text-rose-300">{{ errors.participant }}</p>
+        <p v-if="errors.bulk" role="alert" class="mt-2 text-sm text-rose-300">{{ errors.bulk }}</p>
       </div>
 
       <div v-if="invite" class="rounded-2xl border border-white/10 bg-white/5 p-5">
@@ -423,6 +491,116 @@ function sendReminder() {
         </div>
       </div>
 
+      <div v-if="data.canManage" class="rounded-2xl border border-white/10 bg-white/5 p-5">
+        <h2 class="font-bold">Настройки игры</h2>
+        <p class="mt-1 text-sm opacity-60">Изменения сохраняются сразу и видны участникам</p>
+        <form class="mt-4 grid gap-3 sm:grid-cols-2" @submit.prevent="saveSettings">
+          <label class="grid gap-1 text-sm">
+            <span class="text-xs font-semibold uppercase tracking-widest opacity-60">Название</span>
+            <input
+              v-model="settings.title"
+              type="text"
+              required
+              maxlength="120"
+              aria-label="Название игры"
+              class="rounded-xl border border-white/15 bg-white/5 px-3 py-2 text-sm outline-none focus:border-white/40"
+            />
+          </label>
+          <label class="grid gap-1 text-sm">
+            <span class="text-xs font-semibold uppercase tracking-widest opacity-60">Бюджет</span>
+            <input
+              v-model="settings.budget"
+              type="text"
+              maxlength="80"
+              aria-label="Бюджет подарка"
+              class="rounded-xl border border-white/15 bg-white/5 px-3 py-2 text-sm outline-none focus:border-white/40"
+            />
+          </label>
+          <label class="grid gap-1 text-sm">
+            <span class="text-xs font-semibold uppercase tracking-widest opacity-60">Дата обмена</span>
+            <input
+              v-model="settings.exchangeDate"
+              type="date"
+              aria-label="Дата обмена"
+              class="rounded-xl border border-white/15 bg-white/5 px-3 py-2 text-sm outline-none focus:border-white/40"
+            />
+          </label>
+          <label class="grid gap-1 text-sm">
+            <span class="text-xs font-semibold uppercase tracking-widest opacity-60">Формат</span>
+            <select
+              v-model="settings.format"
+              aria-label="Формат игры"
+              class="rounded-xl border border-white/15 bg-slate-900/80 px-3 py-2 text-sm outline-none focus:border-white/40"
+            >
+              <option value="">Без формата</option>
+              <option v-for="preset in presets" :key="preset.id" :value="preset.id">{{ preset.label }}</option>
+            </select>
+          </label>
+          <label class="grid gap-1 text-sm">
+            <span class="text-xs font-semibold uppercase tracking-widest opacity-60">Тема</span>
+            <select
+              v-model="settings.themeId"
+              aria-label="Тема оформления"
+              class="rounded-xl border border-white/15 bg-slate-900/80 px-3 py-2 text-sm outline-none focus:border-white/40"
+            >
+              <option v-for="theme in themes" :key="theme.id" :value="theme.id">{{ theme.name }}</option>
+            </select>
+          </label>
+          <label class="grid gap-1 text-sm sm:col-span-2">
+            <span class="text-xs font-semibold uppercase tracking-widest opacity-60">Правила</span>
+            <textarea
+              v-model="settings.rules"
+              rows="3"
+              maxlength="2000"
+              aria-label="Правила игры"
+              class="w-full rounded-xl border border-white/15 bg-white/5 px-3 py-2 text-sm outline-none focus:border-white/40"
+            ></textarea>
+          </label>
+          <p v-if="errors.settings" role="alert" class="text-sm text-rose-300 sm:col-span-2">{{ errors.settings }}</p>
+          <button
+            type="submit"
+            class="justify-self-start rounded-full px-5 py-2 text-sm font-bold transition hover:opacity-80 disabled:opacity-50 sm:col-span-2"
+            :style="{ background: preferences.theme.accent, color: '#0b1120' }"
+            :disabled="busy"
+          >
+            Сохранить настройки
+          </button>
+        </form>
+
+        <form class="mt-5 grid gap-2 sm:grid-cols-[1fr_auto]" @submit.prevent="saveTenant">
+          <label class="grid gap-1 text-sm">
+            <span class="text-xs font-semibold uppercase tracking-widest opacity-60">Адрес игры на поддомене</span>
+            <input
+              v-model="tenantSlug"
+              type="text"
+              minlength="3"
+              maxlength="32"
+              pattern="[a-z0-9-]+"
+              placeholder="moia-igra"
+              aria-label="Адрес игры на поддомене"
+              class="w-full rounded-xl border border-white/15 bg-white/5 px-3 py-2 text-sm outline-none focus:border-white/40"
+            />
+          </label>
+          <button
+            type="submit"
+            class="self-end rounded-full border border-white/20 px-5 py-2 text-sm font-semibold transition hover:bg-white/10 disabled:opacity-50"
+            :disabled="busy || !tenantSlug.trim()"
+          >
+            Сохранить адрес
+          </button>
+          <p v-if="errors.tenant" role="alert" class="text-sm text-rose-300">{{ errors.tenant }}</p>
+        </form>
+        <a
+          v-if="tenantUrl"
+          :href="tenantUrl"
+          target="_blank"
+          rel="noopener noreferrer"
+          class="mt-2 block truncate text-sm underline"
+        >
+          {{ tenantUrl }}
+        </a>
+      </div>
+
       <div class="rounded-2xl border border-white/10 bg-white/5 p-5">
         <h2 class="font-bold">Прогресс игры</h2>
         <div class="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
@@ -449,9 +627,10 @@ function sendReminder() {
             </div>
           </div>
         </div>
-        <form class="mt-4 flex flex-wrap gap-2" @submit.prevent="markGift('sent')">
+        <form v-if="data.canManage" class="mt-4 flex flex-wrap gap-2" @submit.prevent="markGift('sent')">
           <select
             v-model="giftParticipant"
+            aria-label="Участник, отметки о подарке"
             class="rounded-xl border border-white/15 bg-slate-900/80 px-3 py-2 text-sm outline-none"
           >
             <option value="" disabled>Выберите участника</option>
@@ -472,10 +651,11 @@ function sendReminder() {
           >
             Подарок получен
           </button>
+          <p v-if="errors.gift" role="alert" class="text-sm text-rose-300">{{ errors.gift }}</p>
         </form>
       </div>
 
-      <div class="rounded-2xl border border-white/10 bg-white/5 p-5">
+      <div v-if="data.canManage" class="rounded-2xl border border-white/10 bg-white/5 p-5">
         <div class="flex flex-wrap items-center justify-between gap-3">
           <div>
             <h2 class="font-bold">Команда организаторов</h2>
@@ -536,17 +716,23 @@ function sendReminder() {
           </li>
           <li v-if="!organizers.length" class="opacity-50">Организаторов пока нет</li>
         </ul>
+        <p v-if="errors.organizer" role="alert" class="mt-2 text-sm text-rose-300">{{ errors.organizer }}</p>
       </div>
 
       <div class="rounded-2xl border border-white/10 bg-white/5 p-5">
-        <h2 class="font-bold">Анкета организатора</h2>
-        <p class="mt-1 text-sm opacity-60">До 10 вопросов; ответы видны Санте и организатору</p>
-        <form class="mt-4 grid gap-2 sm:grid-cols-[2fr_2fr_1fr_auto_auto]" @submit.prevent="addQuestion">
+        <h2 class="font-bold">Вопросы анкеты</h2>
+        <p class="mt-1 text-sm opacity-60">Ответы видны Санте после раскрытия пары</p>
+        <form
+          v-if="data.canManage"
+          class="mt-4 grid gap-2 sm:grid-cols-[2fr_2fr_1fr_auto_auto]"
+          @submit.prevent="addQuestion"
+        >
           <input
             v-model="questionTitle"
             type="text"
             maxlength="120"
             placeholder="Название вопроса"
+            aria-label="Название вопроса"
             class="rounded-xl border border-white/15 bg-white/5 px-3 py-2 text-sm outline-none focus:border-white/40"
           />
           <input
@@ -554,10 +740,12 @@ function sendReminder() {
             type="text"
             maxlength="200"
             placeholder="Подсказка или варианты через запятую"
+            aria-label="Подсказка или варианты через запятую"
             class="rounded-xl border border-white/15 bg-white/5 px-3 py-2 text-sm outline-none focus:border-white/40"
           />
           <select
             v-model="questionType"
+            aria-label="Тип вопроса"
             class="rounded-xl border border-white/15 bg-slate-900/80 px-3 py-2 text-sm outline-none focus:border-white/40"
           >
             <option value="text">Текст</option>
@@ -577,11 +765,13 @@ function sendReminder() {
           >
             Добавить вопрос
           </button>
+          <p v-if="errors.question" role="alert" class="text-sm text-rose-300 sm:col-span-5">{{ errors.question }}</p>
         </form>
         <ul class="mt-3 grid gap-1 text-sm opacity-70">
           <li v-for="question in data.questions" :key="question.id" class="flex items-center justify-between gap-3">
             <span>{{ question.title }} · {{ question.type }}</span>
             <button
+              v-if="data.canManage"
               type="button"
               class="text-xs underline opacity-70 transition hover:opacity-100 disabled:opacity-50"
               :disabled="busy"
@@ -592,7 +782,7 @@ function sendReminder() {
           </li>
           <li v-if="!data.questions.length" class="opacity-50">Вопросов пока нет</li>
         </ul>
-        <div class="mt-4 grid gap-2 text-sm">
+        <div v-if="data.canManage" class="mt-4 grid gap-2 text-sm">
           <p class="font-semibold">Ответы</p>
           <details
             v-for="person in data.participants"
@@ -619,7 +809,7 @@ function sendReminder() {
         </div>
       </div>
 
-      <div class="rounded-2xl border border-white/10 bg-white/5 p-5">
+      <div v-if="data.canManage" class="rounded-2xl border border-white/10 bg-white/5 p-5">
         <h2 class="font-bold">Прошлые игры</h2>
         <p class="mt-1 text-sm opacity-60">
           Импортированные пары исключаются автоматически; имена прошлых получателей не раскрываются
@@ -628,6 +818,7 @@ function sendReminder() {
         <form class="mt-3 flex flex-wrap gap-2" @submit.prevent="importPastPairs">
           <select
             v-model="pastGameId"
+            aria-label="Прошлая игра для импорта пар"
             class="min-w-48 flex-1 rounded-xl border border-white/15 bg-slate-900/80 px-3 py-2 text-sm outline-none"
           >
             <option value="" disabled>Выберите прошлую игру</option>
@@ -643,12 +834,13 @@ function sendReminder() {
             Импортировать пары
           </button>
         </form>
+        <p v-if="errors.past" role="alert" class="mt-2 text-sm text-rose-300">{{ errors.past }}</p>
         <p v-if="!pastGames.length" class="mt-2 text-sm opacity-50">
           Войдите и поучаствуйте в игре, чтобы увидеть здесь прошлые игры
         </p>
       </div>
 
-      <div class="rounded-2xl border border-white/10 bg-white/5 p-5">
+      <div v-if="data.canManage" class="rounded-2xl border border-white/10 bg-white/5 p-5">
         <div class="flex flex-wrap items-center justify-between gap-3">
           <div>
             <h2 class="font-bold">Исключения и ручные пары</h2>
@@ -667,6 +859,7 @@ function sendReminder() {
         <form class="mt-4 grid gap-2 sm:grid-cols-[1fr_1fr_auto]" @submit.prevent="addExclusion">
           <select
             v-model="exclusionFrom"
+            aria-label="Кто не дарит"
             class="rounded-xl border border-white/15 bg-slate-900/80 px-3 py-2 text-sm outline-none focus:border-white/40"
           >
             <option value="" disabled>Кто не дарит</option>
@@ -674,6 +867,7 @@ function sendReminder() {
           </select>
           <select
             v-model="exclusionTo"
+            aria-label="Кому не дарит"
             class="rounded-xl border border-white/15 bg-slate-900/80 px-3 py-2 text-sm outline-none focus:border-white/40"
           >
             <option value="" disabled>Кому не дарит</option>
@@ -709,6 +903,7 @@ function sendReminder() {
         <form class="mt-4 grid gap-2 sm:grid-cols-[1fr_1fr_auto]" @submit.prevent="setPair">
           <select
             v-model="manualFrom"
+            aria-label="Кто дарит в ручной паре"
             class="rounded-xl border border-white/15 bg-slate-900/80 px-3 py-2 text-sm outline-none focus:border-white/40"
           >
             <option value="" disabled>Кто дарит</option>
@@ -716,6 +911,7 @@ function sendReminder() {
           </select>
           <select
             v-model="manualTo"
+            aria-label="Кому дарит в ручной паре"
             class="rounded-xl border border-white/15 bg-slate-900/80 px-3 py-2 text-sm outline-none focus:border-white/40"
           >
             <option value="" disabled>Кому дарит</option>
@@ -729,26 +925,36 @@ function sendReminder() {
             Зафиксировать
           </button>
         </form>
+        <p v-if="errors.exclusion" role="alert" class="mt-2 text-sm text-rose-300">{{ errors.exclusion }}</p>
+        <p v-if="errors.pair" role="alert" class="mt-2 text-sm text-rose-300">{{ errors.pair }}</p>
       </div>
 
       <div class="grid gap-4 lg:grid-cols-2">
         <div class="rounded-2xl border border-white/10 bg-white/5 p-5">
           <h2 class="font-bold">Участники</h2>
           <div class="mt-3 grid gap-2">
-            <ParticipantCard
-              v-for="person in data.participants"
-              :key="person.id"
-              :person="person"
-              :accent="preferences.theme.accent"
-              :busy="busy"
-              :receiver-name="receiverFor(person.id)"
-              @save="updateParticipant(person.id, $event)"
-              @remove="removeParticipant(person)"
-            />
+            <template v-if="data.canManage">
+              <ParticipantCard
+                v-for="person in data.participants"
+                :key="person.id"
+                :person="person"
+                :accent="preferences.theme.accent"
+                :busy="busy"
+                :receiver-name="receiverFor(person.id)"
+                @save="updateParticipant(person.id, $event)"
+                @remove="removeParticipant(person)"
+              />
+            </template>
+            <ul v-else class="grid gap-1 text-sm">
+              <li v-for="person in data.participants" :key="person.id">{{ person.name }}</li>
+            </ul>
             <p v-if="!data.participants.length" class="text-sm opacity-50">Пока никто не присоединился</p>
+            <p v-if="errors['participant-card']" role="alert" class="text-sm text-rose-300">
+              {{ errors['participant-card'] }}
+            </p>
           </div>
         </div>
-        <div class="rounded-2xl border border-white/10 bg-white/5 p-5">
+        <div v-if="data.canManage" class="rounded-2xl border border-white/10 bg-white/5 p-5">
           <div class="flex flex-wrap items-center justify-between gap-2">
             <h2 class="font-bold">Пары</h2>
             <div class="flex gap-2">
@@ -786,10 +992,15 @@ function sendReminder() {
             </li>
             <li v-if="!data.pairs.length" class="opacity-50">Пары ещё не распределены</li>
           </ol>
+          <p v-if="errors.pairs" role="alert" class="mt-2 text-sm text-rose-300">{{ errors.pairs }}</p>
+        </div>
+        <div v-else class="rounded-2xl border border-white/10 bg-white/5 p-5 text-sm opacity-70">
+          <h2 class="font-bold">Пары</h2>
+          <p class="mt-2">Пары станут известны в персональной ссылке-приглашении после раскрытия.</p>
         </div>
       </div>
 
-      <div class="grid gap-4 lg:grid-cols-2">
+      <div v-if="data.canManage" class="grid gap-4 lg:grid-cols-2">
         <div class="rounded-2xl border border-white/10 bg-white/5 p-5">
           <h2 class="font-bold">История</h2>
           <div class="mt-3 grid gap-2 sm:grid-cols-3">
@@ -827,16 +1038,15 @@ function sendReminder() {
             <li v-if="!filteredEvents.length" class="opacity-50">Событий по фильтру нет</li>
           </ol>
         </div>
-        <div class="rounded-2xl border border-white/10 bg-white/5 p-5">
-          <h2 class="font-bold">Уведомления об изменениях карточек</h2>
-          <ol class="mt-3 grid gap-2 text-sm opacity-70">
-            <li v-for="item in notifications" :key="item.id">{{ item.created_at }} · {{ notificationText(item) }}</li>
-            <li v-if="!notifications.length" class="opacity-50">Карточки ещё не менялись</li>
-          </ol>
-        </div>
+        <NotificationsPanel
+          :game-id="gameToken"
+          :game-token="gameToken"
+          title="Уведомления об изменениях"
+          :show-names="true"
+        />
       </div>
 
-      <div class="rounded-2xl border border-white/10 bg-white/5 p-5">
+      <div v-if="data.canManage" class="rounded-2xl border border-white/10 bg-white/5 p-5">
         <h2 class="font-bold">Массовые напоминания</h2>
         <p class="mt-1 text-sm opacity-60">До 1000 символов, статусы доставки и защита от повторов</p>
         <form class="mt-4 grid gap-2" @submit.prevent="sendReminder">
@@ -845,11 +1055,13 @@ function sendReminder() {
             maxlength="1000"
             rows="3"
             placeholder="Текст напоминания"
+            aria-label="Текст напоминания"
             class="w-full rounded-xl border border-white/15 bg-white/5 px-4 py-2 text-sm outline-none placeholder:text-current/40 focus:border-white/40"
           ></textarea>
           <div class="flex flex-wrap items-center justify-between gap-2">
             <select
               v-model="reminderRecipients"
+              aria-label="Получатели напоминания"
               multiple
               class="min-w-48 flex-1 rounded-xl border border-white/15 bg-slate-900/80 px-3 py-2 text-sm outline-none"
             >
@@ -873,6 +1085,7 @@ function sendReminder() {
           </li>
           <li v-if="!reminders.length" class="opacity-50">Напоминаний пока нет</li>
         </ul>
+        <p v-if="errors.reminder" role="alert" class="mt-2 text-sm text-rose-300">{{ errors.reminder }}</p>
       </div>
     </div>
   </section>

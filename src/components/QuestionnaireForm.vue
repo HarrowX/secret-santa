@@ -21,6 +21,18 @@ const props = defineProps({
 const emit = defineEmits(['save'])
 
 const values = ref({})
+const errors = ref({})
+
+function toArray(value) {
+  if (Array.isArray(value)) return value.map(String)
+  if (typeof value === 'string') {
+    return value
+      .split(',')
+      .map((item) => item.trim())
+      .filter(Boolean)
+  }
+  return []
+}
 
 watch(
   () => [props.questions, props.answers],
@@ -28,42 +40,73 @@ watch(
     const next = {}
     for (const answer of props.answers) next[answer.question_id] = answer.value ?? ''
     for (const question of props.questions) {
-      if (next[question.id] === undefined) next[question.id] = ''
+      if (next[question.id] === undefined) next[question.id] = question.type === 'multi' ? [] : ''
+      else if (question.type === 'multi') next[question.id] = toArray(next[question.id])
+      else if (Array.isArray(next[question.id])) next[question.id] = next[question.id].join(', ')
     }
     values.value = next
+    errors.value = {}
   },
   { immediate: true, deep: true },
 )
 
 function options(question) {
-  return String(question.hint ?? '')
+  if (Array.isArray(question.options)) return question.options.map(String)
+  const hint = question.hint
+  if (Array.isArray(hint)) return hint.map(String)
+  if (typeof hint !== 'string') return []
+  const trimmed = hint.trim()
+  if (trimmed.startsWith('[')) {
+    try {
+      const parsed = JSON.parse(trimmed)
+      if (Array.isArray(parsed)) return parsed.map(String)
+    } catch {
+      return trimmed
+        .split(',')
+        .map((item) => item.trim())
+        .filter(Boolean)
+    }
+  }
+  return trimmed
     .split(',')
     .map((item) => item.trim())
     .filter(Boolean)
 }
 
 function checked(questionId, option) {
-  return String(values.value[questionId] ?? '')
-    .split(',')
-    .map((item) => item.trim())
-    .includes(option)
+  return toArray(values.value[questionId]).includes(option)
 }
 
 function toggle(questionId, option) {
-  const current = String(values.value[questionId] ?? '')
-    .split(',')
-    .map((item) => item.trim())
-    .filter(Boolean)
-  const next = checked(questionId, option) ? current.filter((item) => item !== option) : [...current, option]
-  values.value[questionId] = next.join(', ')
+  const current = toArray(values.value[questionId])
+  values.value[questionId] = current.includes(option) ? current.filter((item) => item !== option) : [...current, option]
+  delete errors.value[questionId]
+}
+
+function isEmpty(question) {
+  if (question.type === 'multi') return !toArray(values.value[question.id]).length
+  return !String(values.value[question.id] ?? '').trim()
+}
+
+function validate() {
+  const next = {}
+  for (const question of props.questions) {
+    if (question.required && isEmpty(question)) next[question.id] = 'Ответьте на обязательный вопрос'
+  }
+  errors.value = next
+  return !Object.keys(next).length
 }
 
 function save() {
+  if (!props.editable || props.busy || !validate()) return
   emit(
     'save',
     props.questions.map((question) => ({
       questionId: question.id,
-      value: values.value[question.id] ?? '',
+      value:
+        question.type === 'multi'
+          ? toArray(values.value[question.id]).join(', ')
+          : String(values.value[question.id] ?? ''),
     })),
   )
 }
@@ -71,25 +114,35 @@ function save() {
 
 <template>
   <form v-if="questions.length" class="grid gap-3" @submit.prevent="save">
-    <label v-for="question in questions" :key="question.id" class="grid gap-1 text-sm">
-      <span class="font-semibold">
+    <div v-for="question in questions" :key="question.id" class="grid gap-1 text-sm">
+      <label :for="`question-${question.id}`" class="font-semibold">
         {{ question.title }}
         <span v-if="question.required" class="opacity-60">*</span>
+      </label>
+      <span v-if="question.hint && ['single', 'multi'].includes(question.type)" class="text-xs opacity-50">
+        Выберите подходящий вариант
       </span>
-      <span v-if="question.hint && !['single', 'multi'].includes(question.type)" class="text-xs opacity-50">{{
-        question.hint
-      }}</span>
+      <span v-else-if="question.hint" class="text-xs opacity-50">{{ question.hint }}</span>
+
       <input
         v-if="question.type === 'number'"
+        :id="`question-${question.id}`"
         v-model="values[question.id]"
         type="number"
+        :aria-label="question.title"
+        :aria-invalid="Boolean(errors[question.id])"
         class="rounded-xl border border-white/15 bg-white/5 px-4 py-2 text-sm outline-none focus:border-white/40 disabled:opacity-60"
+        :class="errors[question.id] ? 'border-rose-400' : ''"
         :disabled="!editable || busy"
       />
       <select
         v-else-if="question.type === 'boolean'"
+        :id="`question-${question.id}`"
         v-model="values[question.id]"
+        :aria-label="question.title"
+        :aria-invalid="Boolean(errors[question.id])"
         class="rounded-xl border border-white/15 bg-slate-900/80 px-4 py-2 text-sm outline-none focus:border-white/40 disabled:opacity-60"
+        :class="errors[question.id] ? 'border-rose-400' : ''"
         :disabled="!editable || busy"
       >
         <option value="">Не выбрано</option>
@@ -98,36 +151,57 @@ function save() {
       </select>
       <select
         v-else-if="question.type === 'single'"
+        :id="`question-${question.id}`"
         v-model="values[question.id]"
+        :aria-label="question.title"
+        :aria-invalid="Boolean(errors[question.id])"
         class="rounded-xl border border-white/15 bg-slate-900/80 px-4 py-2 text-sm outline-none focus:border-white/40 disabled:opacity-60"
+        :class="errors[question.id] ? 'border-rose-400' : ''"
         :disabled="!editable || busy"
       >
         <option value="">Не выбрано</option>
         <option v-for="option in options(question)" :key="option" :value="option">{{ option }}</option>
       </select>
-      <div v-else-if="question.type === 'multi'" class="flex flex-wrap gap-2">
-        <button
+      <fieldset
+        v-else-if="question.type === 'multi'"
+        role="group"
+        :aria-label="question.title"
+        class="flex flex-wrap gap-2 rounded-xl border border-white/10 p-2"
+      >
+        <legend class="sr-only">{{ question.title }}</legend>
+        <label
           v-for="option in options(question)"
           :key="option"
-          type="button"
-          class="rounded-full border px-3 py-1 text-xs transition disabled:opacity-60"
+          class="flex cursor-pointer items-center gap-2 rounded-full border px-3 py-1 text-xs transition"
           :class="checked(question.id, option) ? 'border-transparent' : 'border-white/20 opacity-70'"
-          :disabled="!editable || busy"
           :style="checked(question.id, option) ? { background: accent, color: '#0b1120' } : {}"
-          @click="toggle(question.id, option)"
         >
+          <input
+            type="checkbox"
+            class="h-3.5 w-3.5"
+            :checked="checked(question.id, option)"
+            :aria-label="`${question.title}: ${option}`"
+            :disabled="!editable || busy"
+            @change="toggle(question.id, option)"
+          />
           {{ option }}
-        </button>
-      </div>
+        </label>
+        <span v-if="!options(question).length" class="text-xs opacity-50">Варианты не заданы</span>
+      </fieldset>
       <input
         v-else
+        :id="`question-${question.id}`"
         v-model="values[question.id]"
         type="text"
         maxlength="2000"
-        class="rounded-xl border border-white/15 bg-white/5 px-4 py-2 text-sm outline-none focus:border-white/40 disabled:opacity-60"
+        :aria-label="question.title"
+        :aria-invalid="Boolean(errors[question.id])"
+        class="rounded-xl border border-white/15 bg-white/5 px-4 py-2 text-sm outline-none placeholder:text-current/40 focus:border-white/40 disabled:opacity-60"
+        :class="errors[question.id] ? 'border-rose-400' : ''"
         :disabled="!editable || busy"
       />
-    </label>
+      <p v-if="errors[question.id]" role="alert" class="text-xs text-rose-300">{{ errors[question.id] }}</p>
+    </div>
     <button
       v-if="editable"
       type="submit"

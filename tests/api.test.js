@@ -20,8 +20,9 @@ before(async () => {
 })
 
 beforeEach(async () => {
-  db.exec('DELETE FROM users; DELETE FROM games;')
+  db.exec('DELETE FROM users; DELETE FROM games; DELETE FROM rate_limits;')
   cookies.clear()
+  anonymousCsrf = null
   server = createApp().listen(0)
   await new Promise((resolve) => server.once('listening', resolve))
   base = `http://127.0.0.1:${server.address().port}/api`
@@ -46,25 +47,32 @@ function parseCookies(header) {
   return parsed
 }
 
+let anonymousCsrf = null
+
 function mergedCookies(headers) {
   const merged = new Map(cookies)
   for (const [name, value] of parseCookies(headers.Cookie ?? headers.cookie)) merged.set(name, value)
+  if (anonymousCsrf && !merged.has('santa_csrf')) merged.set('santa_csrf', anonymousCsrf)
   return merged
 }
 
-function saveCookies(response) {
+function saveCookies(response, noCookies = false) {
   const items = response.headers.getSetCookie?.() ?? []
   for (const item of items) {
     const [name, ...rest] = item.split(';')[0].trim().split('=')
     if (!name || !rest.length) continue
-    if (!rest.join('=') || /Max-Age=0/i.test(item)) cookies.delete(name)
-    else cookies.set(name, decodeURIComponent(rest.join('=')))
+    const value = decodeURIComponent(rest.join('='))
+    if (name === 'santa_csrf' && value) anonymousCsrf = value
+    if (noCookies) continue
+    if (!value || /Max-Age=0/i.test(item)) cookies.delete(name)
+    else cookies.set(name, value)
   }
 }
 
 async function request(method, target, body, headers = {}) {
   const noCookies = headers['x-test-no-cookies'] === true
   const merged = noCookies ? new Map() : mergedCookies(headers)
+  if (noCookies && anonymousCsrf) merged.set('santa_csrf', anonymousCsrf)
   const cookie = [...merged].map(([name, value]) => `${name}=${value}`).join('; ')
   const unsafe = !['GET', 'HEAD', 'OPTIONS'].includes(method)
   const { Cookie: _upperCookie, cookie: _lowerCookie, 'x-test-no-cookies': _noCookies, ...restHeaders } = headers
@@ -78,7 +86,7 @@ async function request(method, target, body, headers = {}) {
     },
     body: body === undefined ? undefined : JSON.stringify(body),
   })
-  saveCookies(response)
+  saveCookies(response, noCookies)
   const payload = await response.json().catch(() => null)
   const sessionCookie = (response.headers.getSetCookie?.() ?? []).find((item) => item.startsWith('santa_session='))
   return {
@@ -93,7 +101,13 @@ function cookieHeader(response) {
 }
 
 async function createGame(title = 'Тестовая игра', headers = {}) {
-  const response = await request('POST', '/games', { title, themeId: 'winter' }, headers)
+  const merged = mergedCookies(headers)
+  let authHeaders = headers
+  if (!merged.get('santa_session') && headers['x-test-no-cookies'] !== true) {
+    const session = await request('POST', '/auth/session', {})
+    authHeaders = { ...headers, ...cookieHeader(session) }
+  }
+  const response = await request('POST', '/games', { title, themeId: 'winter' }, authHeaders)
   assert.equal(response.status, 201)
   return response.body
 }
@@ -126,36 +140,49 @@ describe('API', () => {
     assert.ok(response.body.every((theme) => theme.glow))
   })
 
-  it('создаёт игру и возвращает её в списке', async () => {
-    const game = await createGame('Зима')
+  it('создаёт игру и возвращает её в списке только авторизованному владельцу', async () => {
+    const owner = await request('POST', '/auth/session', {})
+    const headers = cookieHeader(owner)
+    const game = await createGame('Зима', headers)
     assert.equal(game.theme_id, 'winter')
     assert.match(game.token, /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i)
 
-    const byToken = await request('GET', `/games/${game.token}`)
+    const byToken = await request('GET', `/games/${game.token}`, undefined, headers)
     assert.equal(byToken.status, 200)
     assert.equal(byToken.body.game.id, game.id)
 
-    const list = await request('GET', '/games')
+    const list = await request('GET', '/games', undefined, headers)
     assert.equal(list.status, 200)
     assert.equal(list.body.length, 1)
     assert.equal(list.body[0].participants_count, 0)
+    assert.equal('token' in list.body[0], false)
+
+    const unauthorized = await request('GET', '/games', undefined, { 'x-test-no-cookies': true })
+    assert.equal(unauthorized.status, 401)
   })
 
   it('сохраняет название, бюджет, дату, правила и тему игры', async () => {
-    const response = await request('POST', '/games', {
-      title: 'Подробная игра',
-      budget: '1 500 ₽',
-      exchangeDate: '2026-12-25',
-      rules: 'Без алкоголя',
-      themeId: 'space',
-    })
+    const owner = await request('POST', '/auth/session', {})
+    const headers = cookieHeader(owner)
+    const response = await request(
+      'POST',
+      '/games',
+      {
+        title: 'Подробная игра',
+        budget: '1 500 ₽',
+        exchangeDate: '2026-12-25',
+        rules: 'Без алкоголя',
+        themeId: 'space',
+      },
+      headers,
+    )
     assert.equal(response.status, 201)
     assert.equal(response.body.budget, '1 500 ₽')
     assert.equal(response.body.exchange_date, '2026-12-25')
     assert.equal(response.body.rules, 'Без алкоголя')
     assert.equal(response.body.theme_id, 'space')
 
-    const loaded = await request('GET', `/games/${response.body.token}`)
+    const loaded = await request('GET', `/games/${response.body.token}`, undefined, headers)
     assert.equal(loaded.status, 200)
     assert.equal(loaded.body.game.title, 'Подробная игра')
     assert.equal(loaded.body.game.rules, 'Без алкоголя')
@@ -168,8 +195,9 @@ describe('API', () => {
   })
 
   it('сохраняет карточку участника и привязывает её к пользователю', async () => {
-    const game = await createGame('Карточка')
-    const [person] = await addParticipants(game.token, ['Вика'])
+    const owner = await request('POST', '/auth/session', {})
+    const game = await createGame('Карточка', cookieHeader(owner))
+    const [person] = await addParticipants(game.token, ['Вика'], cookieHeader(owner))
     const session = await request('POST', '/auth/session', {})
 
     const patched = await request(
@@ -183,13 +211,13 @@ describe('API', () => {
         notes: 'Только не сладости',
         preferred: 'Аня',
       },
-      cookieHeader(session),
+      cookieHeader(owner),
     )
     assert.equal(patched.status, 200)
     assert.equal(patched.body.wishlist, 'Книги')
     assert.equal(patched.body.preferred, 'Аня')
 
-    const invite = await request('GET', `/games/${game.token}/invite`)
+    const invite = await request('GET', `/games/${game.token}/invite`, undefined, cookieHeader(owner))
     const token = invite.body.participants[0].invite_token
     const accepted = await request(
       'POST',
@@ -203,10 +231,13 @@ describe('API', () => {
     assert.equal(accepted.body.participant.notes, 'Только не сладости')
     assert.equal(accepted.body.participant.filled, 1)
 
-    const notifications = await request('GET', `/games/${game.token}/notifications`)
-    assert.ok(notifications.body.length >= 2)
-    assert.equal(notifications.body[0].kind, 'card_updated')
-    assert.equal(JSON.parse(notifications.body[0].payload).wishlist, 'Книги и настолки')
+    const notifications = await request('GET', `/games/${game.token}/notifications`, undefined, {
+      'x-invite-token': token,
+      'x-test-no-cookies': true,
+    })
+    assert.ok(notifications.body.length >= 1)
+    assert.ok(notifications.body.some((item) => item.kind === 'card_updated'))
+    assert.ok(notifications.body.some((item) => JSON.parse(item.payload).text === 'Карточка участника обновлена'))
   })
 
   it('добавляет участников списком и обрабатывает персональные приглашения', async () => {
@@ -228,6 +259,7 @@ describe('API', () => {
     assert.equal(opened.status, 200)
     assert.equal(opened.body.participant.name, 'Аня')
     assert.equal(opened.body.game.id, game.id)
+    assert.equal(opened.body.game.token, game.token)
 
     const accepted = await request('POST', `/invites/${person.invite_token}/accept`, {
       email: 'anya@example.test',
@@ -411,17 +443,50 @@ describe('API', () => {
     assert.equal(afterLogout.body.user, null)
   })
 
-  it('показывает пользователю его игры и раскрытый обмен', async () => {
+  it('показывает пользователю его игры и скрывает чувствительные данные обмена до раскрытия', async () => {
+    const owner = await request('POST', '/auth/session', {})
     const session = await request('POST', '/auth/session', {})
     const headers = cookieHeader(session)
-    const game = await createGame('Мой кабинет', { 'x-test-no-cookies': true })
-    const [person] = await addParticipants(game.token, ['Аня', 'Борис'])
-    const invite = await request('GET', `/games/${game.token}/invite`)
+    const game = await createGame('Мой кабинет', cookieHeader(owner))
+    const [person] = await addParticipants(game.token, ['Аня', 'Борис'], cookieHeader(owner))
+    const invite = await request('GET', `/games/${game.token}/invite`, undefined, cookieHeader(owner))
     const token = invite.body.participants[0].invite_token
-    const accepted = await request('POST', `/invites/${token}/accept`, { wishlist: 'Книги' }, headers)
+    const accepted = await request(
+      'POST',
+      `/invites/${token}/accept`,
+      { wishlist: 'Книги', address: 'Москва' },
+      headers,
+    )
     assert.equal(accepted.body.participant.user_id, session.body.user.id)
-    await request('POST', `/games/${game.token}/draw`)
-    await request('POST', `/games/${game.token}/reveal`, { fromId: person.id })
+
+    const receiverSession = await request('POST', '/auth/session', {})
+    const receiverHeaders = cookieHeader(receiverSession)
+    const receiverToken = invite.body.participants[1].invite_token
+    const receiverAccepted = await request('POST', `/invites/${receiverToken}/accept`, {}, receiverHeaders)
+    assert.equal(receiverAccepted.status, 200)
+
+    await request('POST', `/games/${game.token}/draw`, undefined, cookieHeader(owner))
+
+    const inviteHeaders = { ...headers, 'x-invite-token': token }
+    const receiverInviteHeaders = { ...receiverHeaders, 'x-invite-token': receiverToken }
+    const hiddenAnswers = await request('GET', `/games/${game.token}/recipient-answers`, undefined, inviteHeaders)
+    assert.equal(hiddenAnswers.status, 403)
+    const hiddenPair = await request('GET', `/games/${game.token}/my-pair`, undefined, receiverInviteHeaders)
+    assert.equal(hiddenPair.status, 200)
+    assert.equal(hiddenPair.body.revealed_at, null)
+    assert.ok(!('from_name' in hiddenPair.body))
+
+    const hidden = await request('GET', '/me/exchanges', undefined, headers)
+    assert.equal(hidden.status, 200)
+    assert.equal(hidden.body.length, 1)
+    assert.equal(hidden.body[0].receiver_id, null)
+    assert.equal(hidden.body[0].receiver_name, null)
+    assert.equal(hidden.body[0].wishlist, null)
+    assert.equal(hidden.body[0].address, null)
+    assert.equal(hidden.body[0].notes, null)
+    assert.equal(hidden.body[0].preferred, null)
+
+    await request('POST', `/games/${game.token}/reveal`, { fromId: person.id }, cookieHeader(owner))
 
     const myGames = await request('GET', '/me/games', undefined, headers)
     assert.equal(myGames.status, 200)
@@ -435,6 +500,16 @@ describe('API', () => {
     assert.equal(exchanges.body.length, 1)
     assert.equal(exchanges.body[0].receiver_name, 'Борис')
     assert.ok(exchanges.body[0].revealed_at)
+
+    const recipient = await request('GET', `/games/${game.token}/recipient-answers`, undefined, inviteHeaders)
+    assert.equal(recipient.status, 200)
+    assert.equal(recipient.body.participant.name, 'Борис')
+    assert.ok(Array.isArray(recipient.body.answers))
+
+    const revealedPair = await request('GET', `/games/${game.token}/my-pair`, undefined, receiverInviteHeaders)
+    assert.equal(revealedPair.status, 200)
+    assert.equal(revealedPair.body.from_name, 'Аня')
+    assert.equal(revealedPair.body.to_name, 'Борис')
 
     const unauthorized = await request('GET', '/me/games', undefined, { 'x-test-no-cookies': true })
     assert.equal(unauthorized.status, 401)
@@ -520,62 +595,98 @@ describe('API', () => {
   })
 
   it('проводит анкету участника с валидацией и лимитом вопросов', async () => {
-    const game = await createGame()
-    const people = await addParticipants(game.token, ['Аня', 'Борис'])
+    const owner = await request('POST', '/auth/session', {})
+    const headers = cookieHeader(owner)
+    const game = await createGame('Анкета', headers)
+    const people = await addParticipants(game.token, ['Аня', 'Борис'], headers)
 
-    const age = await request('POST', `/games/${game.token}/questions`, {
-      title: 'Возраст',
-      type: 'number',
-      required: true,
-      position: 1,
-    })
+    const age = await request(
+      'POST',
+      `/games/${game.token}/questions`,
+      {
+        title: 'Возраст',
+        type: 'number',
+        required: true,
+        position: 1,
+      },
+      headers,
+    )
     assert.equal(age.status, 201)
-    const hobbies = await request('POST', `/games/${game.token}/questions`, {
-      title: 'Хобби',
-      hint: 'Книги, Спорт',
-      type: 'multi',
-      position: 2,
-    })
+    const hobbies = await request(
+      'POST',
+      `/games/${game.token}/questions`,
+      {
+        title: 'Хобби',
+        hint: 'Книги, Спорт',
+        type: 'multi',
+        options: ['Книги', 'Спорт', 'Игры'],
+        position: 2,
+      },
+      headers,
+    )
     assert.equal(hobbies.status, 201)
 
-    const missing = await request('PUT', `/games/${game.token}/participants/${people[0].id}/answers`, {
-      answers: [],
-    })
+    const missing = await request(
+      'PUT',
+      `/games/${game.token}/participants/${people[0].id}/answers`,
+      {
+        answers: [],
+      },
+      { 'x-invite-token': people[0].invite_token, 'x-test-no-cookies': true },
+    )
     assert.equal(missing.status, 400)
     assert.match(missing.body.error.message, /обязателен/)
 
-    const invalid = await request('PUT', `/games/${game.token}/participants/${people[0].id}/answers`, {
-      answers: [{ questionId: age.body.id, value: 'тридцать' }],
-    })
+    const invalid = await request(
+      'PUT',
+      `/games/${game.token}/participants/${people[0].id}/answers`,
+      {
+        answers: [{ questionId: age.body.id, value: 'тридцать' }],
+      },
+      { 'x-invite-token': people[0].invite_token, 'x-test-no-cookies': true },
+    )
     assert.equal(invalid.status, 400)
     assert.match(invalid.body.error.message, /требует число/)
 
-    const saved = await request('PUT', `/games/${game.token}/participants/${people[0].id}/answers`, {
-      answers: [
-        { questionId: age.body.id, value: '30' },
-        { questionId: hobbies.body.id, value: 'Книги, Спорт' },
-      ],
-    })
+    const saved = await request(
+      'PUT',
+      `/games/${game.token}/participants/${people[0].id}/answers`,
+      {
+        answers: [
+          { questionId: age.body.id, value: '30' },
+          { questionId: hobbies.body.id, value: 'Книги,Спорт' },
+        ],
+      },
+      { 'x-invite-token': people[0].invite_token, 'x-test-no-cookies': true },
+    )
     assert.equal(saved.status, 200)
     assert.equal(saved.body.length, 2)
 
-    const mine = await request('GET', `/games/${game.token}/participants/${people[0].id}/answers`)
+    const mine = await request('GET', `/games/${game.token}/participants/${people[0].id}/answers`, undefined, {
+      'x-invite-token': people[0].invite_token,
+      'x-test-no-cookies': true,
+    })
     assert.equal(mine.body.length, 2)
     assert.equal(mine.body[0].value, '30')
 
-    const all = await request('GET', `/games/${game.token}/answers`)
+    const all = await request('GET', `/games/${game.token}/answers`, undefined, headers)
     assert.equal(all.body.length, 2)
     assert.equal(all.body[0].question_title, 'Возраст')
     assert.equal(all.body[0].participant_name, 'Аня')
 
     for (let index = 2; index < 10; index += 1) {
-      const extra = await request('POST', `/games/${game.token}/questions`, {
-        title: `Вопрос ${index}`,
-        position: index,
-      })
+      const extra = await request(
+        'POST',
+        `/games/${game.token}/questions`,
+        {
+          title: `Вопрос ${index}`,
+          position: index,
+        },
+        headers,
+      )
       assert.equal(extra.status, 201)
     }
-    const limit = await request('POST', `/games/${game.token}/questions`, { title: 'Одиннадцатый' })
+    const limit = await request('POST', `/games/${game.token}/questions`, { title: 'Одиннадцатый' }, headers)
     assert.equal(limit.status, 400)
     assert.match(limit.body.error.message, /10 вопросов/)
   })
@@ -589,7 +700,10 @@ describe('API', () => {
     assert.match(invite.body.url, /https:\/\/santa\.local\/organizer\//)
 
     const pending = await request('GET', `/games/${game.token}/organizers`, undefined, cookieHeader(owner))
-    assert.ok(pending.body.some((organizer) => organizer.url === invite.body.url))
+    assert.ok(pending.body.some((organizer) => organizer.id === invite.body.id && organizer.status === 'pending'))
+    assert.ok(pending.body.every((organizer) => !('user_token' in organizer)))
+    assert.ok(pending.body.every((organizer) => !('user_email' in organizer)))
+    assert.ok(pending.body.every((organizer) => !('invited_token' in organizer)))
     const earlyOwnerRemoval = await request(
       'DELETE',
       `/games/${game.token}/organizers/${pending.body[0].id}`,
@@ -618,16 +732,18 @@ describe('API', () => {
       cookieHeader(owner),
     )
     assert.equal(firstRemoval.status, 200)
-    const lastRemoval = await request(
+    const remaining = await request('GET', `/games/${game.token}/organizers`, undefined, cookieHeader(session))
+    const lastAccepted = remaining.body.find((item) => item.status === 'accepted')
+    const removePending = await request(
       'DELETE',
-      `/games/${game.token}/organizers/${organizers.body[1].id}`,
+      `/games/${game.token}/organizers/${third.body.id}`,
       undefined,
       cookieHeader(session),
     )
-    assert.equal(lastRemoval.status, 200)
+    assert.equal(removePending.status, 200)
     const guard = await request(
       'DELETE',
-      `/games/${game.token}/organizers/${third.body.id}`,
+      `/games/${game.token}/organizers/${lastAccepted.id}`,
       undefined,
       cookieHeader(session),
     )
@@ -647,10 +763,12 @@ describe('API', () => {
         title: 'Что подарить?',
         type: 'single',
         required: true,
+        options: ['Книги', 'Настолки'],
       },
       cookieHeader(owner),
     )
     assert.equal(question.status, 201)
+    assert.deepEqual(question.body.options, ['Книги', 'Настолки'])
     const updated = await request(
       'PATCH',
       `/games/${game.token}/questions/${question.body.id}`,
@@ -693,10 +811,14 @@ describe('API', () => {
       cookieHeader(owner),
     )
     assert.equal(tenant.status, 201)
-    const resolved = await request('GET', '/tenants/company')
+    const resolved = await request('GET', '/tenants/company', undefined, cookieHeader(owner))
+    assert.equal(resolved.status, 200)
     assert.equal(resolved.body.game.title, game.title)
     const current = await request('GET', '/tenants/current')
     assert.equal(current.body.tenant, null)
+    const tenantList = await request('GET', '/tenants', undefined, cookieHeader(owner))
+    assert.equal(tenantList.status, 200)
+    assert.ok(tenantList.body.some((item) => item.slug === 'company'))
 
     const invalid = await request('POST', '/tenants', { slug: 'bad slug', gameId: game.id }, cookieHeader(owner))
     assert.equal(invalid.status, 400)
@@ -747,7 +869,15 @@ describe('API', () => {
       INSERT OR IGNORE INTO past_pairs (game_id, from_token, to_token)
       VALUES (?, ?, ?)
     `,
-    ).run(current.id, boris.body.user.token, anna.body.user.token)
+    ).run(
+      current.id,
+      db
+        .prepare('SELECT identity_token FROM participants WHERE game_id = ? AND user_id = ?')
+        .get(current.id, boris.body.user.id).identity_token,
+      db
+        .prepare('SELECT identity_token FROM participants WHERE game_id = ? AND user_id = ?')
+        .get(current.id, anna.body.user.id).identity_token,
+    )
 
     const blocked = await request('POST', `/games/${current.id}/draw`, undefined, cookieHeader(anna))
     assert.equal(blocked.status, 409)
@@ -834,7 +964,7 @@ describe('API', () => {
       cookieHeader(outsider),
     )
     assert.equal(denied.status, 403)
-    assert.match(denied.body.error.message, /организатор/)
+    assert.match(denied.body.error.message, /организатор|доступ/i)
 
     const anonymous = await request('POST', `/games/${game.token}/participants`, {
       name: 'Без сессии',
@@ -850,7 +980,10 @@ describe('API', () => {
     const byId = await request('GET', `/games/${game.id}`, undefined, { 'x-test-no-cookies': true })
     assert.equal(byId.status, 403)
 
-    const byToken = await request('GET', `/games/${game.token}`, undefined, { 'x-test-no-cookies': true })
+    const byToken = await request('GET', `/games/${game.token}`, undefined, {
+      'x-game-token': game.token,
+      'x-test-no-cookies': true,
+    })
     assert.equal(byToken.status, 200)
     assert.equal(byToken.body.canManage, false)
     assert.deepEqual(byToken.body.pairs, [])
@@ -858,7 +991,10 @@ describe('API', () => {
     assert.ok(byToken.body.participants.every((person) => !('wishlist' in person)))
 
     for (const path of ['pairs', 'answers', 'events', 'exclusions', 'invite']) {
-      const denied = await request('GET', `/games/${game.token}/${path}`, undefined, { 'x-test-no-cookies': true })
+      const denied = await request('GET', `/games/${game.token}/${path}`, undefined, {
+        'x-game-token': game.token,
+        'x-test-no-cookies': true,
+      })
       assert.equal(denied.status, 403)
     }
 

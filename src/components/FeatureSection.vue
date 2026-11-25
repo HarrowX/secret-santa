@@ -1,11 +1,32 @@
 <script setup>
+import { onMounted, ref } from 'vue'
 import { domain } from '../config'
+import { api } from '../lib/api'
 
 defineProps({
   accent: String,
 })
 
 const emit = defineEmits(['open-demo'])
+
+const stages = ref([])
+const metricsError = ref('')
+const loaded = ref(false)
+
+function numberText(value) {
+  return new Intl.NumberFormat('ru-RU').format(Number(value) || 0)
+}
+
+onMounted(async () => {
+  try {
+    const summary = await api.metrics()
+    stages.value = Array.isArray(summary?.stages) ? summary.stages : []
+  } catch {
+    metricsError.value = 'Метрики пока недоступны'
+  } finally {
+    loaded.value = true
+  }
+})
 
 const features = [
   {
@@ -44,21 +65,18 @@ const features = [
 <template>
   <section id="features" class="mx-auto max-w-6xl px-5 py-14">
     <div class="rounded-3xl border border-white/10 bg-white/5 p-6 backdrop-blur">
-      <div class="grid gap-6 text-center sm:grid-cols-3">
-        <div>
-          <p class="text-3xl font-black" :style="{ color: accent }">2,4 млн+</p>
-          <p class="mt-1 text-sm opacity-65">участников в 2025 году</p>
-        </div>
-        <div>
-          <p class="text-3xl font-black" :style="{ color: accent }">230 тыс+</p>
-          <p class="mt-1 text-sm opacity-65">созданных игр</p>
-        </div>
-        <div>
-          <p class="text-3xl font-black" :style="{ color: accent }">Каждый 3-й</p>
-          <p class="mt-1 text-sm opacity-65">организатор вернулся снова</p>
+      <p class="text-xs font-semibold uppercase tracking-[0.3em] opacity-60">Воронка игр на этом сайте</p>
+      <div v-if="stages.length" class="mt-4 grid gap-6 text-center sm:grid-cols-3 lg:grid-cols-5">
+        <div v-for="stage in stages" :key="stage.key">
+          <p class="text-3xl font-black" :style="{ color: accent }">{{ numberText(stage.count) }}</p>
+          <p class="mt-1 text-sm opacity-65">{{ stage.title }}</p>
+          <p class="mt-1 text-xs opacity-50">{{ stage.conversion }}% от созданных игр</p>
         </div>
       </div>
-      <p class="mt-4 text-center text-xs opacity-50">Цифры с сайта-источника приведены для демонстрации стиля.</p>
+      <p v-else-if="loaded" class="mt-4 text-center text-sm opacity-60">
+        {{ metricsError || 'Пока нет данных по воронке' }}
+      </p>
+      <p v-else class="mt-4 text-center text-sm opacity-60">Загружаем метрики…</p>
     </div>
 
     <div class="mt-14 flex flex-wrap items-end justify-between gap-4">

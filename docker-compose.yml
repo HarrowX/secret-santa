@@ -2,6 +2,11 @@ services:
   app:
     build: .
     restart: unless-stopped
+    init: true
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
     env_file: .env
     environment:
       NODE_ENV: production
@@ -11,14 +16,28 @@ services:
       TRUST_PROXY: "true"
     volumes:
       - santa-data:/data
+      - backups-data:/data/backups
     expose:
       - "3000"
+    logging: &logging
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
 
   proxy:
     build:
       context: .
       dockerfile: Dockerfile.caddy
     restart: unless-stopped
+    init: true
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    cap_add:
+      - NET_BIND_SERVICE
+    env_file: .env
     environment:
       DOMAIN: ${DOMAIN:-santa.local}
       CLOUDFLARE_API_TOKEN: ${CLOUDFLARE_API_TOKEN:-}
@@ -30,26 +49,47 @@ services:
       - caddy-config:/config
       - ./${CADDYFILE:-Caddyfile.internal}:/etc/caddy/Caddyfile:ro
     depends_on:
-      - app
+      app:
+        condition: service_healthy
+    logging: *logging
 
   backup:
     build: .
     restart: unless-stopped
+    init: true
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
     env_file: .env
     environment:
+      NODE_ENV: production
       DB_PATH: /data/secret-santa.sqlite
       BACKUP_DIR: /data/backups
       BACKUP_INTERVAL_SECONDS: ${BACKUP_INTERVAL_SECONDS:-86400}
     volumes:
       - santa-data:/data
+      - backups-data:/data/backups
     entrypoint:
       - sh
       - -c
-      - while true; do npm run db:backup; sleep "$${BACKUP_INTERVAL_SECONDS}"; done
+      - |
+        while true; do
+          if npm run db:backup; then
+            echo "backup cycle ok" >&2
+          else
+            status=$$?
+            echo "backup cycle failed with exit $$status" >&2
+          fi
+          sleep "$${BACKUP_INTERVAL_SECONDS:-86400}"
+        done
     depends_on:
-      - app
+      app:
+        condition: service_healthy
+    logging: *logging
 
 volumes:
   santa-data:
+  backups-data:
   caddy-data:
   caddy-config:

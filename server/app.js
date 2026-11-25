@@ -1,5 +1,6 @@
 import express from 'express'
 import path from 'node:path'
+import { createHash, timingSafeEqual } from 'node:crypto'
 import { fileURLToPath } from 'node:url'
 import { authMiddleware } from './middlewares/auth.js'
 import { csrfMiddleware } from './middlewares/csrf.js'
@@ -16,10 +17,18 @@ import { randomizerRouter } from './routes/randomizer.js'
 import { supportRouter } from './routes/support.js'
 import { tenantsRouter } from './routes/tenants.js'
 import { themesRouter } from './routes/themes.js'
+import { db } from './db.js'
 import { metricsSummary } from './services/metrics.js'
 import { latestChecks, recordError, recentErrors } from './services/monitoring.js'
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
+
+function tokensEqual(provided, expected) {
+  if (typeof provided !== 'string' || typeof expected !== 'string' || expected.length === 0) return false
+  const left = createHash('sha256').update(provided).digest()
+  const right = createHash('sha256').update(expected).digest()
+  return timingSafeEqual(left, right)
+}
 
 export function createApp() {
   const app = express()
@@ -31,7 +40,35 @@ export function createApp() {
   app.use(csrfMiddleware)
   app.use(tenantMiddleware)
 
-  app.get('/api/health', (_req, res) => {
+  app.get('/api/health', (req, res) => {
+    let databaseOk = false
+    try {
+      db.prepare('SELECT 1').get()
+      databaseOk = true
+    } catch (error) {
+      databaseOk = false
+      try {
+        recordError({ type: 'health', path: '/api/health', name: error?.name || 'DatabaseError' })
+      } catch (recordErrorFailure) {
+        console.error(
+          JSON.stringify({ level: 'error', msg: 'health_error_record_failed', name: recordErrorFailure?.name }),
+        )
+      }
+    }
+
+    if (!databaseOk) {
+      res.status(503).json({ status: 'error', database: 'error' })
+      return
+    }
+    if (req.query.deep === '1') {
+      res.json({
+        status: 'ok',
+        database: 'ok',
+        uptime: Math.round(process.uptime()),
+        checkedAt: new Date().toISOString(),
+      })
+      return
+    }
     res.json({ status: 'ok' })
   })
 
@@ -45,7 +82,7 @@ export function createApp() {
 
   app.get('/api/monitoring', (req, res) => {
     const token = process.env.MONITORING_TOKEN
-    if (!token || req.get('x-monitoring-token') !== token) fail(401, 'Нет доступа к мониторингу')
+    if (!tokensEqual(req.get('x-monitoring-token'), token)) fail(401, 'Нет доступа к мониторингу')
     res.json({ errors: recentErrors(), checks: latestChecks() })
   })
 

@@ -40,8 +40,6 @@ defineProps({
         </div>
       </div>
     </div>
-    <div class="border-t border-white/10 px-5 py-5 text-center text-xs opacity-50">
-      © 2014–2026 Тайный Санта · дизайн-прототип
-    </div>
+    <div class="border-t border-white/10 px-5 py-5 text-center text-xs opacity-50">© 2014–2026 Тайный Санта</div>
   </footer>
 </template>

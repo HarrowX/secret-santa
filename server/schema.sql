@@ -38,6 +38,7 @@ CREATE TABLE IF NOT EXISTS participants (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   game_id INTEGER NOT NULL REFERENCES games(id) ON DELETE CASCADE,
   user_id INTEGER REFERENCES users(id) ON DELETE SET NULL,
+  identity_token TEXT,
   name TEXT NOT NULL,
   email TEXT,
   invite_token TEXT UNIQUE,
@@ -58,6 +59,7 @@ CREATE TABLE IF NOT EXISTS questions (
   title TEXT NOT NULL,
   hint TEXT,
   type TEXT NOT NULL CHECK (type IN ('text', 'number', 'boolean', 'single', 'multi')),
+  options TEXT,
   required INTEGER NOT NULL DEFAULT 0,
   position INTEGER NOT NULL DEFAULT 0
 );
@@ -185,6 +187,16 @@ CREATE TABLE IF NOT EXISTS metrics (
   created_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
 
+CREATE TABLE IF NOT EXISTS monitoring_errors (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  created_at TEXT NOT NULL DEFAULT (datetime('now')),
+  type TEXT NOT NULL,
+  host TEXT,
+  path TEXT,
+  name TEXT,
+  message TEXT
+);
+
 CREATE TABLE IF NOT EXISTS monitoring_checks (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   host TEXT NOT NULL,
@@ -195,11 +207,23 @@ CREATE TABLE IF NOT EXISTS monitoring_checks (
   created_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
 
+CREATE TABLE IF NOT EXISTS rate_limits (
+  key TEXT NOT NULL,
+  window_start INTEGER NOT NULL,
+  count INTEGER NOT NULL DEFAULT 0,
+  updated_at TEXT NOT NULL DEFAULT (datetime('now')),
+  PRIMARY KEY (key, window_start)
+);
+
 CREATE INDEX IF NOT EXISTS idx_games_token ON games(token);
 CREATE INDEX IF NOT EXISTS idx_participants_game ON participants(game_id);
+CREATE INDEX IF NOT EXISTS idx_participants_identity ON participants(identity_token);
 CREATE INDEX IF NOT EXISTS idx_pairs_game ON pairs(game_id);
 CREATE INDEX IF NOT EXISTS idx_events_game ON events(game_id);
 CREATE INDEX IF NOT EXISTS idx_messages_game ON messages(game_id);
 CREATE INDEX IF NOT EXISTS idx_chat_game ON chat_messages(game_id);
 CREATE INDEX IF NOT EXISTS idx_metrics_kind ON metrics(kind);
+CREATE INDEX IF NOT EXISTS idx_monitoring_errors_created_at ON monitoring_errors(created_at);
 CREATE INDEX IF NOT EXISTS idx_monitoring_host ON monitoring_checks(host);
+CREATE INDEX IF NOT EXISTS idx_monitoring_checks_created_at ON monitoring_checks(created_at);
+CREATE INDEX IF NOT EXISTS idx_rate_limits_updated ON rate_limits(updated_at);

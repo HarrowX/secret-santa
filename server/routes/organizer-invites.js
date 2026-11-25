@@ -1,10 +1,12 @@
 import { Router } from 'express'
 import { db } from '../db.js'
 import { fail, HttpError } from '../http-error.js'
+import { rateLimit } from '../middlewares/rateLimit.js'
 
 export const organizerInvitesRouter = Router()
+const organizerInviteRateLimit = rateLimit({ name: 'organizer-invite-accept', windowMs: 60_000, max: 20 })
 
-organizerInvitesRouter.post('/:token/accept', (req, res) => {
+organizerInvitesRouter.post('/:token/accept', organizerInviteRateLimit, (req, res) => {
   if (!req.user) fail(401, 'Нужен активный вход')
 
   const invite = db
@@ -31,7 +33,7 @@ organizerInvitesRouter.post('/:token/accept', (req, res) => {
       invite.game_id,
       'settings',
       'Принято приглашение организатора',
-      'организатор',
+      String(req.user.id),
     )
   })()
 

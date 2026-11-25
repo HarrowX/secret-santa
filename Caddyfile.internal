@@ -1,11 +1,28 @@
+# За trusted_proxies см. Caddyfile.wildcard; по умолчанию цепочка X-Forwarded-For
+# сохраняется Caddy: он дописывает адрес клиента, а не перезаписывает заголовок.
 {$DOMAIN}, *.{$DOMAIN} {
   tls internal
   encode zstd gzip
 
+  header {
+    X-Content-Type-Options "nosniff"
+    Referrer-Policy "strict-origin-when-cross-origin"
+    X-Frame-Options "SAMEORIGIN"
+    -Server
+  }
+
+  log {
+    output stdout
+  }
+
+  # Активная проверка upstream: /api/health делает SELECT 1 и возвращает 503 при БД-ошибке.
   reverse_proxy app:3000 {
+    health_uri /api/health
+    health_interval 10s
+    health_timeout 2s
+    health_status 200
     header_up Host {http.request.host}
     header_up X-Forwarded-Host {http.request.host}
     header_up X-Forwarded-Proto {http.request.scheme}
-    header_up X-Forwarded-For {http.request.remote.host}
   }
 }

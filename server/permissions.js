@@ -8,54 +8,47 @@ function gameById(gameId) {
   return game
 }
 
-function hasOrganizer(gameId) {
-  return db.prepare('SELECT 1 FROM organizers WHERE game_id = ? AND user_id IS NOT NULL LIMIT 1').get(gameId)
+function assertTenant(req, gameId) {
+  if (req.tenant?.game && req.tenant.game.id !== gameId) {
+    fail(403, 'Игра недоступна на этом поддомене')
+  }
 }
 
-function isOrganizer(gameId, user) {
+export function isOrganizer(gameId, user) {
   if (!user) return false
-  return db.prepare('SELECT 1 FROM organizers WHERE game_id = ? AND user_id = ?').get(gameId, user.id)
+  return Boolean(db.prepare('SELECT 1 FROM organizers WHERE game_id = ? AND user_id = ?').get(gameId, user.id))
 }
 
-function gameTokenFromRequest(req, game) {
-  if (req.params?.id === game.token) return game.token
-  return req.get?.('x-game-token') ?? req.query?.gameToken ?? req.body?.gameToken ?? null
+export function hasAcceptedOrganizer(gameId) {
+  return Boolean(db.prepare('SELECT 1 FROM organizers WHERE game_id = ? AND user_id IS NOT NULL LIMIT 1').get(gameId))
 }
 
-function inviteTokenFromRequest(req) {
-  return req.get?.('x-invite-token') ?? req.query?.inviteToken ?? req.body?.inviteToken ?? null
+export function gameTokenFromRequest(req) {
+  return req.get?.('x-game-token') ?? null
+}
+
+export function inviteTokenFromRequest(req) {
+  return req.get?.('x-invite-token') ?? null
 }
 
 export function requireOrganizer(gameId, user) {
-  if (hasOrganizer(gameId) && !isOrganizer(gameId, user)) {
+  if (!isOrganizer(gameId, user)) {
     fail(403, 'Только организатор может выполнять это действие')
   }
 }
 
-export function canManageGame(req, gameId) {
-  const game = gameById(gameId)
-  if (isOrganizer(gameId, req.user)) return true
-  if (hasOrganizer(gameId)) return false
-  return gameTokenFromRequest(req, game) === game.token
-}
-
 export function requireGameAccess(req, gameId) {
   const game = gameById(gameId)
-  if (req.tenant?.game && req.tenant.game.id !== gameId) {
-    fail(403, 'Игра недоступна на этом поддомене')
-  }
+  assertTenant(req, gameId)
   if (isOrganizer(gameId, req.user)) return game
-  if (gameTokenFromRequest(req, game) === game.token) return game
-  if (hasOrganizer(gameId)) fail(403, 'Только организатор может выполнять это действие')
-  fail(403, 'Нужна ссылка на игру')
+  if (gameTokenFromRequest(req) === game.token) return game
+  fail(403, 'Нет доступа к игре')
 }
 
 export function requireParticipantAccess(req, gameId, participantId) {
   const game = gameById(gameId)
-  if (req.tenant?.game && req.tenant.game.id !== gameId) {
-    fail(403, 'Игра недоступна на этом поддомене')
-  }
-  if (canManageGame(req, gameId)) return game
+  assertTenant(req, gameId)
+  if (isOrganizer(gameId, req.user)) return game
 
   const inviteToken = inviteTokenFromRequest(req)
   const participant = db
@@ -67,10 +60,8 @@ export function requireParticipantAccess(req, gameId, participantId) {
 
 export function requireQuestionAccess(req, gameId) {
   gameById(gameId)
-  if (req.tenant?.game && req.tenant.game.id !== gameId) {
-    fail(403, 'Игра недоступна на этом поддомене')
-  }
-  if (canManageGame(req, gameId)) return
+  assertTenant(req, gameId)
+  if (isOrganizer(gameId, req.user)) return
   const inviteToken = inviteTokenFromRequest(req)
   if (
     !inviteToken ||
@@ -80,6 +71,11 @@ export function requireQuestionAccess(req, gameId) {
   }
 }
 
-export function hasAcceptedOrganizer(gameId) {
-  return Boolean(hasOrganizer(gameId))
+export function participantByInvite(req, gameId) {
+  gameById(gameId)
+  assertTenant(req, gameId)
+  const token = inviteTokenFromRequest(req)
+  const participant = db.prepare('SELECT * FROM participants WHERE game_id = ? AND invite_token = ?').get(gameId, token)
+  if (!participant) fail(403, 'Нет доступа к игре')
+  return participant
 }

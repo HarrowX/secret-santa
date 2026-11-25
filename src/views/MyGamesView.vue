@@ -4,11 +4,14 @@ import { useRouter } from 'vue-router'
 import { api, ensureSession } from '../lib/api'
 import { usePreferencesStore } from '../stores/preferences'
 import ChatPanel from '../components/ChatPanel.vue'
+import QuestionnaireForm from '../components/QuestionnaireForm.vue'
 
 const router = useRouter()
 const preferences = usePreferencesStore()
 const games = ref([])
 const exchanges = ref([])
+const questionsByGame = ref({})
+const recipientByGame = ref({})
 const user = ref(null)
 const email = ref('')
 const password = ref('')
@@ -16,6 +19,43 @@ const error = ref('')
 const authError = ref('')
 const loading = ref(true)
 const authBusy = ref(false)
+
+function normalizeAnswers(data) {
+  const rows = Array.isArray(data) ? data : data?.answers
+  if (!Array.isArray(rows)) return []
+  return rows.map((item) => ({
+    question_id: item.question_id ?? item.questionId,
+    value: item.value ?? '',
+  }))
+}
+
+function recipientCard(exchange) {
+  const data = recipientByGame.value[exchange.game_id]
+  return data?.participant ?? data?.card ?? null
+}
+
+function recipientAnswers(exchange) {
+  return normalizeAnswers(recipientByGame.value[exchange.game_id])
+}
+
+async function loadRecipientData() {
+  const revealed = exchanges.value.filter((item) => item.revealed_at && item.invite_token)
+  await Promise.all(
+    revealed.map(async (exchange) => {
+      try {
+        const [questions, recipient] = await Promise.all([
+          api.games.questions(exchange.game_id, exchange.invite_token, exchange.game_token),
+          api.games.recipientAnswers(exchange.game_id, exchange.invite_token, exchange.game_token),
+        ])
+        questionsByGame.value[exchange.game_id] = questions
+        recipientByGame.value[exchange.game_id] = recipient
+      } catch {
+        questionsByGame.value[exchange.game_id] = []
+        recipientByGame.value[exchange.game_id] = null
+      }
+    }),
+  )
+}
 
 async function load() {
   loading.value = true
@@ -26,6 +66,9 @@ async function load() {
     user.value = session.user
     email.value = session.user?.email ?? email.value
     ;[games.value, exchanges.value] = await Promise.all([api.me.games(), api.me.exchanges()])
+    questionsByGame.value = {}
+    recipientByGame.value = {}
+    await loadRecipientData()
   } catch (requestError) {
     error.value = requestError.message
   } finally {
@@ -80,6 +123,21 @@ function roleLabel(role) {
   return 'участник'
 }
 
+function chatContacts(exchange) {
+  if (!exchange.revealed_at) return []
+  const contacts = []
+  if (exchange.receiver_id) {
+    contacts.push({
+      id: exchange.receiver_id,
+      name: exchange.receiver_name ?? 'Получатель',
+      direction: 'receiver',
+    })
+  }
+  const santaId = exchange.sender_id ?? exchange.giver_id ?? exchange.from_id
+  if (santaId) contacts.push({ id: santaId, name: 'Санта', direction: 'santa' })
+  return contacts
+}
+
 load()
 </script>
 
@@ -112,6 +170,7 @@ load()
           required
           maxlength="160"
           placeholder="Email"
+          aria-label="Email"
           class="rounded-xl border border-white/15 bg-white/5 px-4 py-2 text-sm outline-none focus:border-white/40"
         />
         <input
@@ -121,6 +180,7 @@ load()
           minlength="6"
           maxlength="200"
           placeholder="Пароль от 6 символов"
+          aria-label="Пароль"
           class="rounded-xl border border-white/15 bg-white/5 px-4 py-2 text-sm outline-none focus:border-white/40"
         />
         <button
@@ -177,6 +237,7 @@ load()
               role="button"
               tabindex="0"
               class="mt-2 block truncate text-xs opacity-50 underline"
+              :aria-label="`Скопировать ссылку на игру ${game.title}`"
               @click.stop="copyLink(`/game/${game.token}`)"
               @keydown.enter.stop="copyLink(`/game/${game.token}`)"
             >
@@ -196,20 +257,37 @@ load()
             class="rounded-xl border border-white/10 bg-white/5 p-4 text-sm"
           >
             <p class="text-xs uppercase tracking-widest opacity-50">{{ exchange.title }}</p>
-            <p class="mt-2 font-bold" :style="{ color: preferences.theme.accent }">
-              Вы дарите: {{ exchange.receiver_name }}
-            </p>
-            <p v-if="!exchange.revealed_at" class="mt-2 text-xs opacity-60">
-              Карточка откроется после того, как организатор раскроет пару
+            <p v-if="!exchange.revealed_at" class="mt-2 font-bold" :style="{ color: preferences.theme.accent }">
+              Получатель станет известен после раскрытия пары
             </p>
             <template v-else>
+              <p class="mt-2 font-bold" :style="{ color: preferences.theme.accent }">
+                Вы дарите: {{ exchange.receiver_name ?? 'Получатель' }}
+              </p>
               <p v-if="exchange.wishlist" class="mt-2 opacity-80">Желания: {{ exchange.wishlist }}</p>
               <p v-if="exchange.address" class="mt-1 opacity-80">Адрес: {{ exchange.address }}</p>
               <p v-if="exchange.notes" class="mt-1 opacity-80">Заметки: {{ exchange.notes }}</p>
+              <div v-if="recipientCard(exchange)" class="mt-3 grid gap-1 opacity-75">
+                <p v-if="recipientCard(exchange).wishlist">Желания в анкете: {{ recipientCard(exchange).wishlist }}</p>
+                <p v-if="recipientCard(exchange).address">Адрес в анкете: {{ recipientCard(exchange).address }}</p>
+              </div>
+              <div v-if="recipientAnswers(exchange).length" class="mt-3">
+                <p class="text-xs font-semibold uppercase tracking-widest opacity-60">Анкета получателя</p>
+                <div class="mt-2">
+                  <QuestionnaireForm
+                    :questions="questionsByGame[exchange.game_id] ?? []"
+                    :answers="recipientAnswers(exchange)"
+                    :accent="preferences.theme.accent"
+                    :editable="false"
+                  />
+                </div>
+              </div>
               <ChatPanel
                 v-if="exchange.invite_token"
                 :game-token="exchange.game_token"
                 :invite-token="exchange.invite_token"
+                :contacts="chatContacts(exchange)"
+                :initial-to-id="exchange.receiver_id"
                 :accent="preferences.theme.accent"
               />
             </template>

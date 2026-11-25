@@ -10,8 +10,11 @@ function isUnsafeMethod(method) {
   return !['GET', 'HEAD', 'OPTIONS'].includes(method.toUpperCase())
 }
 
-function inviteHeaders(inviteToken) {
-  return inviteToken ? { 'x-invite-token': inviteToken } : {}
+function accessHeaders(inviteToken, gameToken) {
+  return {
+    ...(inviteToken ? { 'x-invite-token': inviteToken } : {}),
+    ...(gameToken ? { 'x-game-token': gameToken } : {}),
+  }
 }
 
 export class ApiError extends Error {
@@ -60,8 +63,14 @@ export const api = {
   },
   games: {
     list: () => request('/games'),
-    get: (id) => request(`/games/${encodeURIComponent(id)}`),
+    get: (id, gameToken) => request(`/games/${encodeURIComponent(id)}`, { headers: accessHeaders(null, gameToken) }),
     create: (body) => request('/games', { method: 'POST', body: JSON.stringify(body) }),
+    update: (id, body, gameToken) =>
+      request(`/games/${encodeURIComponent(id)}`, {
+        method: 'PATCH',
+        body: JSON.stringify(body),
+        headers: accessHeaders(null, gameToken),
+      }),
     addParticipant: (id, body) =>
       request(`/games/${encodeURIComponent(id)}/participants`, { method: 'POST', body: JSON.stringify(body) }),
     addParticipants: (id, body) =>
@@ -99,23 +108,33 @@ export const api = {
         method: 'POST',
         body: JSON.stringify({ fromId }),
       }),
-    pairs: (id) => request(`/games/${encodeURIComponent(id)}/pairs`),
+    pairs: (id, inviteToken, gameToken) =>
+      request(`/games/${encodeURIComponent(id)}/pairs`, { headers: accessHeaders(inviteToken, gameToken) }),
+    myPair: (id, inviteToken, gameToken) =>
+      request(`/games/${encodeURIComponent(id)}/my-pair`, { headers: accessHeaders(inviteToken, gameToken) }),
     events: (id) => request(`/games/${encodeURIComponent(id)}/events`),
-    notifications: (id) => request(`/games/${encodeURIComponent(id)}/notifications`),
-    questions: (id, inviteToken) =>
-      request(`/games/${encodeURIComponent(id)}/questions`, { headers: inviteHeaders(inviteToken) }),
+    notifications: (id, inviteToken, gameToken) =>
+      request(`/games/${encodeURIComponent(id)}/notifications`, { headers: accessHeaders(inviteToken, gameToken) }),
+    recipientAnswers: (id, inviteToken, gameToken) =>
+      request(`/games/${encodeURIComponent(id)}/recipient-answers`, {
+        headers: accessHeaders(inviteToken, gameToken),
+      }),
+    questions: (id, inviteToken, gameToken) =>
+      request(`/games/${encodeURIComponent(id)}/questions`, {
+        headers: accessHeaders(inviteToken, gameToken),
+      }),
     addQuestion: (id, body) =>
       request(`/games/${encodeURIComponent(id)}/questions`, { method: 'POST', body: JSON.stringify(body) }),
     answers: (id) => request(`/games/${encodeURIComponent(id)}/answers`),
-    participantAnswers: (id, participantId, inviteToken) =>
+    participantAnswers: (id, participantId, inviteToken, gameToken) =>
       request(`/games/${encodeURIComponent(id)}/participants/${participantId}/answers`, {
-        headers: inviteHeaders(inviteToken),
+        headers: accessHeaders(inviteToken, gameToken),
       }),
-    saveAnswers: (id, participantId, body, inviteToken) =>
+    saveAnswers: (id, participantId, body, inviteToken, gameToken) =>
       request(`/games/${encodeURIComponent(id)}/participants/${participantId}/answers`, {
         method: 'PUT',
         body: JSON.stringify(body),
-        headers: inviteHeaders(inviteToken),
+        headers: accessHeaders(inviteToken, gameToken),
       }),
     updateQuestion: (id, questionId, body) =>
       request(`/games/${encodeURIComponent(id)}/questions/${questionId}`, {
@@ -127,13 +146,17 @@ export const api = {
     messages: (id) => request(`/games/${encodeURIComponent(id)}/messages`),
     addMessage: (id, body) =>
       request(`/games/${encodeURIComponent(id)}/messages`, { method: 'POST', body: JSON.stringify(body) }),
-    chat: (id, inviteToken) =>
-      request(`/games/${encodeURIComponent(id)}/chat`, { headers: inviteHeaders(inviteToken) }),
-    sendChat: (id, body, inviteToken) =>
+    chat: (id, toId, inviteToken, gameToken) => {
+      const query = toId ? `?toId=${encodeURIComponent(toId)}` : ''
+      return request(`/games/${encodeURIComponent(id)}/chat${query}`, {
+        headers: accessHeaders(inviteToken, gameToken),
+      })
+    },
+    sendChat: (id, body, inviteToken, gameToken) =>
       request(`/games/${encodeURIComponent(id)}/chat`, {
         method: 'POST',
         body: JSON.stringify(body),
-        headers: inviteHeaders(inviteToken),
+        headers: accessHeaders(inviteToken, gameToken),
       }),
     reminders: (id) => request(`/games/${encodeURIComponent(id)}/reminders`),
     importPastPairs: (id, pastGameId) =>
@@ -186,8 +209,14 @@ export const api = {
     current: () => request('/tenants/current'),
     list: () => request('/tenants'),
     get: (slug) => request(`/tenants/${encodeURIComponent(slug)}`),
-    create: (body) => request('/tenants', { method: 'POST', body: JSON.stringify(body) }),
+    create: (body, gameToken) =>
+      request('/tenants', {
+        method: 'POST',
+        body: JSON.stringify(body),
+        headers: accessHeaders(null, gameToken),
+      }),
   },
+  metrics: () => request('/metrics'),
 }
 
 export async function ensureSession() {

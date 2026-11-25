@@ -64,13 +64,27 @@ meRouter.get('/exchanges', (req, res) => {
     .all(req.user.id)
 
   res.json(
-    exchanges.map((exchange) => ({
-      ...exchange,
-      wishlist: exchange.revealed_at ? exchange.wishlist : null,
-      address: exchange.revealed_at ? exchange.address : null,
-      notes: exchange.revealed_at ? exchange.notes : null,
-      preferred: exchange.revealed_at ? exchange.preferred : null,
-    })),
+    exchanges.map((exchange) => {
+      const revealed = Boolean(exchange.revealed_at)
+      return {
+        game_id: exchange.game_id,
+        game_token: exchange.game_token,
+        title: exchange.title,
+        budget: exchange.budget,
+        exchange_date: exchange.exchange_date,
+        rules: exchange.rules,
+        participant_id: exchange.participant_id,
+        invite_token: exchange.invite_token,
+        player_name: exchange.player_name,
+        receiver_id: revealed ? exchange.receiver_id : null,
+        receiver_name: revealed ? exchange.receiver_name : null,
+        wishlist: revealed ? exchange.wishlist : null,
+        address: revealed ? exchange.address : null,
+        notes: revealed ? exchange.notes : null,
+        preferred: revealed ? exchange.preferred : null,
+        revealed_at: exchange.revealed_at,
+      }
+    }),
   )
 })
 

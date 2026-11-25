@@ -5,17 +5,30 @@ import { storeToRefs } from 'pinia'
 import SiteHeader from './components/SiteHeader.vue'
 import SiteFooter from './components/SiteFooter.vue'
 import { usePreferencesStore } from './stores/preferences'
-import { api } from './lib/api'
+import { ApiError, api } from './lib/api'
+import { domain } from './config'
 
 const route = useRoute()
 const router = useRouter()
 const preferences = usePreferencesStore()
 const { theme, isDay, background } = storeToRefs(preferences)
 
-const cookieConsent = ref(true)
+const cookieConsent = ref(localStorage.getItem('cookie-consent') === 'accepted')
+const tenantError = ref('')
+const initialPath = route.fullPath
+const personalRoutes = new Set([
+  'join',
+  'participant',
+  'organizer-invite',
+  'game',
+  'randomizer',
+  'my',
+  'support',
+  'demo',
+])
 
 const page = computed(() => {
-  if (route.name === 'demo' || route.name === 'game' || route.name === 'join') return 'demo'
+  if (['demo', 'game', 'join', 'participant'].includes(route.name)) return 'demo'
   return route.name ?? 'landing'
 })
 
@@ -27,15 +40,30 @@ function navigate(target) {
   else router.push('/')
 }
 
+function isUnknownSubdomain() {
+  const host = window.location.hostname.toLowerCase()
+  const base = domain.toLowerCase()
+  if (!base || host === base || host === `www.${base}`) return false
+  if (!host.endsWith(`.${base}`)) return false
+  return !host.slice(0, -(base.length + 1)).includes('.')
+}
+
 onMounted(async () => {
-  cookieConsent.value = localStorage.getItem('cookie-consent') === 'accepted'
   try {
     const { tenant } = await api.tenants.current()
-    if (tenant?.game?.token && route.name !== 'game') {
-      router.push(`/game/${tenant.game.token}`)
+    if (route.fullPath !== initialPath) return
+    if (tenant?.game?.token) {
+      if (!personalRoutes.has(route.name)) router.push(`/game/${tenant.game.token}`)
+      return
     }
-  } catch {
-    router.push('/')
+    if (isUnknownSubdomain()) router.push('/')
+  } catch (requestError) {
+    if (route.fullPath !== initialPath) return
+    if (requestError instanceof ApiError && requestError.status === 404) {
+      router.push('/')
+      return
+    }
+    tenantError.value = 'Не удалось проверить адрес игры. Данные на странице могут быть неактуальны.'
   }
 })
 
@@ -52,6 +80,14 @@ function acceptCookies() {
     :style="{ background, '--accent': theme.accent }"
   >
     <SiteHeader :page="page" :accent="theme.accent" :is-day="isDay" @navigate="navigate" />
+
+    <p
+      v-if="tenantError"
+      role="status"
+      class="mx-auto mt-3 max-w-6xl rounded-xl border border-amber-400/30 bg-amber-500/10 px-4 py-2 text-sm text-amber-200"
+    >
+      {{ tenantError }}
+    </p>
 
     <main>
       <RouterView />

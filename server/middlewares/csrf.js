@@ -7,6 +7,10 @@ function tokensEqual(left, right) {
   return first.length === second.length && timingSafeEqual(first, second)
 }
 
+function hasParticipantToken(req) {
+  return Boolean(req.get('x-invite-token') || req.get('x-organizer-invite-token'))
+}
+
 export function csrfMiddleware(req, res, next) {
   let token = readCookie(req.headers.cookie, CSRF_COOKIE)
 
@@ -25,7 +29,7 @@ export function csrfMiddleware(req, res, next) {
 
   const unsafe = !['GET', 'HEAD', 'OPTIONS'].includes(req.method)
   const sessionToken = readCookie(req.headers.cookie, SESSION_COOKIE)
-  if (unsafe && sessionToken && !tokensEqual(req.get('x-csrf-token'), token)) {
+  if (unsafe && (sessionToken || hasParticipantToken(req)) && !tokensEqual(req.get('x-csrf-token'), token)) {
     res.status(403).json({ error: { message: 'CSRF-токен недействителен' } })
     return
   }

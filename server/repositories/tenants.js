@@ -1,17 +1,20 @@
 import { db } from '../db.js'
 
 export const tenantsRepository = {
-  list() {
+  listForUser(userId) {
     return db
       .prepare(
         `
-        SELECT tenants.*, games.title AS game_title
+        SELECT DISTINCT tenants.*, games.title AS game_title
         FROM tenants
         JOIN games ON games.id = tenants.game_id
+        LEFT JOIN organizers o ON o.game_id = tenants.game_id AND o.user_id = ?
+        LEFT JOIN participants p ON p.game_id = tenants.game_id AND p.user_id = ?
+        WHERE o.id IS NOT NULL OR p.id IS NOT NULL
         ORDER BY tenants.id DESC
       `,
       )
-      .all()
+      .all(userId, userId)
   },
 
   findBySlug(slug) {

@@ -4,7 +4,9 @@ import { db } from '../db.js'
 import { HttpError, fail } from '../http-error.js'
 import { rateLimit } from '../middlewares/rateLimit.js'
 import {
-  canManageGame,
+  inviteTokenFromRequest,
+  isOrganizer,
+  participantByInvite,
   requireGameAccess,
   requireOrganizer,
   requireParticipantAccess,
@@ -33,6 +35,12 @@ function resolveGameId(raw) {
 function loadGame(req) {
   const id = resolveGameId(req.params.id)
   requireGameAccess(req, id)
+  return id
+}
+
+function loadManagedGame(req) {
+  const id = loadGame(req)
+  requireOrganizer(id, req.user)
   return id
 }
 
@@ -66,6 +74,27 @@ function publicLink(req, path) {
   return `${appBaseUrl()}${path}`
 }
 
+function parseOptions(raw) {
+  if (raw == null || raw === '') return null
+  try {
+    const parsed = JSON.parse(raw)
+    return Array.isArray(parsed) ? parsed : null
+  } catch {
+    return null
+  }
+}
+
+function serializeQuestion(question) {
+  return { ...question, options: parseOptions(question.options) }
+}
+
+function normalizeOptions(type, options) {
+  if (!['single', 'multi'].includes(type)) return null
+  const cleaned = [...new Set((options ?? []).map((item) => String(item).trim()).filter(Boolean))]
+  if (!cleaned.length) fail(400, 'Для вопросов с выбором нужны варианты')
+  return JSON.stringify(cleaned)
+}
+
 function addNotification(gameId, participantId, payload, kind = 'card_updated') {
   db.prepare(
     `
@@ -77,42 +106,6 @@ function addNotification(gameId, participantId, payload, kind = 'card_updated') 
 function notifyParticipants(gameId, kind, payload) {
   const participants = db.prepare('SELECT id FROM participants WHERE game_id = ?').all(gameId)
   for (const participant of participants) addNotification(gameId, participant.id, payload, kind)
-}
-
-function inviteTokenFromRequest(req) {
-  return req.get?.('x-invite-token') ?? req.query?.inviteToken ?? req.body?.inviteToken ?? null
-}
-
-function assertTenantGame(req, gameId) {
-  if (req.tenant?.game && req.tenant.game.id !== gameId) {
-    fail(403, 'Игра недоступна на этом поддомене')
-  }
-}
-
-function participantByInvite(req, gameId) {
-  assertTenantGame(req, gameId)
-  const token = inviteTokenFromRequest(req)
-  const participant = db.prepare('SELECT * FROM participants WHERE game_id = ? AND invite_token = ?').get(gameId, token)
-  if (!participant) fail(403, 'Нет доступа к игре')
-  return participant
-}
-
-function chatCounterparty(gameId, participantId) {
-  const revealed = db
-    .prepare(
-      `
-      SELECT from_id, to_id FROM pairs
-      WHERE game_id = ? AND (from_id = ? OR to_id = ?) AND revealed_at IS NOT NULL
-      ORDER BY id LIMIT 1
-    `,
-    )
-    .get(gameId, participantId, participantId)
-  if (revealed) return revealed.from_id === participantId ? revealed.to_id : revealed.from_id
-  const anyPair = db
-    .prepare('SELECT 1 FROM pairs WHERE game_id = ? AND (from_id = ? OR to_id = ?) LIMIT 1')
-    .get(gameId, participantId, participantId)
-  if (!anyPair) fail(403, 'У вас ещё нет пары')
-  fail(403, 'Пара ещё не раскрыта')
 }
 
 function addEvent(gameId, kind, text, actor = null) {
@@ -157,7 +150,8 @@ function pastPairsFor(gameId) {
   const identities = db
     .prepare(
       `
-      SELECT participants.id, COALESCE(users.token, participants.invite_token) AS identity
+      SELECT participants.id,
+        COALESCE(participants.identity_token, users.token, participants.invite_token) AS identity
       FROM participants
       LEFT JOIN users ON users.id = participants.user_id
       WHERE participants.game_id = ?
@@ -174,33 +168,111 @@ function pastPairsFor(gameId) {
   )
 }
 
+function parseChatToId(req) {
+  const raw = req.method === 'GET' ? req.query?.toId : req.body?.toId
+  if (raw === undefined || raw === null || raw === '') return null
+  const value = Number(raw)
+  if (!Number.isInteger(value) || value <= 0) fail(400, 'Некорректный получатель')
+  return value
+}
+
+function chatCounterparty(gameId, participantId, requestedToId) {
+  const revealedPairs = db
+    .prepare(
+      `
+      SELECT from_id, to_id FROM pairs
+      WHERE game_id = ? AND (from_id = ? OR to_id = ?) AND revealed_at IS NOT NULL
+      ORDER BY id
+    `,
+    )
+    .all(gameId, participantId, participantId)
+
+  if (requestedToId !== null) {
+    const match = revealedPairs.find((pair) => pair.from_id === requestedToId || pair.to_id === requestedToId)
+    if (!match) fail(403, 'Нет доступа к этому чату')
+    return requestedToId
+  }
+
+  if (revealedPairs.length) {
+    const outgoing = revealedPairs.find((pair) => pair.from_id === participantId)
+    const incoming = revealedPairs.find((pair) => pair.to_id === participantId)
+    const pair = outgoing ?? incoming
+    return pair.from_id === participantId ? pair.to_id : pair.from_id
+  }
+
+  const anyPair = db
+    .prepare('SELECT 1 FROM pairs WHERE game_id = ? AND (from_id = ? OR to_id = ?) LIMIT 1')
+    .get(gameId, participantId, participantId)
+  if (!anyPair) fail(403, 'У вас ещё нет пары')
+  fail(403, 'Пара ещё не раскрыта')
+}
+
+function validateAnswer(question, value) {
+  if (value === '' || value == null) return
+  if (question.type === 'number' && Number.isNaN(Number(value))) {
+    fail(400, `Вопрос «${question.title}» требует число`)
+  }
+  if (question.type === 'boolean' && !['да', 'нет', 'true', 'false', '1', '0'].includes(String(value).toLowerCase())) {
+    fail(400, `Вопрос «${question.title}» требует да/нет`)
+  }
+  const options = parseOptions(question.options)
+  if (question.type === 'single') {
+    if (!options?.includes(String(value))) fail(400, `Недопустимый вариант для вопроса «${question.title}»`)
+  }
+  if (question.type === 'multi') {
+    const selected = String(value)
+      .split(',')
+      .map((item) => item.trim())
+      .filter(Boolean)
+    if (!selected.length || selected.some((item) => !options?.includes(item))) {
+      fail(400, `Недопустимый вариант для вопроса «${question.title}»`)
+    }
+  }
+}
+
 const reminderRateLimit = rateLimit({ name: 'reminder', windowMs: 60_000, max: 10 })
-const chatRateLimit = rateLimit({
-  name: 'chat',
-  windowMs: 60_000,
-  max: 30,
-  key: (req) => `${req.ip || req.socket.remoteAddress || 'unknown'}:${req.params.id ?? ''}`,
-})
 const drawRateLimit = rateLimit({
   name: 'draw',
   windowMs: 60_000,
   max: 10,
   key: (req) => `${req.ip || req.socket.remoteAddress || 'unknown'}:${req.params.id ?? ''}`,
 })
-
-gamesRouter.get('/', (_req, res) => {
-  res.json(gamesRepository.list().map(({ token: _token, ...game }) => game))
+const chatRateLimit = rateLimit({
+  name: 'chat',
+  windowMs: 60_000,
+  max: 30,
+  key: (req) => {
+    const token = inviteTokenFromRequest(req)
+    return token ? `invite:${token}` : `ip:${req.ip || req.socket.remoteAddress || 'unknown'}`
+  },
+})
+const createGameRateLimit = rateLimit({ name: 'game-create', windowMs: 60_000, max: 15 })
+const organizerActionRateLimit = rateLimit({ name: 'organizer-action', windowMs: 60_000, max: 20 })
+const notificationRateLimit = rateLimit({
+  name: 'notifications',
+  windowMs: 60_000,
+  max: 60,
+  key: (req) => {
+    const token = inviteTokenFromRequest(req)
+    if (token) return `invite:${token}`
+    if (req.user?.id) return `user:${req.user.id}`
+    return `ip:${req.ip || req.socket.remoteAddress || 'unknown'}`
+  },
 })
 
-gamesRouter.post('/', validateBody(schemas.createGame), (req, res) => {
+gamesRouter.get('/', (req, res) => {
+  if (!req.user) fail(401, 'Нужен активный вход')
+  res.json(gamesRepository.listForUser(req.user.id).map(({ token: _token, ...game }) => game))
+})
+
+gamesRouter.post('/', createGameRateLimit, validateBody(schemas.createGame), (req, res) => {
+  if (!req.user) fail(401, 'Нужен активный вход')
   const { title, budget, exchangeDate, rules, format, themeId } = req.body
   const theme = db.prepare('SELECT id FROM themes WHERE id = ?').get(themeId)
   if (!theme) fail(400, 'Неизвестная тема оформления')
 
   const token = randomUUID()
-  const returning = req.user
-    ? Boolean(db.prepare('SELECT 1 FROM organizers WHERE user_id = ? LIMIT 1').get(req.user.id))
-    : false
+  const returning = Boolean(db.prepare('SELECT 1 FROM organizers WHERE user_id = ? LIMIT 1').get(req.user.id))
   const result = db
     .prepare(
       `
@@ -211,9 +283,9 @@ gamesRouter.post('/', validateBody(schemas.createGame), (req, res) => {
     .run(token, title, budget, exchangeDate, rules, format, themeId)
 
   const id = Number(result.lastInsertRowid)
-  db.prepare('INSERT INTO organizers (game_id, user_id, role) VALUES (?, ?, ?)').run(id, req.user?.id ?? null, 'owner')
-  addEvent(id, 'settings', 'Игра создана', req.user?.id ?? null)
-  trackMetric('game_created', { gameId: id, userId: req.user?.id ?? null })
+  db.prepare('INSERT INTO organizers (game_id, user_id, role) VALUES (?, ?, ?)').run(id, req.user.id, 'owner')
+  addEvent(id, 'settings', 'Игра создана', req.user.id)
+  trackMetric('game_created', { gameId: id, userId: req.user.id })
   if (returning) trackMetric('organizer_return', { gameId: id, userId: req.user.id })
   res.status(201).json(getGame(id))
 })
@@ -221,7 +293,7 @@ gamesRouter.post('/', validateBody(schemas.createGame), (req, res) => {
 gamesRouter.get('/:id', (req, res) => {
   const id = loadGame(req)
   const game = getGame(id)
-  const canManage = canManageGame(req, id)
+  const canManage = isOrganizer(id, req.user)
   const participants = db.prepare('SELECT * FROM participants WHERE game_id = ? ORDER BY id').all(id)
 
   res.json({
@@ -240,38 +312,68 @@ gamesRouter.get('/:id', (req, res) => {
           gift_sent_at,
           gift_received_at,
         })),
-    questions: db.prepare('SELECT * FROM questions WHERE game_id = ? ORDER BY position, id').all(id),
+    questions: db
+      .prepare('SELECT * FROM questions WHERE game_id = ? ORDER BY position, id')
+      .all(id)
+      .map(serializeQuestion),
     exclusions: canManage ? db.prepare('SELECT from_id, to_id FROM exclusions WHERE game_id = ?').all(id) : [],
     pairs: canManage ? db.prepare('SELECT * FROM pairs WHERE game_id = ? ORDER BY from_id').all(id) : [],
     events: canManage ? db.prepare('SELECT * FROM events WHERE game_id = ? ORDER BY id DESC').all(id) : [],
   })
 })
 
+gamesRouter.patch('/:id', validateBody(schemas.updateGame), (req, res) => {
+  const id = loadManagedGame(req)
+  const game = getGame(id)
+  if (req.body.themeId !== undefined) {
+    const theme = db.prepare('SELECT id FROM themes WHERE id = ?').get(req.body.themeId)
+    if (!theme) fail(400, 'Неизвестная тема оформления')
+  }
+
+  const next = {
+    title: req.body.title ?? game.title,
+    budget: req.body.budget ?? game.budget ?? '',
+    exchange_date: req.body.exchangeDate ?? game.exchange_date ?? '',
+    rules: req.body.rules ?? game.rules ?? '',
+    format: req.body.format ?? game.format ?? '',
+    theme_id: req.body.themeId ?? game.theme_id,
+  }
+
+  db.prepare(
+    `
+    UPDATE games
+    SET title = ?, budget = ?, exchange_date = ?, rules = ?, format = ?, theme_id = ?
+    WHERE id = ?
+  `,
+  ).run(next.title, next.budget, next.exchange_date, next.rules, next.format, next.theme_id, id)
+  addEvent(id, 'settings', 'Настройки игры обновлены', req.user.id)
+  res.json(getGame(id))
+})
+
 gamesRouter.post('/:id/participants', validateBody(schemas.participant), (req, res) => {
-  const id = loadGame(req)
-  requireOrganizer(id, req.user)
+  const id = loadManagedGame(req)
   const name = req.body.name
 
   let result
   try {
     result = db
-      .prepare('INSERT INTO participants (game_id, name, invite_token) VALUES (?, ?, ?)')
-      .run(id, name, inviteToken())
+      .prepare('INSERT INTO participants (game_id, name, invite_token, identity_token) VALUES (?, ?, ?, ?)')
+      .run(id, name, inviteToken(), randomUUID())
   } catch (error) {
     if (String(error.message).includes('UNIQUE')) fail(409, 'Участник с таким именем уже есть')
     throw error
   }
 
   const participant = db.prepare('SELECT * FROM participants WHERE id = ?').get(result.lastInsertRowid)
-  addEvent(id, 'join', `${name} присоединился к игре`, name)
-  trackMetric('participant_invited', { gameId: id, userId: req.user?.id ?? null })
+  addEvent(id, 'join', `${name} присоединился к игре`, req.user.id)
+  trackMetric('participant_invited', { gameId: id, userId: req.user.id })
   res.status(201).json(participant)
 })
 
 gamesRouter.get('/:id/participants', (req, res) => {
   const id = loadGame(req)
   const participants = db.prepare('SELECT * FROM participants WHERE game_id = ? ORDER BY id').all(id)
-  if (canManageGame(req, id)) {
+  if (isOrganizer(id, req.user)) {
     res.json(participants)
     return
   }
@@ -287,8 +389,7 @@ gamesRouter.get('/:id/participants', (req, res) => {
 })
 
 gamesRouter.post('/:id/participants/bulk', validateBody(schemas.participantBulk), (req, res) => {
-  const id = loadGame(req)
-  requireOrganizer(id, req.user)
+  const id = loadManagedGame(req)
   const seen = new Set()
   const names = req.body.names
     .split(/[,\n]/)
@@ -302,15 +403,15 @@ gamesRouter.post('/:id/participants/bulk', validateBody(schemas.participantBulk)
   if (!names.length) fail(400, 'Список имён пуст')
 
   const insert = db.prepare(`
-    INSERT OR IGNORE INTO participants (game_id, name, invite_token) VALUES (?, ?, ?)
+    INSERT OR IGNORE INTO participants (game_id, name, invite_token, identity_token) VALUES (?, ?, ?, ?)
   `)
   let added = 0
   db.transaction(() => {
-    for (const name of names) added += insert.run(id, name, inviteToken()).changes
+    for (const name of names) added += insert.run(id, name, inviteToken(), randomUUID()).changes
   })()
-  addEvent(id, 'join', `Добавлено участников: ${added}`, req.user?.id ?? null)
+  addEvent(id, 'join', `Добавлено участников: ${added}`, req.user.id)
   for (let index = 0; index < added; index += 1) {
-    trackMetric('participant_invited', { gameId: id, userId: req.user?.id ?? null })
+    trackMetric('participant_invited', { gameId: id, userId: req.user.id })
   }
   res.status(201).json({
     added,
@@ -319,8 +420,7 @@ gamesRouter.post('/:id/participants/bulk', validateBody(schemas.participantBulk)
 })
 
 gamesRouter.patch('/:id/participants/:participantId', validateBody(schemas.participantUpdate), (req, res) => {
-  const id = loadGame(req)
-  requireOrganizer(id, req.user)
+  const id = loadManagedGame(req)
   const participantId = Number(req.params.participantId)
   const participant = db.prepare('SELECT * FROM participants WHERE id = ? AND game_id = ?').get(participantId, id)
   if (!participant) fail(404, 'Участник не найден')
@@ -347,21 +447,20 @@ gamesRouter.patch('/:id/participants/:participantId', validateBody(schemas.parti
     throw error
   }
   const updated = db.prepare('SELECT * FROM participants WHERE id = ?').get(participantId)
-  addNotification(id, participantId, updated)
+  addNotification(id, participantId, { text: 'Карточка участника обновлена' }, 'card_updated')
   res.json(updated)
 })
 
 function markGift(kind) {
   return (req, res) => {
-    const id = loadGame(req)
-    requireOrganizer(id, req.user)
+    const id = loadManagedGame(req)
     const participantId = Number(req.params.participantId)
     const participant = db.prepare('SELECT id FROM participants WHERE id = ? AND game_id = ?').get(participantId, id)
     if (!participant) fail(404, 'Участник не найден')
     const column = kind === 'sent' ? 'gift_sent_at' : 'gift_received_at'
     db.prepare(`UPDATE participants SET ${column} = datetime('now') WHERE id = ?`).run(participantId)
-    addEvent(id, 'settings', kind === 'sent' ? 'Подарок отправлен' : 'Подарок получен', req.user?.id ?? null)
-    if (kind === 'sent') trackMetric('gift_sent', { gameId: id, userId: req.user?.id ?? null })
+    addEvent(id, 'settings', kind === 'sent' ? 'Подарок отправлен' : 'Подарок получен', req.user.id)
+    if (kind === 'sent') trackMetric('gift_sent', { gameId: id, userId: req.user.id })
     res.json({ ok: true })
   }
 }
@@ -370,8 +469,7 @@ gamesRouter.post('/:id/participants/:participantId/gift-sent', markGift('sent'))
 gamesRouter.post('/:id/participants/:participantId/gift-received', markGift('received'))
 
 gamesRouter.delete('/:id/participants/:participantId', (req, res) => {
-  const id = loadGame(req)
-  requireOrganizer(id, req.user)
+  const id = loadManagedGame(req)
   const participantId = Number(req.params.participantId)
   const participant = db.prepare('SELECT id FROM participants WHERE id = ? AND game_id = ?').get(participantId, id)
   if (!participant) fail(404, 'Участник не найден')
@@ -407,10 +505,10 @@ gamesRouter.delete('/:id/participants/:participantId', (req, res) => {
         `)
         for (const [from, to] of solution) insert.run(id, from, to)
       } else {
-        addEvent(id, 'draw', 'Не удалось перестроить пары после удаления участника', req.user?.id ?? null)
+        addEvent(id, 'draw', 'Не удалось перестроить пары после удаления участника', req.user.id)
       }
     }
-    addEvent(id, 'settings', 'Участник удалён, пары перестроены', req.user?.id ?? null)
+    addEvent(id, 'settings', 'Участник удалён, пары перестроены', req.user.id)
     notifyParticipants(id, 'draw_changed', { text: 'Состав участников изменён, пары перестроены' })
   })()
 
@@ -421,8 +519,7 @@ gamesRouter.delete('/:id/participants/:participantId', (req, res) => {
 })
 
 gamesRouter.get('/:id/invite', (req, res) => {
-  const id = loadGame(req)
-  requireOrganizer(id, req.user)
+  const id = loadManagedGame(req)
   const game = getGame(id)
   res.json({
     commonUrl: publicLink(req, `/game/${game.token}`),
@@ -437,8 +534,7 @@ gamesRouter.get('/:id/invite', (req, res) => {
 })
 
 gamesRouter.post('/:id/past-pairs/import', validateBody(schemas.pastPairsImport), (req, res) => {
-  const id = loadGame(req)
-  requireOrganizer(id, req.user)
+  const id = loadManagedGame(req)
   const pastGameId = Number(req.body.pastGameId)
   getGame(pastGameId)
   const belongs = db
@@ -456,8 +552,8 @@ gamesRouter.post('/:id/past-pairs/import', validateBody(schemas.pastPairsImport)
     .prepare(
       `
         SELECT
-          COALESCE(fromUser.token, fromParticipant.invite_token) AS from_token,
-          COALESCE(toUser.token, toParticipant.invite_token) AS to_token,
+          COALESCE(fromParticipant.identity_token, fromUser.token, fromParticipant.invite_token) AS from_token,
+          COALESCE(toParticipant.identity_token, toUser.token, toParticipant.invite_token) AS to_token,
           COALESCE(g.exchange_date, datetime('now')) AS played_at
         FROM pairs
         JOIN participants fromParticipant ON fromParticipant.id = pairs.from_id
@@ -482,13 +578,12 @@ gamesRouter.post('/:id/past-pairs/import', validateBody(schemas.pastPairsImport)
     }
     return imported
   })()
-  addEvent(id, 'settings', `Импортировано прошлых пар: ${result}`, req.user?.id ?? null)
+  addEvent(id, 'settings', `Импортировано прошлых пар: ${result}`, req.user.id)
   res.status(201).json({ imported: result, total: rows.length })
 })
 
 gamesRouter.post('/:id/exclusions', validateBody(schemas.exclusion), (req, res) => {
-  const id = loadGame(req)
-  requireOrganizer(id, req.user)
+  const id = loadManagedGame(req)
   const { fromId, toId } = req.body
   const participants = db.prepare('SELECT id FROM participants WHERE game_id = ?').all(id)
   const ids = new Set(participants.map((person) => person.id))
@@ -499,14 +594,12 @@ gamesRouter.post('/:id/exclusions', validateBody(schemas.exclusion), (req, res) 
 })
 
 gamesRouter.get('/:id/exclusions', (req, res) => {
-  const id = loadGame(req)
-  requireOrganizer(id, req.user)
+  const id = loadManagedGame(req)
   res.json(db.prepare('SELECT from_id, to_id FROM exclusions WHERE game_id = ?').all(id))
 })
 
 gamesRouter.delete('/:id/exclusions/:fromId/:toId', (req, res) => {
-  const id = loadGame(req)
-  requireOrganizer(id, req.user)
+  const id = loadManagedGame(req)
   db.prepare('DELETE FROM exclusions WHERE game_id = ? AND from_id = ? AND to_id = ?').run(
     id,
     Number(req.params.fromId),
@@ -516,8 +609,7 @@ gamesRouter.delete('/:id/exclusions/:fromId/:toId', (req, res) => {
 })
 
 gamesRouter.post('/:id/draw', drawRateLimit, (req, res) => {
-  const id = loadGame(req)
-  requireOrganizer(id, req.user)
+  const id = loadManagedGame(req)
   const participants = db.prepare('SELECT id, name FROM participants WHERE game_id = ? ORDER BY id').all(id)
   if (participants.length < 2) fail(400, 'Для жеребьёвки нужно минимум два участника')
 
@@ -542,8 +634,8 @@ gamesRouter.post('/:id/draw', drawRateLimit, (req, res) => {
     db.prepare('DELETE FROM pairs WHERE game_id = ?').run(id)
     const insert = db.prepare('INSERT INTO pairs (game_id, from_id, to_id, manual) VALUES (?, ?, ?, ?)')
     for (const [from, to] of solution) insert.run(id, from, to, manual.has(from) ? 1 : 0)
-    addEvent(id, 'draw', 'Проведена жеребьёвка', req.user?.id ?? null)
-    trackMetric('draw_completed', { gameId: id, userId: req.user?.id ?? null })
+    addEvent(id, 'draw', 'Проведена жеребьёвка', req.user.id)
+    trackMetric('draw_completed', { gameId: id, userId: req.user.id })
     notifyParticipants(id, 'draw_changed', { text: 'Распределение пар обновлено' })
   })()
 
@@ -551,8 +643,7 @@ gamesRouter.post('/:id/draw', drawRateLimit, (req, res) => {
 })
 
 gamesRouter.post('/:id/draw/new', drawRateLimit, (req, res) => {
-  const id = loadGame(req)
-  requireOrganizer(id, req.user)
+  const id = loadManagedGame(req)
   const participants = db.prepare('SELECT id FROM participants WHERE game_id = ? ORDER BY id').all(id)
   const pairs = db.prepare('SELECT from_id, to_id FROM pairs WHERE game_id = ?').all(id)
   const paired = new Set(pairs.flatMap((pair) => [pair.from_id, pair.to_id]))
@@ -588,17 +679,41 @@ gamesRouter.post('/:id/draw/new', drawRateLimit, (req, res) => {
   db.transaction(() => {
     const insert = db.prepare('INSERT INTO pairs (game_id, from_id, to_id, manual) VALUES (?, ?, ?, ?)')
     for (const [from, to] of solution) insert.run(id, from, to, manual.has(from) ? 1 : 0)
-    addEvent(id, 'draw', `Дополнительно распределено участников: ${pending.length}`, req.user?.id ?? null)
-    trackMetric('draw_completed', { gameId: id, userId: req.user?.id ?? null })
+    addEvent(id, 'draw', `Дополнительно распределено участников: ${pending.length}`, req.user.id)
+    trackMetric('draw_completed', { gameId: id, userId: req.user.id })
     notifyParticipants(id, 'draw_changed', { text: 'Распределение пар обновлено' })
   })()
 
   res.json(db.prepare('SELECT * FROM pairs WHERE game_id = ? ORDER BY from_id').all(id))
 })
 
+gamesRouter.get('/:id/my-pair', (req, res) => {
+  const id = resolveGameId(req.params.id)
+  const participant = participantByInvite(req, id)
+  const pair = db
+    .prepare(
+      `
+      SELECT pairs.from_id, pairs.to_id, pairs.revealed_at, sender.name AS from_name, receiver.name AS to_name
+      FROM pairs
+      JOIN participants sender ON sender.id = pairs.from_id
+      JOIN participants receiver ON receiver.id = pairs.to_id
+      WHERE pairs.game_id = ? AND (pairs.from_id = ? OR pairs.to_id = ?)
+      ORDER BY pairs.id
+      LIMIT 1
+    `,
+    )
+    .get(id, participant.id, participant.id)
+
+  if (!pair || !pair.revealed_at) {
+    res.json({ revealed_at: null })
+    return
+  }
+
+  res.json(pair)
+})
+
 gamesRouter.get('/:id/pairs', (req, res) => {
-  const id = loadGame(req)
-  requireOrganizer(id, req.user)
+  const id = loadManagedGame(req)
   res.json(
     db
       .prepare(
@@ -616,19 +731,17 @@ gamesRouter.get('/:id/pairs', (req, res) => {
 })
 
 gamesRouter.post('/:id/pairs/reset', drawRateLimit, (req, res) => {
-  const id = loadGame(req)
-  requireOrganizer(id, req.user)
+  const id = loadManagedGame(req)
   db.transaction(() => {
     db.prepare('DELETE FROM pairs WHERE game_id = ?').run(id)
-    addEvent(id, 'settings', 'Распределение пар сброшено', req.user?.id ?? null)
+    addEvent(id, 'settings', 'Распределение пар сброшено', req.user.id)
     notifyParticipants(id, 'draw_changed', { text: 'Распределение пар сброшено' })
   })()
   res.json([])
 })
 
 gamesRouter.post('/:id/pairs', validateBody(schemas.pair), (req, res) => {
-  const id = loadGame(req)
-  requireOrganizer(id, req.user)
+  const id = loadManagedGame(req)
   const { fromId, toId } = req.body
   const participantIds = new Set(
     db
@@ -660,7 +773,7 @@ gamesRouter.post('/:id/pairs', validateBody(schemas.pair), (req, res) => {
         current.to_id,
       )
     }
-    addEvent(id, 'settings', 'Распределение пар изменено вручную', req.user?.id ?? null)
+    addEvent(id, 'settings', 'Распределение пар изменено вручную', req.user.id)
     notifyParticipants(id, 'draw_changed', { text: 'Распределение пар изменено' })
   })()
 
@@ -668,28 +781,25 @@ gamesRouter.post('/:id/pairs', validateBody(schemas.pair), (req, res) => {
 })
 
 gamesRouter.post('/:id/reveal', validateBody(schemas.reveal), (req, res) => {
-  const id = loadGame(req)
-  requireOrganizer(id, req.user)
+  const id = loadManagedGame(req)
   const fromId = req.body.fromId
   const pair = db.prepare('SELECT * FROM pairs WHERE game_id = ? AND from_id = ?').get(id, fromId)
   if (!pair) fail(404, 'Пара не найдена')
   db.prepare(`UPDATE pairs SET revealed_at = datetime('now') WHERE id = ?`).run(pair.id)
-  addEvent(id, 'draw', 'Организатор раскрыл пару', req.user?.id ?? null)
+  addEvent(id, 'draw', 'Организатор раскрыл пару', req.user.id)
   addNotification(id, pair.from_id, { text: 'Ваша пара раскрыта' }, 'pair_revealed')
   addNotification(id, pair.to_id, { text: 'Ваша пара раскрыта' }, 'pair_revealed')
   res.json(db.prepare('SELECT * FROM pairs WHERE id = ?').get(pair.id))
 })
 
 gamesRouter.get('/:id/events', (req, res) => {
-  const id = loadGame(req)
-  requireOrganizer(id, req.user)
+  const id = loadManagedGame(req)
   res.json(db.prepare('SELECT * FROM events WHERE game_id = ? ORDER BY id DESC').all(id))
 })
 
-gamesRouter.get('/:id/notifications', (req, res) => {
+gamesRouter.get('/:id/notifications', notificationRateLimit, (req, res) => {
   const id = resolveGameId(req.params.id)
-  assertTenantGame(req, id)
-  if (canManageGame(req, id)) {
+  if (isOrganizer(id, req.user)) {
     res.json(
       db
         .prepare(
@@ -706,6 +816,15 @@ gamesRouter.get('/:id/notifications', (req, res) => {
     return
   }
   const participant = participantByInvite(req, id)
+  db.transaction(() => {
+    db.prepare(
+      `
+      UPDATE notifications
+      SET sent_at = COALESCE(sent_at, datetime('now'))
+      WHERE game_id = ? AND participant_id = ? AND sent_at IS NULL
+    `,
+    ).run(id, participant.id)
+  })()
   res.json(
     db
       .prepare(
@@ -723,31 +842,32 @@ gamesRouter.get('/:id/notifications', (req, res) => {
 gamesRouter.get('/:id/questions', (req, res) => {
   const id = resolveGameId(req.params.id)
   requireQuestionAccess(req, id)
-  res.json(db.prepare('SELECT * FROM questions WHERE game_id = ? ORDER BY position, id').all(id))
+  res.json(db.prepare('SELECT * FROM questions WHERE game_id = ? ORDER BY position, id').all(id).map(serializeQuestion))
 })
 
 gamesRouter.post('/:id/questions', validateBody(schemas.questionCreate), (req, res) => {
-  const id = loadGame(req)
-  requireOrganizer(id, req.user)
+  const id = loadManagedGame(req)
   const { title, hint, type, required, position } = req.body
   const count = db.prepare('SELECT COUNT(*) AS count FROM questions WHERE game_id = ?').get(id).count
   if (count >= 10) fail(400, 'Можно добавить не больше 10 вопросов')
 
+  const options = normalizeOptions(type, req.body.options)
   const result = db
     .prepare(
       `
-      INSERT INTO questions (game_id, title, hint, type, required, position)
-      VALUES (?, ?, ?, ?, ?, ?)
+      INSERT INTO questions (game_id, title, hint, type, options, required, position)
+      VALUES (?, ?, ?, ?, ?, ?, ?)
     `,
     )
-    .run(id, title, hint, type, required ? 1 : 0, position)
-  addEvent(id, 'settings', `Добавлен вопрос «${title}»`, req.user?.id ?? null)
-  res.status(201).json(db.prepare('SELECT * FROM questions WHERE id = ?').get(result.lastInsertRowid))
+    .run(id, title, hint, type, options, required ? 1 : 0, position)
+  addEvent(id, 'settings', `Добавлен вопрос «${title}»`, req.user.id)
+  res
+    .status(201)
+    .json(serializeQuestion(db.prepare('SELECT * FROM questions WHERE id = ?').get(result.lastInsertRowid)))
 })
 
 gamesRouter.patch('/:id/questions/:questionId', validateBody(schemas.questionUpdate), (req, res) => {
-  const id = loadGame(req)
-  requireOrganizer(id, req.user)
+  const id = loadManagedGame(req)
   const questionId = Number(req.params.questionId)
   const question = db.prepare('SELECT * FROM questions WHERE id = ? AND game_id = ?').get(questionId, id)
   if (!question) fail(404, 'Вопрос не найден')
@@ -757,28 +877,35 @@ gamesRouter.patch('/:id/questions/:questionId', validateBody(schemas.questionUpd
   const type = req.body.type === undefined ? question.type : req.body.type
   const required = req.body.required === undefined ? question.required : req.body.required ? 1 : 0
   const position = req.body.position === undefined ? question.position : req.body.position
+  const options =
+    req.body.options === undefined
+      ? ['single', 'multi'].includes(type)
+        ? question.options
+        : null
+      : normalizeOptions(type, req.body.options)
+  if (['single', 'multi'].includes(type) && !parseOptions(options)?.length) {
+    fail(400, 'Для вопросов с выбором нужны варианты')
+  }
 
   db.prepare(
     `
-    UPDATE questions SET title = ?, hint = ?, type = ?, required = ?, position = ? WHERE id = ?
+    UPDATE questions SET title = ?, hint = ?, type = ?, options = ?, required = ?, position = ? WHERE id = ?
   `,
-  ).run(title, hint, type, required, position, questionId)
-  res.json(db.prepare('SELECT * FROM questions WHERE id = ?').get(questionId))
+  ).run(title, hint, type, options, required, position, questionId)
+  res.json(serializeQuestion(db.prepare('SELECT * FROM questions WHERE id = ?').get(questionId)))
 })
 
 gamesRouter.delete('/:id/questions/:questionId', (req, res) => {
-  const id = loadGame(req)
-  requireOrganizer(id, req.user)
+  const id = loadManagedGame(req)
   const questionId = Number(req.params.questionId)
   const result = db.prepare('DELETE FROM questions WHERE id = ? AND game_id = ?').run(questionId, id)
   if (!result.changes) fail(404, 'Вопрос не найден')
-  addEvent(id, 'settings', 'Вопрос удалён', req.user?.id ?? null)
+  addEvent(id, 'settings', 'Вопрос удалён', req.user.id)
   res.json({ ok: true })
 })
 
 gamesRouter.get('/:id/answers', (req, res) => {
-  const id = loadGame(req)
-  requireOrganizer(id, req.user)
+  const id = loadManagedGame(req)
   res.json(
     db
       .prepare(
@@ -831,16 +958,7 @@ gamesRouter.put('/:id/participants/:participantId/answers', validateBody(schemas
     const question = allowed.get(answer.questionId)
     if (!question) fail(400, 'Вопрос не относится к этой игре')
     if (values.has(answer.questionId)) fail(400, 'Дублирующий ответ')
-    if (question.type === 'number' && answer.value && Number.isNaN(Number(answer.value))) {
-      fail(400, `Вопрос «${question.title}» требует число`)
-    }
-    if (
-      question.type === 'boolean' &&
-      answer.value &&
-      !['да', 'нет', 'true', 'false', '1', '0'].includes(answer.value.toLowerCase())
-    ) {
-      fail(400, `Вопрос «${question.title}» требует да/нет`)
-    }
+    validateAnswer(question, answer.value)
     values.set(answer.questionId, answer.value)
   }
   for (const question of questions) {
@@ -853,7 +971,7 @@ gamesRouter.put('/:id/participants/:participantId/answers', validateBody(schemas
       INSERT INTO answers (question_id, participant_id, value) VALUES (?, ?, ?)
     `)
     for (const [questionId, value] of values) insert.run(questionId, participantId, value)
-    addNotification(id, participantId, { answers: req.body.answers })
+    addNotification(id, participantId, { text: 'Ответы на вопросы обновлены' }, 'answers_updated')
   })()
 
   res.json(
@@ -871,9 +989,47 @@ gamesRouter.put('/:id/participants/:participantId/answers', validateBody(schemas
   )
 })
 
+gamesRouter.get('/:id/recipient-answers', (req, res) => {
+  const id = resolveGameId(req.params.id)
+  const participant = participantByInvite(req, id)
+  const pair = db
+    .prepare('SELECT to_id, revealed_at FROM pairs WHERE game_id = ? AND from_id = ?')
+    .get(id, participant.id)
+  if (!pair) fail(404, 'Пара не найдена')
+  if (!pair.revealed_at) fail(403, 'Пара ещё не раскрыта')
+
+  const recipient = db
+    .prepare('SELECT id, name, wishlist, address, notes, preferred FROM participants WHERE id = ? AND game_id = ?')
+    .get(pair.to_id, id)
+  if (!recipient) fail(404, 'Участник не найден')
+
+  const answers = db
+    .prepare(
+      `
+      SELECT q.id AS question_id, q.title, q.hint, q.type, q.options, q.required, q.position, a.value
+      FROM questions q
+      LEFT JOIN answers a ON a.question_id = q.id AND a.participant_id = ?
+      WHERE q.game_id = ?
+      ORDER BY q.position, q.id
+    `,
+    )
+    .all(pair.to_id, id)
+    .map((row) => ({
+      questionId: row.question_id,
+      title: row.title,
+      hint: row.hint,
+      type: row.type,
+      options: parseOptions(row.options),
+      required: Boolean(row.required),
+      position: row.position,
+      value: row.value ?? '',
+    }))
+
+  res.json({ participant: recipient, answers })
+})
+
 gamesRouter.get('/:id/messages', (req, res) => {
-  const id = loadGame(req)
-  requireOrganizer(id, req.user)
+  const id = loadManagedGame(req)
   res.json(
     db
       .prepare(
@@ -891,8 +1047,7 @@ gamesRouter.get('/:id/messages', (req, res) => {
 })
 
 gamesRouter.post('/:id/messages', validateBody(schemas.message), (req, res) => {
-  const id = loadGame(req)
-  requireOrganizer(id, req.user)
+  const id = loadManagedGame(req)
   const { body } = req.body
   const fromId = req.body.fromId ?? null
   const toId = req.body.toId ?? null
@@ -908,14 +1063,15 @@ gamesRouter.post('/:id/messages', validateBody(schemas.message), (req, res) => {
   const result = db
     .prepare('INSERT INTO messages (game_id, from_id, to_id, body) VALUES (?, ?, ?, ?)')
     .run(id, fromId, toId, body)
-  addEvent(id, 'message', 'Отправлено сообщение', req.user?.id ?? null)
+  addEvent(id, 'message', 'Отправлено сообщение', req.user.id)
   res.status(201).json(db.prepare('SELECT * FROM messages WHERE id = ?').get(result.lastInsertRowid))
 })
 
 gamesRouter.get('/:id/chat', (req, res) => {
   const id = resolveGameId(req.params.id)
   const participant = participantByInvite(req, id)
-  const counterparty = chatCounterparty(id, participant.id)
+  const requestedToId = parseChatToId(req)
+  const counterparty = chatCounterparty(id, participant.id, requestedToId)
   const messages = db
     .prepare(
       `
@@ -939,7 +1095,8 @@ gamesRouter.get('/:id/chat', (req, res) => {
 gamesRouter.post('/:id/chat', chatRateLimit, validateBody(schemas.chatMessage), (req, res) => {
   const id = resolveGameId(req.params.id)
   const participant = participantByInvite(req, id)
-  const counterparty = chatCounterparty(id, participant.id)
+  const requestedToId = req.body.toId ?? null
+  const counterparty = chatCounterparty(id, participant.id, requestedToId)
   const result = db
     .prepare('INSERT INTO chat_messages (game_id, from_id, to_id, body, image_url) VALUES (?, ?, ?, ?, ?)')
     .run(id, participant.id, counterparty, req.body.body, req.body.imageUrl ?? null)
@@ -948,8 +1105,7 @@ gamesRouter.post('/:id/chat', chatRateLimit, validateBody(schemas.chatMessage), 
 })
 
 gamesRouter.get('/:id/reminders', (req, res) => {
-  const id = loadGame(req)
-  requireOrganizer(id, req.user)
+  const id = loadManagedGame(req)
   res.json(
     db
       .prepare(
@@ -966,8 +1122,7 @@ gamesRouter.get('/:id/reminders', (req, res) => {
 })
 
 gamesRouter.post('/:id/reminders', reminderRateLimit, validateBody(schemas.reminder), (req, res) => {
-  const id = loadGame(req)
-  requireOrganizer(id, req.user)
+  const id = loadManagedGame(req)
   const { body, recipientIds } = req.body
   const uniqueIds = [...new Set(recipientIds.map(Number))]
   const participants = db
@@ -1010,35 +1165,40 @@ gamesRouter.post('/:id/reminders', reminderRateLimit, validateBody(schemas.remin
         .get(result.lastInsertRowid)
     }),
   )()
-  addEvent(id, 'message', `Отправлено напоминаний: ${created.length}`, req.user?.id ?? null)
+  addEvent(id, 'message', `Отправлено напоминаний: ${created.length}`, req.user.id)
   res.status(201).json(created)
 })
 
 gamesRouter.get('/:id/organizers', (req, res) => {
-  const id = loadGame(req)
-  requireOrganizer(id, req.user)
+  const id = loadManagedGame(req)
   res.json(
     db
       .prepare(
         `
-      SELECT organizers.*, users.token AS user_token, users.email AS user_email
-      FROM organizers
-      LEFT JOIN users ON users.id = organizers.user_id
-      WHERE organizers.game_id = ?
-      ORDER BY organizers.id
+      SELECT o.id, o.role, o.user_id, o.created_at, o.invited_token IS NOT NULL AS invited,
+        u.email AS user_email
+      FROM organizers o
+      LEFT JOIN users u ON u.id = o.user_id
+      WHERE o.game_id = ?
+      ORDER BY o.id
     `,
       )
       .all(id)
       .map((organizer) => ({
-        ...organizer,
-        url: organizer.invited_token ? publicLink(req, `/organizer/${organizer.invited_token}`) : null,
+        id: organizer.id,
+        role: organizer.role,
+        userId: organizer.user_id,
+        invited: Boolean(organizer.invited),
+        status: organizer.user_id ? 'accepted' : 'pending',
+        displayName:
+          organizer.user_email || (organizer.user_id ? `Организатор #${organizer.user_id}` : 'Ожидает принятия'),
+        createdAt: organizer.created_at,
       })),
   )
 })
 
-gamesRouter.post('/:id/organizers', validateBody(schemas.organizer), (req, res) => {
-  const id = loadGame(req)
-  requireOrganizer(id, req.user)
+gamesRouter.post('/:id/organizers', organizerActionRateLimit, validateBody(schemas.organizer), (req, res) => {
+  const id = loadManagedGame(req)
   const token = req.body.token
   const user = db.prepare('SELECT id FROM users WHERE token = ?').get(token)
   if (!user) fail(404, 'Пользователь не найден')
@@ -1052,13 +1212,12 @@ gamesRouter.post('/:id/organizers', validateBody(schemas.organizer), (req, res) 
     if (String(error.message).includes('UNIQUE')) fail(409, 'Организатор уже добавлен')
     throw error
   }
-  addEvent(id, 'settings', 'Добавлен организатор', req.user?.id ?? null)
+  addEvent(id, 'settings', 'Добавлен организатор', req.user.id)
   res.status(201).json({ userId: user.id })
 })
 
-gamesRouter.post('/:id/organizers/invite', (req, res) => {
-  const id = loadGame(req)
-  requireOrganizer(id, req.user)
+gamesRouter.post('/:id/organizers/invite', organizerActionRateLimit, (req, res) => {
+  const id = loadManagedGame(req)
   const count = db.prepare('SELECT COUNT(*) AS total FROM organizers WHERE game_id = ?').get(id).total
   if (count >= 3) fail(409, 'Максимум три организатора')
 
@@ -1071,7 +1230,7 @@ gamesRouter.post('/:id/organizers/invite', (req, res) => {
     `,
     )
     .run(id, token)
-  addEvent(id, 'settings', 'Создано приглашение организатора', req.user?.id ?? null)
+  addEvent(id, 'settings', 'Создано приглашение организатора', req.user.id)
   res.status(201).json({
     id: result.lastInsertRowid,
     token,
@@ -1079,9 +1238,8 @@ gamesRouter.post('/:id/organizers/invite', (req, res) => {
   })
 })
 
-gamesRouter.delete('/:id/organizers/:organizerId', (req, res) => {
-  const id = loadGame(req)
-  requireOrganizer(id, req.user)
+gamesRouter.delete('/:id/organizers/:organizerId', organizerActionRateLimit, (req, res) => {
+  const id = loadManagedGame(req)
   const organizerId = Number(req.params.organizerId)
   const organizer = db
     .prepare('SELECT id, role, user_id FROM organizers WHERE id = ? AND game_id = ?')
@@ -1103,7 +1261,7 @@ gamesRouter.delete('/:id/organizers/:organizerId', (req, res) => {
   }
 
   db.prepare('DELETE FROM organizers WHERE id = ?').run(organizerId)
-  addEvent(id, 'settings', 'Организатор удалён', req.user?.id ?? null)
+  addEvent(id, 'settings', 'Организатор удалён', req.user.id)
   res.json({ ok: true })
 })
 

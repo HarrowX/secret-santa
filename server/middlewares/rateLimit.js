@@ -1,28 +1,36 @@
+import { db } from '../db.js'
+
 function clientKey(req) {
   return req.ip || req.socket.remoteAddress || 'unknown'
 }
 
 export function rateLimit({ windowMs = 60_000, max = 10, name = 'rate', key } = {}) {
+  const cleanup = db.prepare("DELETE FROM rate_limits WHERE updated_at < datetime('now', '-1 day')")
+  const increment = db.prepare(`
+    INSERT INTO rate_limits (key, window_start, count, updated_at)
+    VALUES (?, ?, 1, datetime('now'))
+    ON CONFLICT(key, window_start) DO UPDATE SET
+      count = count + 1,
+      updated_at = datetime('now')
+    RETURNING count
+  `)
+
   return (req, res, next) => {
-    const store = (req.app.locals.rateLimits ??= new Map())
     const identity = key ? key(req) : clientKey(req)
     const cacheKey = `${name}:${identity}`
     const now = Date.now()
-    const entry = store.get(cacheKey) ?? { start: now, count: 0 }
+    const windowStart = now - (now % windowMs)
 
-    if (now - entry.start > windowMs) {
-      entry.start = now
-      entry.count = 0
+    try {
+      cleanup.run()
+      const row = increment.get(cacheKey, windowStart)
+      if (row.count > max) {
+        res.status(429).json({ error: { message: 'Слишком много запросов' } })
+        return
+      }
+      next()
+    } catch (error) {
+      next(error)
     }
-
-    entry.count += 1
-    store.set(cacheKey, entry)
-
-    if (entry.count > max) {
-      res.status(429).json({ error: { message: 'Слишком много запросов' } })
-      return
-    }
-
-    next()
   }
 }

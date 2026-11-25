@@ -19,7 +19,7 @@ before(async () => {
 })
 
 beforeEach(async () => {
-  db.exec('DELETE FROM users; DELETE FROM games;')
+  db.exec('DELETE FROM users; DELETE FROM games; DELETE FROM rate_limits;')
   server = createApp().listen(0)
   await new Promise((resolve) => server.once('listening', resolve))
   base = `http://127.0.0.1:${server.address().port}/api`
@@ -158,6 +158,8 @@ describe('E2E', () => {
     const organizer = createClient()
     const participant = createClient()
 
+    const session = await organizer.request('POST', '/auth/session', {})
+    assert.equal(session.status, 201)
     const created = await organizer.request('POST', '/games', {
       title: 'Е2E участник',
       themeId: 'sakura',
@@ -173,8 +175,8 @@ describe('E2E', () => {
     const boris = invite.body.participants.find((person) => person.name === 'Борис')
     await organizer.request('PATCH', `/games/${game.token}/participants/${boris.id}`, { wishlist: 'Пазлы' })
 
-    const session = await participant.request('POST', '/auth/session', {})
-    assert.equal(session.status, 201)
+    const participantSession = await participant.request('POST', '/auth/session', {})
+    assert.equal(participantSession.status, 201)
     const accepted = await participant.request('POST', `/invites/${anya.invite_token}/accept`, {
       email: 'anya@example.test',
       wishlist: 'Настолки',

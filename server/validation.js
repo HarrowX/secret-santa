@@ -5,6 +5,7 @@ const text = z.string().trim().min(1)
 const optionalLongText = z.string().trim().max(2000).nullable().optional()
 const identifier = z.coerce.number().int().positive()
 const questionTypes = ['text', 'number', 'boolean', 'single', 'multi']
+const questionOptions = z.array(z.string().trim().min(1).max(120)).min(1).max(20)
 
 function isImageUrl(value) {
   try {
@@ -25,6 +26,17 @@ export const schemas = {
       themeId: text.max(40).optional().default('winter'),
     })
     .strict(),
+  updateGame: z
+    .object({
+      title: text.max(120).optional(),
+      budget: z.string().trim().max(80).optional(),
+      exchangeDate: z.string().trim().max(40).optional(),
+      rules: z.string().trim().max(2000).optional(),
+      format: z.string().trim().max(40).optional(),
+      themeId: text.max(40).optional(),
+    })
+    .strict()
+    .refine((value) => Object.keys(value).length > 0, 'Нет полей для обновления'),
   participant: z.object({ name: text.max(80) }).strict(),
   participantBulk: z.object({ names: text.max(1000) }).strict(),
   randomizer: z.object({ names: text.max(5000) }).strict(),
@@ -46,6 +58,7 @@ export const schemas = {
       address: optionalLongText,
       notes: optionalLongText,
       preferred: optionalLongText,
+      pastIdentityToken: z.string().trim().max(120).optional().nullable(),
     })
     .strict(),
   answersSave: z
@@ -61,15 +74,21 @@ export const schemas = {
       title: text.max(120),
       hint: z.string().trim().max(200).optional().default(''),
       type: z.enum(questionTypes).optional().default('text'),
+      options: questionOptions.optional(),
       required: z.boolean().optional().default(false),
       position: z.coerce.number().int().min(0).optional().default(0),
     })
-    .strict(),
+    .strict()
+    .refine(
+      (value) => !['single', 'multi'].includes(value.type) || (value.options?.length ?? 0) > 0,
+      'Для вопросов с выбором нужны варианты',
+    ),
   questionUpdate: z
     .object({
       title: text.max(120).optional(),
       hint: z.string().trim().max(200).optional(),
       type: z.enum(questionTypes).optional(),
+      options: questionOptions.optional().nullable(),
       required: z.boolean().optional(),
       position: z.coerce.number().int().min(0).optional(),
     })
@@ -86,6 +105,7 @@ export const schemas = {
     .object({
       body: z.string().trim().max(1000).optional().default(''),
       imageUrl: z.string().trim().max(500).url().optional().nullable(),
+      toId: identifier.optional().nullable(),
     })
     .strict()
     .refine((value) => Boolean(value.body || value.imageUrl), 'Пустое сообщение')
@@ -117,7 +137,6 @@ export const schemas = {
     .object({
       slug: z.string().regex(/^[a-z0-9-]{3,32}$/, 'Неверный поддомен'),
       gameId: identifier,
-      gameToken: text.max(80).optional().nullable(),
       domain: z.string().trim().max(200).optional().nullable(),
     })
     .strict(),

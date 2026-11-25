@@ -1,13 +1,36 @@
+# Если за Caddy стоит Cloudflare, раскомментируйте глобальный блок и задайте
+# TRUSTED_PROXIES списком IP-сетей Cloudflare в .env.
+# {
+#   servers {
+#     trusted_proxies static {$TRUSTED_PROXIES}
+#   }
+# }
 {$DOMAIN}, *.{$DOMAIN} {
   tls {
     dns cloudflare {$CLOUDFLARE_API_TOKEN}
   }
   encode zstd gzip
 
+  header {
+    X-Content-Type-Options "nosniff"
+    Referrer-Policy "strict-origin-when-cross-origin"
+    X-Frame-Options "SAMEORIGIN"
+    Strict-Transport-Security "max-age=31536000; includeSubDomains"
+    -Server
+  }
+
+  log {
+    output stdout
+  }
+
+  # X-Forwarded-For формируется Caddy автоматически и не перезаписывается вручную.
   reverse_proxy app:3000 {
+    health_uri /api/health
+    health_interval 10s
+    health_timeout 2s
+    health_status 200
     header_up Host {http.request.host}
     header_up X-Forwarded-Host {http.request.host}
     header_up X-Forwarded-Proto {http.request.scheme}
-    header_up X-Forwarded-For {http.request.remote.host}
   }
 }

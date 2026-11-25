@@ -1,3 +1,16 @@
-import '../server/db.js'
+import { applyMigrations, createDatabase } from '../server/migrations.js'
 
-console.log(JSON.stringify({ level: 'info', msg: 'migrations_applied' }))
+const database = createDatabase()
+try {
+  const result = applyMigrations(database)
+  console.log(
+    JSON.stringify({
+      level: 'info',
+      msg: 'migrations_applied',
+      applied: result.applied,
+      total: result.total,
+    }),
+  )
+} finally {
+  database.close()
+}
