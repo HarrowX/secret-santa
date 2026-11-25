@@ -35,6 +35,7 @@ async function load(id) {
   notifications.value = []
   try {
     data.value = await api.games.get(id)
+    preferences.setTheme(data.value.game.theme_id)
     invite.value = await api.games.invite(id)
     notifications.value = await api.games.notifications(id)
   } catch (requestError) {

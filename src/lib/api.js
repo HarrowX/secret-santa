@@ -114,6 +114,7 @@ export const api = {
       }),
   },
   tenants: {
+    current: () => request('/tenants/current'),
     list: () => request('/tenants'),
     get: (slug) => request(`/tenants/${encodeURIComponent(slug)}`),
     create: (body) => request('/tenants', { method: 'POST', body: JSON.stringify(body) }),

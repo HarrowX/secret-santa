@@ -1,10 +1,11 @@
 <script setup>
-import { computed } from 'vue'
+import { computed, onMounted } from 'vue'
 import { useRoute, useRouter, RouterView } from 'vue-router'
 import { storeToRefs } from 'pinia'
 import SiteHeader from './components/SiteHeader.vue'
 import SiteFooter from './components/SiteFooter.vue'
 import { usePreferencesStore } from './stores/preferences'
+import { api } from './lib/api'
 
 const route = useRoute()
 const router = useRouter()
@@ -23,6 +24,17 @@ function navigate(target) {
   else if (target === 'features') router.push({ path: '/', hash: '#features' })
   else router.push('/')
 }
+
+onMounted(async () => {
+  try {
+    const { tenant } = await api.tenants.current()
+    if (tenant?.game?.token && route.name !== 'game') {
+      router.push(`/game/${tenant.game.token}`)
+    }
+  } catch {
+    router.push('/')
+  }
+})
 </script>
 
 <template>

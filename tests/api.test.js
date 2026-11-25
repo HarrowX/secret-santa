@@ -418,6 +418,11 @@ describe('API', () => {
     assert.equal(resolved.body.game.title, game.title)
     const current = await request('GET', '/tenants/current')
     assert.equal(current.body.tenant, null)
+
+    const invalid = await request('POST', '/tenants', { slug: 'bad slug', gameId: game.id })
+    assert.equal(invalid.status, 400)
+    const reserved = await request('POST', '/tenants', { slug: 'admin', gameId: game.id })
+    assert.equal(reserved.status, 409)
   })
 
   it('ограничивает частоту запросов к auth', async () => {
