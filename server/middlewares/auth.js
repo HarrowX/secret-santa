@@ -8,7 +8,7 @@ export function authMiddleware(req, _res, next) {
   if (token) {
     const session = db
       .prepare(`
-        SELECT u.id, u.token, u.email, u.created_at, s.expires_at
+        SELECT u.id, u.token, u.email, u.password_hash, u.created_at, s.expires_at
         FROM sessions s
         JOIN users u ON u.id = s.user_id
         WHERE s.token_hash = ?
@@ -20,6 +20,7 @@ export function authMiddleware(req, _res, next) {
         id: session.id,
         token: session.token,
         email: session.email ?? null,
+        has_password: Boolean(session.password_hash),
       }
     }
   }

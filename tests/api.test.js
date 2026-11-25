@@ -308,6 +308,43 @@ describe('API', () => {
     }
   })
 
+  it('регистрирует пользователя по email и паролю и позволяет войти', async () => {
+    const anonymous = await request('POST', '/auth/session', {})
+    const registered = await request(
+      'POST',
+      '/auth/register',
+      { email: 'santa@example.com', password: 'secret123' },
+      cookieHeader(anonymous),
+    )
+    assert.equal(registered.status, 200)
+    assert.equal(registered.body.user.id, anonymous.body.user.id)
+    assert.equal(registered.body.user.email, 'santa@example.com')
+    assert.equal(registered.body.user.has_password, true)
+
+    const duplicate = await request('POST', '/auth/register', {
+      email: 'santa@example.com',
+      password: 'secret123',
+    })
+    assert.equal(duplicate.status, 409)
+
+    await request('POST', '/auth/logout', {}, cookieHeader(registered))
+    const afterLogout = await request('GET', '/auth/session', undefined, cookieHeader(registered))
+    assert.equal(afterLogout.body.user, null)
+
+    const wrong = await request('POST', '/auth/login', {
+      email: 'santa@example.com',
+      password: 'wrongpass',
+    })
+    assert.equal(wrong.status, 401)
+
+    const loggedIn = await request('POST', '/auth/login', {
+      email: 'santa@example.com',
+      password: 'secret123',
+    })
+    assert.equal(loggedIn.status, 200)
+    assert.equal(loggedIn.body.user.id, registered.body.user.id)
+  })
+
   it('создаёт анонимную сессию, восстанавливает её и добавляет email', async () => {
     const created = await request('POST', '/auth/session', {})
     assert.equal(created.status, 201)
@@ -361,6 +398,8 @@ describe('API', () => {
     assert.equal(myGames.status, 200)
     assert.equal(myGames.body.length, 1)
     assert.equal(myGames.body[0].title, 'Мой кабинет')
+    assert.equal(myGames.body[0].token, game.token)
+    assert.equal(myGames.body[0].role, 'participant')
 
     const exchanges = await request('GET', '/me/exchanges', undefined, headers)
     assert.equal(exchanges.status, 200)
@@ -525,6 +564,7 @@ describe('API', () => {
     )
     assert.equal(accepted.status, 200)
     assert.equal(accepted.body.id, game.id)
+    assert.equal(accepted.body.token, game.token)
 
     const organizers = await request('GET', `/games/${game.id}/organizers`)
     assert.equal(organizers.body.length, 2)

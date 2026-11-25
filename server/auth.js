@@ -27,6 +27,7 @@ export function publicUser(row) {
     id: row.id,
     token: row.token,
     email: row.email ?? null,
+    has_password: Boolean(row.password_hash),
     created_at: row.created_at ?? null,
   }
 }

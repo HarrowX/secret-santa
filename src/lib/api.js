@@ -35,6 +35,8 @@ export const api = {
   auth: {
     session: () => request('/auth/session'),
     createSession: () => request('/auth/session', { method: 'POST' }),
+    register: (body) => request('/auth/register', { method: 'POST', body: JSON.stringify(body) }),
+    login: (body) => request('/auth/login', { method: 'POST', body: JSON.stringify(body) }),
     recover: (code) => request('/auth/recovery', { method: 'POST', body: JSON.stringify({ code }) }),
     setEmail: (email) => request('/auth/email', { method: 'PATCH', body: JSON.stringify({ email }) }),
     logout: () => request('/auth/logout', { method: 'POST' }),

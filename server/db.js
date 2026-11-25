@@ -15,6 +15,11 @@ db.pragma('journal_mode = WAL')
 db.pragma('foreign_keys = ON')
 db.exec(fs.readFileSync(path.join(root, 'server', 'schema.sql'), 'utf8'))
 
+const userColumns = db.prepare('PRAGMA table_info(users)').all()
+if (!userColumns.some((column) => column.name === 'password_hash')) {
+  db.exec('ALTER TABLE users ADD COLUMN password_hash TEXT')
+}
+
 const participantColumns = db.prepare('PRAGMA table_info(participants)').all()
 if (!participantColumns.some((column) => column.name === 'invite_token')) {
   db.exec('ALTER TABLE participants ADD COLUMN invite_token TEXT')

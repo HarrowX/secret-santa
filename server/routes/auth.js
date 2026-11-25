@@ -1,6 +1,7 @@
 import { Router } from 'express'
 import { db } from '../db.js'
 import { fail, HttpError } from '../http-error.js'
+import { hashPassword, verifyPassword } from '../passwords.js'
 import { schemas, validateBody } from '../validation.js'
 import {
   createRecoveryCodes,
@@ -15,7 +16,11 @@ import {
 export const authRouter = Router()
 
 function userById(id) {
-  return db.prepare('SELECT id, token, email, created_at FROM users WHERE id = ?').get(id)
+  return db.prepare('SELECT id, token, email, password_hash, created_at FROM users WHERE id = ?').get(id)
+}
+
+function userByEmail(email) {
+  return db.prepare('SELECT id, token, email, password_hash, created_at FROM users WHERE email = ?').get(email)
 }
 
 authRouter.get('/session', (req, res) => {
@@ -36,6 +41,57 @@ authRouter.post('/session', (req, res) => {
   })()
 
   res.status(201).json({ user: publicUser(user), recoveryCodes })
+})
+
+authRouter.post('/register', validateBody(schemas.credentials), (req, res) => {
+  const { email, password } = req.body
+  const passwordHash = hashPassword(password)
+
+  if (req.user) {
+    if (req.user.email || req.user.has_password) fail(409, 'У пользователя уже есть регистрация')
+    try {
+      db.prepare('UPDATE users SET email = ?, password_hash = ? WHERE id = ?').run(
+        email,
+        passwordHash,
+        req.user.id,
+      )
+    } catch (error) {
+      if (String(error.message).includes('UNIQUE')) fail(409, 'Этот email уже занят')
+      throw error
+    }
+    res.json({ user: publicUser(userById(req.user.id)) })
+    return
+  }
+
+  let user
+  let recoveryCodes
+  try {
+    db.transaction(() => {
+      const token = createToken(16)
+      const result = db
+        .prepare('INSERT INTO users (token, email, password_hash) VALUES (?, ?, ?)')
+        .run(token, email, passwordHash)
+      const userId = Number(result.lastInsertRowid)
+      user = userById(userId)
+      recoveryCodes = createRecoveryCodes(userId)
+      createSession(userId, res)
+    })()
+  } catch (error) {
+    if (String(error.message).includes('UNIQUE')) fail(409, 'Этот email уже занят')
+    throw error
+  }
+
+  res.status(201).json({ user: publicUser(user), recoveryCodes })
+})
+
+authRouter.post('/login', validateBody(schemas.credentials), (req, res) => {
+  const { email, password } = req.body
+  const user = userByEmail(email)
+  if (!user || !verifyPassword(password, user.password_hash)) {
+    fail(401, 'Неверный email или пароль')
+  }
+  createSession(user.id, res)
+  res.json({ user: publicUser(user) })
 })
 
 authRouter.post('/recovery', validateBody(schemas.recovery), (req, res) => {

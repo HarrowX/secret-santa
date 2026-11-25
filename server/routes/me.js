@@ -10,7 +10,8 @@ meRouter.get('/games', (req, res) => {
   res.json(
     db
       .prepare(`
-        SELECT DISTINCT g.id, g.title, g.budget, g.exchange_date, g.rules, g.theme_id
+        SELECT DISTINCT g.id, g.token, g.title, g.budget, g.exchange_date, g.rules, g.theme_id,
+          CASE WHEN o.id IS NOT NULL THEN o.role ELSE 'participant' END AS role
         FROM games g
         LEFT JOIN organizers o ON o.game_id = g.id AND o.user_id = ?
         LEFT JOIN participants p ON p.game_id = g.id AND p.user_id = ?
@@ -27,7 +28,7 @@ meRouter.get('/exchanges', (req, res) => {
   res.json(
     db
       .prepare(`
-        SELECT g.id AS game_id, g.title, g.budget, g.exchange_date, g.rules,
+        SELECT g.id AS game_id, g.token AS game_token, g.title, g.budget, g.exchange_date, g.rules,
           p.id AS participant_id, p.name AS player_name,
           recipient.id AS receiver_id, recipient.name AS receiver_name,
           recipient.wishlist, recipient.address, recipient.notes, recipient.preferred,
