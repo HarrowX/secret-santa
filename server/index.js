@@ -2,6 +2,7 @@ import express from 'express'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { authMiddleware } from './middlewares/auth.js'
+import { requestLogger } from './middlewares/logger.js'
 import { HttpError } from './http-error.js'
 import { authRouter } from './routes/auth.js'
 import { gamesRouter } from './routes/games.js'
@@ -11,6 +12,7 @@ const app = express()
 const port = process.env.PORT || 3000
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
 
+app.use(requestLogger)
 app.use(express.json())
 app.use(authMiddleware)
 
@@ -26,12 +28,12 @@ app.use('/api/auth', authRouter)
 app.use('/api/games', gamesRouter)
 app.use('/api/tenants', tenantsRouter)
 
-app.use((error, _req, res, _next) => {
+app.use((error, req, res, _next) => {
   if (error instanceof HttpError) {
     res.status(error.status).json({ error: { message: error.message } })
     return
   }
-  console.error(error)
+  console.log(JSON.stringify({ level: 'error', msg: 'request_failed', path: req.originalUrl.split('?')[0], name: error.name }))
   res.status(500).json({ error: { message: 'Внутренняя ошибка сервера' } })
 })
 
@@ -41,5 +43,5 @@ if (process.env.NODE_ENV === 'production') {
 }
 
 app.listen(port, () => {
-  console.log(`Express API: http://localhost:${port}`)
+  console.log(JSON.stringify({ level: 'info', msg: 'server_started', port }))
 })

@@ -1,6 +1,7 @@
 import { Router } from 'express'
 import { db } from '../db.js'
 import { fail, HttpError } from '../http-error.js'
+import { schemas, validateBody } from '../validation.js'
 
 export const tenantsRouter = Router()
 
@@ -23,12 +24,12 @@ tenantsRouter.get('/', (_req, res) => {
   )
 })
 
-tenantsRouter.post('/', (req, res) => {
-  const slug = cleanSlug(req.body?.slug)
-  const gameId = Number(req.body?.gameId)
+tenantsRouter.post('/', validateBody(schemas.tenant), (req, res) => {
+  const slug = cleanSlug(req.body.slug)
+  const gameId = req.body.gameId
   const game = db.prepare('SELECT id FROM games WHERE id = ?').get(gameId)
   if (!game) fail(404, 'Игра не найдена')
-  const domain = req.body?.domain ? String(req.body.domain) : null
+  const domain = req.body.domain ?? null
 
   try {
     db.prepare('INSERT INTO tenants (slug, game_id, domain) VALUES (?, ?, ?)').run(slug, gameId, domain)

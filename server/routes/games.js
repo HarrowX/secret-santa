@@ -2,6 +2,7 @@ import { randomUUID } from 'node:crypto'
 import { Router } from 'express'
 import { db } from '../db.js'
 import { HttpError, fail } from '../http-error.js'
+import { schemas, validateBody } from '../validation.js'
 
 export const gamesRouter = Router()
 
@@ -9,11 +10,6 @@ function getGame(id) {
   const game = db.prepare('SELECT * FROM games WHERE id = ?').get(id)
   if (!game) fail(404, 'Игра не найдена')
   return game
-}
-
-function requireText(value, label) {
-  if (typeof value !== 'string' || !value.trim()) fail(400, `${label} обязателен`)
-  return value.trim()
 }
 
 function addEvent(gameId, kind, text, actor = null) {
@@ -45,9 +41,8 @@ gamesRouter.get('/', (_req, res) => {
   res.json(games)
 })
 
-gamesRouter.post('/', (req, res) => {
-  const { title, budget = '', exchangeDate = '', rules = '', themeId = 'winter' } = req.body ?? {}
-  const cleanTitle = requireText(title, 'Название игры')
+gamesRouter.post('/', validateBody(schemas.createGame), (req, res) => {
+  const { title, budget, exchangeDate, rules, themeId } = req.body
   const theme = db.prepare('SELECT id FROM themes WHERE id = ?').get(themeId)
   if (!theme) fail(400, 'Неизвестная тема оформления')
 
@@ -57,7 +52,7 @@ gamesRouter.post('/', (req, res) => {
       INSERT INTO games (token, title, budget, exchange_date, rules, theme_id)
       VALUES (?, ?, ?, ?, ?, ?)
     `)
-    .run(token, cleanTitle, String(budget), String(exchangeDate), String(rules), themeId)
+    .run(token, title, budget, exchangeDate, rules, themeId)
 
   const id = Number(result.lastInsertRowid)
   db.prepare('INSERT INTO organizers (game_id, user_id, role) VALUES (?, ?, ?)').run(
@@ -82,10 +77,10 @@ gamesRouter.get('/:id', (req, res) => {
   })
 })
 
-gamesRouter.post('/:id/participants', (req, res) => {
+gamesRouter.post('/:id/participants', validateBody(schemas.participant), (req, res) => {
   const id = Number(req.params.id)
   getGame(id)
-  const name = requireText(req.body?.name, 'Имя участника')
+  const name = req.body.name
 
   let result
   try {
@@ -106,11 +101,10 @@ gamesRouter.get('/:id/participants', (req, res) => {
   res.json(db.prepare('SELECT * FROM participants WHERE game_id = ? ORDER BY id').all(id))
 })
 
-gamesRouter.post('/:id/exclusions', (req, res) => {
+gamesRouter.post('/:id/exclusions', validateBody(schemas.exclusion), (req, res) => {
   const id = Number(req.params.id)
   getGame(id)
-  const fromId = Number(req.body?.fromId)
-  const toId = Number(req.body?.toId)
+  const { fromId, toId } = req.body
   const participants = db.prepare('SELECT id FROM participants WHERE game_id = ?').all(id)
   const ids = new Set(participants.map((person) => person.id))
   if (!ids.has(fromId) || !ids.has(toId) || fromId === toId) fail(400, 'Некорректная пара исключения')
@@ -191,11 +185,10 @@ gamesRouter.get('/:id/pairs', (req, res) => {
   )
 })
 
-gamesRouter.post('/:id/pairs', (req, res) => {
+gamesRouter.post('/:id/pairs', validateBody(schemas.pair), (req, res) => {
   const id = Number(req.params.id)
   getGame(id)
-  const fromId = Number(req.body?.fromId)
-  const toId = Number(req.body?.toId)
+  const { fromId, toId } = req.body
   const participantIds = new Set(db.prepare('SELECT id FROM participants WHERE game_id = ?').all(id).map((person) => person.id))
   if (!participantIds.has(fromId) || !participantIds.has(toId) || fromId === toId) {
     fail(400, 'Некорректное назначение пары')
@@ -229,10 +222,10 @@ gamesRouter.post('/:id/pairs', (req, res) => {
   res.json(db.prepare('SELECT * FROM pairs WHERE game_id = ? ORDER BY from_id').all(id))
 })
 
-gamesRouter.post('/:id/reveal', (req, res) => {
+gamesRouter.post('/:id/reveal', validateBody(schemas.reveal), (req, res) => {
   const id = Number(req.params.id)
   getGame(id)
-  const fromId = Number(req.body?.fromId)
+  const fromId = req.body.fromId
   const pair = db.prepare('SELECT * FROM pairs WHERE game_id = ? AND from_id = ?').get(id, fromId)
   if (!pair) fail(404, 'Пара не найдена')
   db.prepare(`UPDATE pairs SET revealed_at = datetime('now') WHERE id = ?`).run(pair.id)
@@ -252,38 +245,33 @@ gamesRouter.get('/:id/questions', (req, res) => {
   res.json(db.prepare('SELECT * FROM questions WHERE game_id = ? ORDER BY position, id').all(id))
 })
 
-gamesRouter.post('/:id/questions', (req, res) => {
+gamesRouter.post('/:id/questions', validateBody(schemas.questionCreate), (req, res) => {
   const id = Number(req.params.id)
   getGame(id)
-  const { title, hint = '', type = 'text', required = false, position = 0 } = req.body ?? {}
-  const cleanTitle = requireText(title, 'Название вопроса')
-  const cleanType = String(type)
-  const allowedTypes = ['text', 'number', 'boolean', 'single', 'multi']
-  if (!allowedTypes.includes(cleanType)) fail(400, 'Неизвестный тип вопроса')
+  const { title, hint, type, required, position } = req.body
 
   const result = db
     .prepare(`
       INSERT INTO questions (game_id, title, hint, type, required, position)
       VALUES (?, ?, ?, ?, ?, ?)
     `)
-    .run(id, cleanTitle, String(hint), cleanType, required ? 1 : 0, Number(position) || 0)
-  addEvent(id, 'settings', `Добавлен вопрос «${cleanTitle}»`)
+    .run(id, title, hint, type, required ? 1 : 0, position)
+  addEvent(id, 'settings', `Добавлен вопрос «${title}»`)
   res.status(201).json(db.prepare('SELECT * FROM questions WHERE id = ?').get(result.lastInsertRowid))
 })
 
-gamesRouter.patch('/:id/questions/:questionId', (req, res) => {
+gamesRouter.patch('/:id/questions/:questionId', validateBody(schemas.questionUpdate), (req, res) => {
   const id = Number(req.params.id)
   getGame(id)
   const questionId = Number(req.params.questionId)
   const question = db.prepare('SELECT * FROM questions WHERE id = ? AND game_id = ?').get(questionId, id)
   if (!question) fail(404, 'Вопрос не найден')
 
-  const title = req.body?.title === undefined ? question.title : requireText(req.body.title, 'Название вопроса')
-  const hint = req.body?.hint === undefined ? question.hint : String(req.body.hint)
-  const type = req.body?.type === undefined ? question.type : String(req.body.type)
-  if (!['text', 'number', 'boolean', 'single', 'multi'].includes(type)) fail(400, 'Неизвестный тип вопроса')
-  const required = req.body?.required === undefined ? question.required : req.body.required ? 1 : 0
-  const position = req.body?.position === undefined ? question.position : Number(req.body.position) || 0
+  const title = req.body.title === undefined ? question.title : req.body.title
+  const hint = req.body.hint === undefined ? question.hint : req.body.hint
+  const type = req.body.type === undefined ? question.type : req.body.type
+  const required = req.body.required === undefined ? question.required : req.body.required ? 1 : 0
+  const position = req.body.position === undefined ? question.position : req.body.position
 
   db.prepare(`
     UPDATE questions SET title = ?, hint = ?, type = ?, required = ?, position = ? WHERE id = ?
@@ -316,12 +304,12 @@ gamesRouter.get('/:id/messages', (req, res) => {
   )
 })
 
-gamesRouter.post('/:id/messages', (req, res) => {
+gamesRouter.post('/:id/messages', validateBody(schemas.message), (req, res) => {
   const id = Number(req.params.id)
   getGame(id)
-  const body = requireText(req.body?.body, 'Текст сообщения')
-  const fromId = req.body?.fromId ? Number(req.body.fromId) : null
-  const toId = req.body?.toId ? Number(req.body.toId) : null
+  const { body } = req.body
+  const fromId = req.body.fromId ?? null
+  const toId = req.body.toId ?? null
   const participantIds = new Set(db.prepare('SELECT id FROM participants WHERE game_id = ?').all(id).map((person) => person.id))
   if (fromId !== null && !participantIds.has(fromId)) fail(400, 'Отправитель не участвует в игре')
   if (toId !== null && !participantIds.has(toId)) fail(400, 'Получатель не участвует в игре')
@@ -347,10 +335,10 @@ gamesRouter.get('/:id/organizers', (req, res) => {
   )
 })
 
-gamesRouter.post('/:id/organizers', (req, res) => {
+gamesRouter.post('/:id/organizers', validateBody(schemas.organizer), (req, res) => {
   const id = Number(req.params.id)
   getGame(id)
-  const token = requireText(req.body?.token, 'Токен организатора')
+  const token = req.body.token
   const user = db.prepare('SELECT id FROM users WHERE token = ?').get(token)
   if (!user) fail(404, 'Пользователь не найден')
 

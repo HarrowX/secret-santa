@@ -1,6 +1,7 @@
 import { Router } from 'express'
 import { db } from '../db.js'
 import { fail, HttpError } from '../http-error.js'
+import { schemas, validateBody } from '../validation.js'
 import {
   createRecoveryCodes,
   createSession,
@@ -12,11 +13,6 @@ import {
 } from '../auth.js'
 
 export const authRouter = Router()
-
-function requireText(value, label) {
-  if (typeof value !== 'string' || !value.trim()) fail(400, `${label} обязателен`)
-  return value.trim()
-}
 
 function userById(id) {
   return db.prepare('SELECT id, token, email, created_at FROM users WHERE id = ?').get(id)
@@ -42,8 +38,8 @@ authRouter.post('/session', (req, res) => {
   res.status(201).json({ user: publicUser(user), recoveryCodes })
 })
 
-authRouter.post('/recovery', (req, res) => {
-  const code = requireText(req.body?.code, 'Код восстановления')
+authRouter.post('/recovery', validateBody(schemas.recovery), (req, res) => {
+  const code = req.body.code
   const row = db
     .prepare(`
       SELECT r.id, r.user_id, u.token, u.email, u.created_at
@@ -68,10 +64,9 @@ authRouter.post('/recovery', (req, res) => {
   })
 })
 
-authRouter.patch('/email', (req, res) => {
+authRouter.patch('/email', validateBody(schemas.email), (req, res) => {
   if (!req.user) fail(401, 'Нужен активный вход')
-  const email = requireText(req.body?.email, 'Email').toLowerCase()
-  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) fail(400, 'Неверный формат email')
+  const email = req.body.email
 
   try {
     db.prepare('UPDATE users SET email = ? WHERE id = ?').run(email, req.user.id)
