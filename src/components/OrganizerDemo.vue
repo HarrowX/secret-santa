@@ -15,6 +15,14 @@ const tabs = [
   { id: 'history', label: 'История' },
 ]
 
+const historyFilters = [
+  { id: 'all', label: 'Все' },
+  { id: 'join', label: 'Вход' },
+  { id: 'settings', label: 'Настройки' },
+  { id: 'draw', label: 'Жеребьёвка' },
+  { id: 'gift', label: 'Подарки' },
+]
+
 const tab = ref('overview')
 const people = ref(seedParticipants.map((person) => ({ ...person })))
 const events = ref(seedHistory.map((event) => ({ ...event })))
@@ -25,6 +33,7 @@ const pairs = ref(
 )
 const revealed = ref(false)
 const saved = ref(true)
+const historyFilter = ref('all')
 
 const organizers = ['О', 'В', 'А']
 
@@ -41,8 +50,18 @@ const progress = computed(() => {
   ].map((item) => ({ ...item, percent: Math.round((item.value / item.total) * 100) }))
 })
 
+const filteredEvents = computed(() =>
+  historyFilter.value === 'all'
+    ? events.value
+    : events.value.filter((event) => event.kind === historyFilter.value),
+)
+
 function nameOf(id) {
   return people.value.find((person) => person.id === id)?.name ?? '—'
+}
+
+function candidates(person) {
+  return people.value.filter((item) => item.id !== person.id)
 }
 
 function statusOf(person) {
@@ -68,11 +87,29 @@ function clearPairs() {
 
 function fillRemaining() {
   const ids = people.value.map((person) => person.id)
-  const next = { ...pairs.value }
-  ids.forEach((id, index) => {
-    if (!next[id]) next[id] = ids[(index + 1) % ids.length]
+  const available = ids.filter((id) => !Object.values(pairs.value).includes(id))
+
+  ids.filter((id) => !pairs.value[id]).forEach((id) => {
+    if (!available.length) return
+    const index = available.findIndex((candidate) => candidate !== id)
+    const [recipient] = available.splice(index === -1 ? 0 : index, 1)
+    pairs.value[id] = recipient
   })
-  pairs.value = next
+
+  saved.value = false
+}
+
+function assign(id, value) {
+  const recipient = Number(value)
+  if (!recipient || recipient === id) return
+
+  const current = pairs.value[id]
+  const otherId = Object.keys(pairs.value).find(
+    (key) => Number(key) !== id && pairs.value[key] === recipient,
+  )
+
+  if (otherId !== undefined && current) pairs.value[otherId] = current
+  pairs.value[id] = recipient
   saved.value = false
 }
 
@@ -116,6 +153,7 @@ function save() {
         class="whitespace-nowrap border-b-2 px-4 py-3 text-sm font-semibold transition"
         :class="tab === item.id ? '' : 'border-transparent opacity-55 hover:opacity-90'"
         :style="tab === item.id ? { borderColor: accent, color: accent } : {}"
+        :aria-current="tab === item.id ? 'page' : undefined"
         @click="tab = item.id"
       >
         {{ item.label }}
@@ -152,7 +190,7 @@ function save() {
               >
                 {{ letter }}
               </span>
-              <button type="button" class="grid h-11 w-11 place-items-center rounded-full border border-dashed border-white/30 text-xl opacity-60 transition hover:opacity-100">
+              <button type="button" class="grid h-11 w-11 place-items-center rounded-full border border-dashed border-white/30 text-xl opacity-60 transition hover:opacity-100" aria-label="Добавить организатора">
                 +
               </button>
               <span class="ml-2 text-sm opacity-60">Добавить помощника</span>
@@ -199,15 +237,17 @@ function save() {
       <div v-else-if="tab === 'draw'" class="grid gap-4 lg:grid-cols-[.75fr_1.25fr]">
         <div class="rounded-3xl border border-white/10 bg-white/5 p-6 backdrop-blur">
           <h3 class="text-lg font-bold">Управление парами</h3>
-          <p class="mt-2 text-sm leading-relaxed opacity-65">Ручные назначения сохраняются. Уведомления участникам уходят только после сохранения.</p>
+          <p class="mt-2 text-sm leading-relaxed opacity-65">Ручные назначения сохраняются. Уведомления уходят только после сохранения.</p>
           <div class="mt-5 grid gap-2">
             <button type="button" class="rounded-xl border border-white/15 px-4 py-3 text-left text-sm font-semibold transition hover:bg-white/10" @click="shuffle">Перемешать заново</button>
             <button type="button" class="rounded-xl border border-white/15 px-4 py-3 text-left text-sm font-semibold transition hover:bg-white/10" @click="clearPairs">Очистить пары</button>
             <button type="button" class="rounded-xl border border-white/15 px-4 py-3 text-left text-sm font-semibold transition hover:bg-white/10" @click="fillRemaining">Заполнить оставшиеся</button>
-            <button type="button" class="rounded-xl border border-white/15 px-4 py-3 text-left text-sm font-semibold transition hover:bg-white/10" @click="revealed = !revealed">
+            <button type="button" class="rounded-xl border border-white/15 px-4 py-3 text-left text-sm font-semibold transition hover:bg-white/10" :aria-pressed="revealed" @click="revealed = !revealed">
               {{ revealed ? 'Скрыть пары' : 'Показать пары' }}
             </button>
           </div>
+          <p v-if="!revealed" class="mt-4 text-xs opacity-50">Покажите пары, чтобы назначать получателей вручную.</p>
+          <p v-else class="mt-4 text-xs opacity-50">При выборе занятого получателя пары меняются местами.</p>
         </div>
 
         <div class="rounded-3xl border border-white/10 bg-white/5 p-6 backdrop-blur">
@@ -219,25 +259,56 @@ function save() {
             <div v-for="person in people" :key="person.id" class="flex items-center gap-2 rounded-xl border border-white/10 bg-slate-950/15 px-4 py-3 text-sm">
               <span class="font-semibold">{{ person.name }}</span>
               <span class="ml-auto opacity-40">→</span>
-              <span class="font-semibold" :style="revealed && pairs[person.id] ? { color: accent } : {}">
-                {{ revealed && pairs[person.id] ? nameOf(pairs[person.id]) : '••••' }}
+              <span v-if="!revealed" class="font-semibold" :style="pairs[person.id] ? { color: accent } : {}">
+                {{ pairs[person.id] ? '••••' : '—' }}
               </span>
+              <select
+                v-else
+                class="max-w-[120px] rounded-lg border border-white/15 bg-slate-950/40 px-2 py-1 font-semibold text-inherit"
+                :value="pairs[person.id] ?? ''"
+                :aria-label="`Получатель для ${person.name}`"
+                @change="assign(person.id, $event.target.value)"
+              >
+                <option value="" disabled>Не назначено</option>
+                <option v-for="candidate in candidates(person)" :key="candidate.id" :value="candidate.id">
+                  {{ candidate.name }}
+                </option>
+              </select>
             </div>
           </div>
         </div>
       </div>
 
       <div v-else class="rounded-3xl border border-white/10 bg-white/5 p-6 backdrop-blur">
-        <h3 class="text-lg font-bold">История игры</h3>
-        <p class="mt-1 text-sm opacity-60">Все события с датой и временем</p>
+        <div class="flex flex-wrap items-end justify-between gap-4">
+          <div>
+            <h3 class="text-lg font-bold">История игры</h3>
+            <p class="mt-1 text-sm opacity-60">Все события с датой и временем</p>
+          </div>
+          <div class="flex flex-wrap gap-1">
+            <button
+              v-for="filter in historyFilters"
+              :key="filter.id"
+              type="button"
+              class="rounded-full border border-white/15 px-3 py-1.5 text-xs font-semibold transition"
+              :class="historyFilter === filter.id ? 'bg-white/10' : 'opacity-60 hover:opacity-100'"
+              :style="historyFilter === filter.id ? { borderColor: accent, color: accent } : {}"
+              :aria-pressed="historyFilter === filter.id"
+              @click="historyFilter = filter.id"
+            >
+              {{ filter.label }}
+            </button>
+          </div>
+        </div>
         <div class="mt-4 divide-y divide-white/10">
-          <div v-for="(event, index) in events" :key="index" class="flex items-start gap-4 py-4">
+          <div v-for="(event, index) in filteredEvents" :key="index" class="flex items-start gap-4 py-4">
             <span class="mt-2 h-2 w-2 shrink-0 rounded-full" :style="{ background: accent }"></span>
             <div>
               <p class="font-medium">{{ event.text }}</p>
               <p class="mt-1 text-xs opacity-50">{{ event.time }}</p>
             </div>
           </div>
+          <p v-if="!filteredEvents.length" class="py-6 text-center text-sm opacity-50">Событий в этой категории пока нет.</p>
         </div>
       </div>
     </div>
