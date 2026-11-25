@@ -5,6 +5,7 @@ import { authMiddleware } from './middlewares/auth.js'
 import { HttpError } from './http-error.js'
 import { authRouter } from './routes/auth.js'
 import { gamesRouter } from './routes/games.js'
+import { tenantsRouter } from './routes/tenants.js'
 
 const app = express()
 const port = process.env.PORT || 3000
@@ -23,6 +24,7 @@ app.get('/api/message', (_req, res) => {
 
 app.use('/api/auth', authRouter)
 app.use('/api/games', gamesRouter)
+app.use('/api/tenants', tenantsRouter)
 
 app.use((error, _req, res, _next) => {
   if (error instanceof HttpError) {

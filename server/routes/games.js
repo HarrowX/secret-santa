@@ -246,6 +246,137 @@ gamesRouter.get('/:id/events', (req, res) => {
   res.json(db.prepare('SELECT * FROM events WHERE game_id = ? ORDER BY id DESC').all(id))
 })
 
+gamesRouter.get('/:id/questions', (req, res) => {
+  const id = Number(req.params.id)
+  getGame(id)
+  res.json(db.prepare('SELECT * FROM questions WHERE game_id = ? ORDER BY position, id').all(id))
+})
+
+gamesRouter.post('/:id/questions', (req, res) => {
+  const id = Number(req.params.id)
+  getGame(id)
+  const { title, hint = '', type = 'text', required = false, position = 0 } = req.body ?? {}
+  const cleanTitle = requireText(title, 'Название вопроса')
+  const cleanType = String(type)
+  const allowedTypes = ['text', 'number', 'boolean', 'single', 'multi']
+  if (!allowedTypes.includes(cleanType)) fail(400, 'Неизвестный тип вопроса')
+
+  const result = db
+    .prepare(`
+      INSERT INTO questions (game_id, title, hint, type, required, position)
+      VALUES (?, ?, ?, ?, ?, ?)
+    `)
+    .run(id, cleanTitle, String(hint), cleanType, required ? 1 : 0, Number(position) || 0)
+  addEvent(id, 'settings', `Добавлен вопрос «${cleanTitle}»`)
+  res.status(201).json(db.prepare('SELECT * FROM questions WHERE id = ?').get(result.lastInsertRowid))
+})
+
+gamesRouter.patch('/:id/questions/:questionId', (req, res) => {
+  const id = Number(req.params.id)
+  getGame(id)
+  const questionId = Number(req.params.questionId)
+  const question = db.prepare('SELECT * FROM questions WHERE id = ? AND game_id = ?').get(questionId, id)
+  if (!question) fail(404, 'Вопрос не найден')
+
+  const title = req.body?.title === undefined ? question.title : requireText(req.body.title, 'Название вопроса')
+  const hint = req.body?.hint === undefined ? question.hint : String(req.body.hint)
+  const type = req.body?.type === undefined ? question.type : String(req.body.type)
+  if (!['text', 'number', 'boolean', 'single', 'multi'].includes(type)) fail(400, 'Неизвестный тип вопроса')
+  const required = req.body?.required === undefined ? question.required : req.body.required ? 1 : 0
+  const position = req.body?.position === undefined ? question.position : Number(req.body.position) || 0
+
+  db.prepare(`
+    UPDATE questions SET title = ?, hint = ?, type = ?, required = ?, position = ? WHERE id = ?
+  `).run(title, hint, type, required, position, questionId)
+  res.json(db.prepare('SELECT * FROM questions WHERE id = ?').get(questionId))
+})
+
+gamesRouter.delete('/:id/questions/:questionId', (req, res) => {
+  const id = Number(req.params.id)
+  getGame(id)
+  const questionId = Number(req.params.questionId)
+  const result = db.prepare('DELETE FROM questions WHERE id = ? AND game_id = ?').run(questionId, id)
+  if (!result.changes) fail(404, 'Вопрос не найден')
+  addEvent(id, 'settings', 'Вопрос удалён')
+  res.json({ ok: true })
+})
+
+gamesRouter.get('/:id/messages', (req, res) => {
+  const id = Number(req.params.id)
+  getGame(id)
+  res.json(
+    db.prepare(`
+      SELECT messages.*, sender.name AS from_name, receiver.name AS to_name
+      FROM messages
+      LEFT JOIN participants sender ON sender.id = messages.from_id
+      LEFT JOIN participants receiver ON receiver.id = messages.to_id
+      WHERE messages.game_id = ?
+      ORDER BY messages.id DESC
+    `).all(id),
+  )
+})
+
+gamesRouter.post('/:id/messages', (req, res) => {
+  const id = Number(req.params.id)
+  getGame(id)
+  const body = requireText(req.body?.body, 'Текст сообщения')
+  const fromId = req.body?.fromId ? Number(req.body.fromId) : null
+  const toId = req.body?.toId ? Number(req.body.toId) : null
+  const participantIds = new Set(db.prepare('SELECT id FROM participants WHERE game_id = ?').all(id).map((person) => person.id))
+  if (fromId !== null && !participantIds.has(fromId)) fail(400, 'Отправитель не участвует в игре')
+  if (toId !== null && !participantIds.has(toId)) fail(400, 'Получатель не участвует в игре')
+
+  const result = db
+    .prepare('INSERT INTO messages (game_id, from_id, to_id, body) VALUES (?, ?, ?, ?)')
+    .run(id, fromId, toId, body)
+  addEvent(id, 'message', 'Отправлено сообщение')
+  res.status(201).json(db.prepare('SELECT * FROM messages WHERE id = ?').get(result.lastInsertRowid))
+})
+
+gamesRouter.get('/:id/organizers', (req, res) => {
+  const id = Number(req.params.id)
+  getGame(id)
+  res.json(
+    db.prepare(`
+      SELECT organizers.*, users.token AS user_token, users.email AS user_email
+      FROM organizers
+      LEFT JOIN users ON users.id = organizers.user_id
+      WHERE organizers.game_id = ?
+      ORDER BY organizers.id
+    `).all(id),
+  )
+})
+
+gamesRouter.post('/:id/organizers', (req, res) => {
+  const id = Number(req.params.id)
+  getGame(id)
+  const token = requireText(req.body?.token, 'Токен организатора')
+  const user = db.prepare('SELECT id FROM users WHERE token = ?').get(token)
+  if (!user) fail(404, 'Пользователь не найден')
+
+  const count = db.prepare('SELECT COUNT(*) AS total FROM organizers WHERE game_id = ?').get(id).total
+  if (count >= 3) fail(409, 'Максимум три организатора')
+
+  try {
+    db.prepare('INSERT INTO organizers (game_id, user_id, role) VALUES (?, ?, ?)').run(id, user.id, 'organizer')
+  } catch (error) {
+    if (String(error.message).includes('UNIQUE')) fail(409, 'Организатор уже добавлен')
+    throw error
+  }
+  addEvent(id, 'settings', 'Добавлен организатор')
+  res.status(201).json({ userId: user.id })
+})
+
+gamesRouter.delete('/:id/organizers/:organizerId', (req, res) => {
+  const id = Number(req.params.id)
+  getGame(id)
+  const organizerId = Number(req.params.organizerId)
+  const result = db.prepare('DELETE FROM organizers WHERE id = ? AND game_id = ?').run(organizerId, id)
+  if (!result.changes) fail(404, 'Организатор не найден')
+  addEvent(id, 'settings', 'Организатор удалён')
+  res.json({ ok: true })
+})
+
 gamesRouter.use((error, _req, res, next) => {
   if (error instanceof HttpError) {
     res.status(error.status).json({ error: { message: error.message } })

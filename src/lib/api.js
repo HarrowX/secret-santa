@@ -48,5 +48,28 @@ export const api = {
     draw: (id) => request(`/games/${encodeURIComponent(id)}/draw`, { method: 'POST' }),
     pairs: (id) => request(`/games/${encodeURIComponent(id)}/pairs`),
     events: (id) => request(`/games/${encodeURIComponent(id)}/events`),
+    questions: (id) => request(`/games/${encodeURIComponent(id)}/questions`),
+    addQuestion: (id, body) =>
+      request(`/games/${encodeURIComponent(id)}/questions`, { method: 'POST', body: JSON.stringify(body) }),
+    updateQuestion: (id, questionId, body) =>
+      request(`/games/${encodeURIComponent(id)}/questions/${questionId}`, {
+        method: 'PATCH',
+        body: JSON.stringify(body),
+      }),
+    deleteQuestion: (id, questionId) =>
+      request(`/games/${encodeURIComponent(id)}/questions/${questionId}`, { method: 'DELETE' }),
+    messages: (id) => request(`/games/${encodeURIComponent(id)}/messages`),
+    addMessage: (id, body) =>
+      request(`/games/${encodeURIComponent(id)}/messages`, { method: 'POST', body: JSON.stringify(body) }),
+    organizers: (id) => request(`/games/${encodeURIComponent(id)}/organizers`),
+    addOrganizer: (id, body) =>
+      request(`/games/${encodeURIComponent(id)}/organizers`, { method: 'POST', body: JSON.stringify(body) }),
+    removeOrganizer: (id, organizerId) =>
+      request(`/games/${encodeURIComponent(id)}/organizers/${organizerId}`, { method: 'DELETE' }),
+  },
+  tenants: {
+    list: () => request('/tenants'),
+    get: (slug) => request(`/tenants/${encodeURIComponent(slug)}`),
+    create: (body) => request('/tenants', { method: 'POST', body: JSON.stringify(body) }),
   },
 }

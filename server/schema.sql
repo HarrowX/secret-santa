@@ -138,6 +138,14 @@ CREATE TABLE IF NOT EXISTS notifications (
   created_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
 
+CREATE TABLE IF NOT EXISTS tenants (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  slug TEXT NOT NULL UNIQUE,
+  game_id INTEGER NOT NULL UNIQUE REFERENCES games(id) ON DELETE CASCADE,
+  domain TEXT,
+  created_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
 CREATE INDEX IF NOT EXISTS idx_games_token ON games(token);
 CREATE INDEX IF NOT EXISTS idx_participants_game ON participants(game_id);
 CREATE INDEX IF NOT EXISTS idx_pairs_game ON pairs(game_id);
