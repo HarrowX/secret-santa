@@ -1,46 +1,41 @@
 <script setup>
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
+import SiteHeader from './components/SiteHeader.vue'
+import HeroSection from './components/HeroSection.vue'
+import ThemeShowcase from './components/ThemeShowcase.vue'
+import StepsSection from './components/StepsSection.vue'
+import FeatureSection from './components/FeatureSection.vue'
+import OrganizerDemo from './components/OrganizerDemo.vue'
+import SiteFooter from './components/SiteFooter.vue'
+import { themes } from './data/themes'
 
-const message = ref('')
-const error = ref('')
-const loading = ref(false)
+const themeId = ref('winter')
+const mode = ref('night')
+const page = ref('landing')
 
-async function loadMessage() {
-  loading.value = true
-  error.value = ''
-
-  try {
-    const response = await fetch('/api/message')
-    if (!response.ok) throw new Error(`HTTP ${response.status}`)
-    message.value = (await response.json()).message
-  } catch (err) {
-    error.value = err.message
-  } finally {
-    loading.value = false
-  }
-}
+const theme = computed(() => themes.find((item) => item.id === themeId.value) ?? themes[0])
+const isDay = computed(() => mode.value === 'day')
+const background = computed(() => (isDay.value ? theme.value.day : theme.value.night))
 </script>
 
 <template>
-  <main class="flex min-h-screen items-center justify-center bg-slate-950 p-8 text-slate-100">
-    <section class="w-full max-w-lg rounded-2xl border border-slate-800 bg-slate-900 p-8 shadow-2xl">
-      <p class="text-xs font-semibold uppercase tracking-widest text-emerald-400">
-        Node.js · Express · Vue · Tailwind
-      </p>
-      <h1 class="mt-3 text-3xl font-bold">Secret Santa</h1>
-      <p class="mt-2 text-slate-400">Проверьте связь клиента с API.</p>
+  <div
+    class="min-h-screen transition-all duration-500"
+    :class="isDay ? 'text-slate-900' : 'text-slate-100'"
+    :style="{ background }"
+  >
+    <SiteHeader :page="page" :accent="theme.accent" :is-day="isDay" @navigate="page = $event" />
 
-      <button
-        type="button"
-        class="mt-6 rounded-lg bg-emerald-500 px-5 py-2.5 font-medium text-slate-950 transition hover:bg-emerald-400 disabled:opacity-50"
-        :disabled="loading"
-        @click="loadMessage"
-      >
-        {{ loading ? 'Загрузка...' : 'Получить сообщение' }}
-      </button>
+    <main>
+      <template v-if="page === 'landing'">
+        <HeroSection :theme="theme" :accent="theme.accent" @open-demo="page = 'demo'" />
+        <ThemeShowcase v-model:theme-id="themeId" v-model:mode="mode" :themes="themes" />
+        <StepsSection :accent="theme.accent" />
+        <FeatureSection :accent="theme.accent" @open-demo="page = 'demo'" />
+      </template>
+      <OrganizerDemo v-else :accent="theme.accent" @back="page = 'landing'" />
+    </main>
 
-      <p v-if="message" class="mt-5 rounded-lg bg-slate-800 p-4 text-emerald-300">{{ message }}</p>
-      <p v-if="error" class="mt-5 rounded-lg bg-red-950 p-4 text-red-300">Ошибка: {{ error }}</p>
-    </section>
-  </main>
+    <SiteFooter :accent="theme.accent" :is-day="isDay" />
+  </div>
 </template>
