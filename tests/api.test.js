@@ -194,6 +194,30 @@ describe('API', () => {
     assert.equal(empty.status, 400)
   })
 
+  it('добавляет участников после жеребьёвки и распределяет только новых', async () => {
+    const game = await createGame('Новые участники')
+    const [first, second] = await addParticipants(game.id, ['Аня', 'Борис'])
+    const initial = await request('POST', `/games/${game.id}/draw`)
+    assert.equal(initial.status, 200)
+
+    const [third, fourth] = await addParticipants(game.id, ['Вика', 'Гена'])
+    const extra = await request('POST', `/games/${game.id}/draw/new`)
+    assert.equal(extra.status, 200)
+    assert.equal(extra.body.length, 4)
+    assert.ok(
+      extra.body.some(
+        (pair) => pair.from_id === first.id && pair.to_id === second.id,
+      ) || extra.body.some((pair) => pair.from_id === second.id && pair.to_id === first.id),
+    )
+    const newPairs = extra.body.filter((pair) => [third.id, fourth.id].includes(pair.from_id))
+    assert.equal(newPairs.length, 2)
+    assert.ok(newPairs.some((pair) => pair.to_id === third.id))
+    assert.ok(newPairs.some((pair) => pair.to_id === fourth.id))
+
+    const repeated = await request('POST', `/games/${game.id}/draw/new`)
+    assert.equal(repeated.status, 400)
+  })
+
   it('управляет исключениями и ручными парами при повторной жеребьёвке', async () => {
     const game = await createGame('Управление парами')
     const [first, second, third] = await addParticipants(game.id, ['Аня', 'Борис', 'Вика'])

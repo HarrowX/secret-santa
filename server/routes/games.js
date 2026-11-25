@@ -248,6 +248,43 @@ gamesRouter.post('/:id/draw', (req, res) => {
   res.json(db.prepare('SELECT * FROM pairs WHERE game_id = ? ORDER BY from_id').all(id))
 })
 
+gamesRouter.post('/:id/draw/new', (req, res) => {
+  const id = Number(req.params.id)
+  getGame(id)
+  const participants = db.prepare('SELECT id FROM participants WHERE game_id = ? ORDER BY id').all(id)
+  const pairs = db.prepare('SELECT from_id, to_id FROM pairs WHERE game_id = ?').all(id)
+  const paired = new Set(pairs.flatMap((pair) => [pair.from_id, pair.to_id]))
+  const pending = participants.map((person) => person.id).filter((personId) => !paired.has(personId))
+  if (pending.length < 2) fail(400, 'Нет двух участников без пары')
+
+  const pendingSet = new Set(pending)
+  const exclusions = new Set(
+    db
+      .prepare('SELECT from_id, to_id FROM exclusions WHERE game_id = ?')
+      .all(id)
+      .filter((item) => pendingSet.has(item.from_id) && pendingSet.has(item.to_id))
+      .map((item) => `${item.from_id}:${item.to_id}`),
+  )
+  const manual = new Map(
+    db
+      .prepare('SELECT from_id, to_id FROM pairs WHERE game_id = ? AND manual = 1')
+      .all(id)
+      .filter((item) => pendingSet.has(item.from_id) && pendingSet.has(item.to_id))
+      .map((item) => [item.from_id, item.to_id]),
+  )
+
+  const solution = drawPairs({ ids: pending, exclusions, manual })
+  if (!solution) fail(409, 'Не удалось распределить пары для новых участников')
+
+  db.transaction(() => {
+    const insert = db.prepare('INSERT INTO pairs (game_id, from_id, to_id, manual) VALUES (?, ?, ?, ?)')
+    for (const [from, to] of solution) insert.run(id, from, to, manual.has(from) ? 1 : 0)
+    addEvent(id, 'draw', `Дополнительно распределено участников: ${pending.length}`)
+  })()
+
+  res.json(db.prepare('SELECT * FROM pairs WHERE game_id = ? ORDER BY from_id').all(id))
+})
+
 gamesRouter.get('/:id/pairs', (req, res) => {
   const id = Number(req.params.id)
   getGame(id)

@@ -64,6 +64,7 @@ export const api = {
     removeExclusion: (id, fromId, toId) =>
       request(`/games/${encodeURIComponent(id)}/exclusions/${fromId}/${toId}`, { method: 'DELETE' }),
     draw: (id) => request(`/games/${encodeURIComponent(id)}/draw`, { method: 'POST' }),
+    drawNew: (id) => request(`/games/${encodeURIComponent(id)}/draw/new`, { method: 'POST' }),
     resetPairs: (id) => request(`/games/${encodeURIComponent(id)}/pairs/reset`, { method: 'POST' }),
     setPair: (id, body) =>
       request(`/games/${encodeURIComponent(id)}/pairs`, {

@@ -1,5 +1,5 @@
 <script setup>
-import { ref, watch } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { api } from '../lib/api'
 import { usePreferencesStore } from '../stores/preferences'
@@ -17,6 +17,11 @@ const loading = ref(true)
 const busy = ref(false)
 const newParticipant = ref('')
 const bulkNames = ref('')
+const pendingParticipants = computed(() => {
+  if (!data.value) return []
+  const paired = new Set(data.value.pairs.flatMap((pair) => [pair.from_id, pair.to_id]))
+  return data.value.participants.filter((person) => !paired.has(person.id))
+})
 const exclusionFrom = ref('')
 const exclusionTo = ref('')
 const manualFrom = ref('')
@@ -130,6 +135,10 @@ function draw() {
   return runAction(() => api.games.draw(route.params.id))
 }
 
+function drawNew() {
+  return runAction(() => api.games.drawNew(route.params.id))
+}
+
 function reveal(pair) {
   return runAction(() => api.games.reveal(route.params.id, pair.from_id))
 }
@@ -175,15 +184,26 @@ function reveal(pair) {
             <h2 class="font-bold">Организатор</h2>
             <p class="mt-1 text-sm opacity-60">Добавьте участников и распределите пары</p>
           </div>
-          <button
-            type="button"
-            class="rounded-full px-5 py-2 text-sm font-bold transition hover:opacity-80 disabled:opacity-50"
-            :style="{ background: preferences.theme.accent, color: '#0b1120' }"
-            :disabled="busy || data.participants.length < 2"
-            @click="draw"
-          >
-            Провести жеребьёвку
-          </button>
+          <div class="flex flex-wrap gap-2">
+            <button
+              v-if="pendingParticipants.length > 1"
+              type="button"
+              class="rounded-full border border-white/20 px-5 py-2 text-sm font-semibold transition hover:bg-white/10 disabled:opacity-50"
+              :disabled="busy"
+              @click="drawNew"
+            >
+              Доп. жеребьёвка: {{ pendingParticipants.length }}
+            </button>
+            <button
+              type="button"
+              class="rounded-full px-5 py-2 text-sm font-bold transition hover:opacity-80 disabled:opacity-50"
+              :style="{ background: preferences.theme.accent, color: '#0b1120' }"
+              :disabled="busy || data.participants.length < 2"
+              @click="draw"
+            >
+              Провести жеребьёвку
+            </button>
+          </div>
         </div>
         <form class="mt-4 flex flex-wrap gap-2" @submit.prevent="addParticipant">
           <input
