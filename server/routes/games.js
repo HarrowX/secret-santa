@@ -18,9 +18,7 @@ function getGame(id) {
 
 function resolveGameId(raw) {
   const value = String(raw)
-  const game = /^\d+$/.test(value)
-    ? gamesRepository.findById(Number(value))
-    : gamesRepository.findByToken(value)
+  const game = /^\d+$/.test(value) ? gamesRepository.findById(Number(value)) : gamesRepository.findByToken(value)
   if (!game) fail(404, 'Игра не найдена')
   return game.id
 }
@@ -53,9 +51,11 @@ function publicLink(req, path) {
 }
 
 function addNotification(gameId, participantId, payload) {
-  db.prepare(`
+  db.prepare(
+    `
     INSERT INTO notifications (game_id, participant_id, kind, payload) VALUES (?, ?, ?, ?)
-  `).run(gameId, participantId, 'card_updated', JSON.stringify(payload))
+  `,
+  ).run(gameId, participantId, 'card_updated', JSON.stringify(payload))
 }
 
 function addEvent(gameId, kind, text, actor = null) {
@@ -76,12 +76,14 @@ function gameProgress(gameId) {
     .prepare('SELECT id, user_id, gift_sent_at, gift_received_at FROM participants WHERE game_id = ?')
     .all(gameId)
   const answered = db
-    .prepare(`
+    .prepare(
+      `
       SELECT DISTINCT answers.participant_id
       FROM answers
       JOIN questions ON questions.id = answers.question_id
       WHERE questions.game_id = ?
-    `)
+    `,
+    )
     .all(gameId).length
   const pairs = db.prepare('SELECT revealed_at FROM pairs WHERE game_id = ?').all(gameId)
   const total = participants.length
@@ -96,12 +98,14 @@ function gameProgress(gameId) {
 
 function pastPairsFor(gameId) {
   const identities = db
-    .prepare(`
+    .prepare(
+      `
       SELECT participants.id, COALESCE(users.token, participants.invite_token) AS identity
       FROM participants
       LEFT JOIN users ON users.id = participants.user_id
       WHERE participants.game_id = ?
-    `)
+    `,
+    )
     .all(gameId)
   const idsByToken = new Map(identities.map((person) => [person.identity, person.id]))
   return new Set(
@@ -126,18 +130,16 @@ gamesRouter.post('/', validateBody(schemas.createGame), (req, res) => {
 
   const token = randomUUID()
   const result = db
-    .prepare(`
+    .prepare(
+      `
       INSERT INTO games (token, title, budget, exchange_date, rules, format, theme_id)
       VALUES (?, ?, ?, ?, ?, ?, ?)
-    `)
+    `,
+    )
     .run(token, title, budget, exchangeDate, rules, format, themeId)
 
   const id = Number(result.lastInsertRowid)
-  db.prepare('INSERT INTO organizers (game_id, user_id, role) VALUES (?, ?, ?)').run(
-    id,
-    req.user?.id ?? null,
-    'owner',
-  )
+  db.prepare('INSERT INTO organizers (game_id, user_id, role) VALUES (?, ?, ?)').run(id, req.user?.id ?? null, 'owner')
   addEvent(id, 'settings', 'Игра создана', req.user?.id ?? null)
   res.status(201).json(getGame(id))
 })
@@ -220,28 +222,26 @@ gamesRouter.patch('/:id/participants/:participantId', validateBody(schemas.parti
   getGame(id)
   requireOrganizer(id, req.user)
   const participantId = Number(req.params.participantId)
-  const participant = db
-    .prepare('SELECT * FROM participants WHERE id = ? AND game_id = ?')
-    .get(participantId, id)
+  const participant = db.prepare('SELECT * FROM participants WHERE id = ? AND game_id = ?').get(participantId, id)
   if (!participant) fail(404, 'Участник не найден')
 
   const value = (key) => (req.body[key] === undefined ? participant[key] : req.body[key])
   try {
-    db
-      .prepare(`
+    db.prepare(
+      `
         UPDATE participants
         SET name = ?, email = ?, wishlist = ?, address = ?, notes = ?, preferred = ?
         WHERE id = ?
-      `)
-      .run(
-        value('name'),
-        value('email'),
-        value('wishlist'),
-        value('address'),
-        value('notes'),
-        value('preferred'),
-        participantId,
-      )
+      `,
+    ).run(
+      value('name'),
+      value('email'),
+      value('wishlist'),
+      value('address'),
+      value('notes'),
+      value('preferred'),
+      participantId,
+    )
   } catch (error) {
     if (String(error.message).includes('UNIQUE')) fail(409, 'Участник с таким именем уже есть')
     throw error
@@ -257,9 +257,7 @@ function markGift(kind) {
     getGame(id)
     requireOrganizer(id, req.user)
     const participantId = Number(req.params.participantId)
-    const participant = db
-      .prepare('SELECT id FROM participants WHERE id = ? AND game_id = ?')
-      .get(participantId, id)
+    const participant = db.prepare('SELECT id FROM participants WHERE id = ? AND game_id = ?').get(participantId, id)
     if (!participant) fail(404, 'Участник не найден')
     const column = kind === 'sent' ? 'gift_sent_at' : 'gift_received_at'
     db.prepare(`UPDATE participants SET ${column} = datetime('now') WHERE id = ?`).run(participantId)
@@ -276,9 +274,7 @@ gamesRouter.delete('/:id/participants/:participantId', (req, res) => {
   getGame(id)
   requireOrganizer(id, req.user)
   const participantId = Number(req.params.participantId)
-  const participant = db
-    .prepare('SELECT id FROM participants WHERE id = ? AND game_id = ?')
-    .get(participantId, id)
+  const participant = db.prepare('SELECT id FROM participants WHERE id = ? AND game_id = ?').get(participantId, id)
   if (!participant) fail(404, 'Участник не найден')
 
   const remaining = db
@@ -339,26 +335,26 @@ gamesRouter.get('/:id/invite', (req, res) => {
   })
 })
 
-gamesRouter.post(
-  '/:id/past-pairs/import',
-  validateBody(schemas.pastPairsImport),
-  (req, res) => {
-    const id = resolveGameId(req.params.id)
-    getGame(id)
-    requireOrganizer(id, req.user)
-    const pastGameId = Number(req.body.pastGameId)
-    getGame(pastGameId)
-    const belongs = db
-      .prepare(`
+gamesRouter.post('/:id/past-pairs/import', validateBody(schemas.pastPairsImport), (req, res) => {
+  const id = resolveGameId(req.params.id)
+  getGame(id)
+  requireOrganizer(id, req.user)
+  const pastGameId = Number(req.body.pastGameId)
+  getGame(pastGameId)
+  const belongs = db
+    .prepare(
+      `
         SELECT 1 AS ok FROM participants WHERE game_id = ? AND user_id = ?
         UNION
         SELECT 1 AS ok FROM organizers WHERE game_id = ? AND user_id = ?
-      `)
-      .get(pastGameId, req.user.id, pastGameId, req.user.id)
-    if (!belongs) fail(403, 'Прошлая игра недоступна для импорта')
+      `,
+    )
+    .get(pastGameId, req.user.id, pastGameId, req.user.id)
+  if (!belongs) fail(403, 'Прошлая игра недоступна для импорта')
 
-    const rows = db
-      .prepare(`
+  const rows = db
+    .prepare(
+      `
         SELECT
           COALESCE(fromUser.token, fromParticipant.invite_token) AS from_token,
           COALESCE(toUser.token, toParticipant.invite_token) AS to_token,
@@ -370,25 +366,25 @@ gamesRouter.post(
         LEFT JOIN users toUser ON toUser.id = toParticipant.user_id
         JOIN games g ON g.id = pairs.game_id
         WHERE pairs.game_id = ?
-      `)
-      .all(pastGameId)
-    if (!rows.length) fail(400, 'В прошлой игре нет распределённых пар')
+      `,
+    )
+    .all(pastGameId)
+  if (!rows.length) fail(400, 'В прошлой игре нет распределённых пар')
 
-    const insert = db.prepare(`
+  const insert = db.prepare(`
       INSERT OR IGNORE INTO past_pairs (game_id, from_token, to_token, played_at)
       VALUES (?, ?, ?, ?)
     `)
-    const result = db.transaction(() => {
-      let imported = 0
-      for (const row of rows) {
-        imported += insert.run(id, row.from_token, row.to_token, row.played_at).changes
-      }
-      return imported
-    })()
-    addEvent(id, 'settings', `Импортировано прошлых пар: ${result}`, req.user?.id ?? null)
-    res.status(201).json({ imported: result, total: rows.length })
-  },
-)
+  const result = db.transaction(() => {
+    let imported = 0
+    for (const row of rows) {
+      imported += insert.run(id, row.from_token, row.to_token, row.played_at).changes
+    }
+    return imported
+  })()
+  addEvent(id, 'settings', `Импортировано прошлых пар: ${result}`, req.user?.id ?? null)
+  res.status(201).json({ imported: result, total: rows.length })
+})
 
 gamesRouter.post('/:id/exclusions', validateBody(schemas.exclusion), (req, res) => {
   const id = resolveGameId(req.params.id)
@@ -399,11 +395,7 @@ gamesRouter.post('/:id/exclusions', validateBody(schemas.exclusion), (req, res) 
   const ids = new Set(participants.map((person) => person.id))
   if (!ids.has(fromId) || !ids.has(toId) || fromId === toId) fail(400, 'Некорректная пара исключения')
 
-  db.prepare('INSERT OR IGNORE INTO exclusions (game_id, from_id, to_id) VALUES (?, ?, ?)').run(
-    id,
-    fromId,
-    toId,
-  )
+  db.prepare('INSERT OR IGNORE INTO exclusions (game_id, from_id, to_id) VALUES (?, ?, ?)').run(id, fromId, toId)
   res.status(201).json({ fromId, toId })
 })
 
@@ -434,14 +426,16 @@ gamesRouter.post('/:id/draw', (req, res) => {
 
   const ids = participants.map((person) => person.id)
   const exclusions = new Set(
-    db.prepare('SELECT from_id, to_id FROM exclusions WHERE game_id = ?').all(id).map(
-      (item) => `${item.from_id}:${item.to_id}`,
-    ),
+    db
+      .prepare('SELECT from_id, to_id FROM exclusions WHERE game_id = ?')
+      .all(id)
+      .map((item) => `${item.from_id}:${item.to_id}`),
   )
   const manual = new Map(
-    db.prepare('SELECT from_id, to_id FROM pairs WHERE game_id = ? AND manual = 1').all(id).map(
-      (item) => [item.from_id, item.to_id],
-    ),
+    db
+      .prepare('SELECT from_id, to_id FROM pairs WHERE game_id = ? AND manual = 1')
+      .all(id)
+      .map((item) => [item.from_id, item.to_id]),
   )
 
   const solution = drawPairs({ ids, exclusions, manual, past: pastPairsFor(id) })
@@ -507,14 +501,16 @@ gamesRouter.get('/:id/pairs', (req, res) => {
   getGame(id)
   res.json(
     db
-      .prepare(`
+      .prepare(
+        `
         SELECT pairs.*, sender.name AS from_name, receiver.name AS to_name
         FROM pairs
         JOIN participants sender ON sender.id = pairs.from_id
         JOIN participants receiver ON receiver.id = pairs.to_id
         WHERE pairs.game_id = ?
         ORDER BY pairs.from_id
-      `)
+      `,
+      )
       .all(id),
   )
 })
@@ -535,7 +531,12 @@ gamesRouter.post('/:id/pairs', validateBody(schemas.pair), (req, res) => {
   getGame(id)
   requireOrganizer(id, req.user)
   const { fromId, toId } = req.body
-  const participantIds = new Set(db.prepare('SELECT id FROM participants WHERE game_id = ?').all(id).map((person) => person.id))
+  const participantIds = new Set(
+    db
+      .prepare('SELECT id FROM participants WHERE game_id = ?')
+      .all(id)
+      .map((person) => person.id),
+  )
   if (!participantIds.has(fromId) || !participantIds.has(toId) || fromId === toId) {
     fail(400, 'Некорректное назначение пары')
   }
@@ -544,17 +545,15 @@ gamesRouter.post('/:id/pairs', validateBody(schemas.pair), (req, res) => {
   }
 
   const current = db.prepare('SELECT to_id FROM pairs WHERE game_id = ? AND from_id = ?').get(id, fromId)
-  const other = db.prepare('SELECT from_id FROM pairs WHERE game_id = ? AND to_id = ? AND from_id <> ?').get(id, toId, fromId)
+  const other = db
+    .prepare('SELECT from_id FROM pairs WHERE game_id = ? AND to_id = ? AND from_id <> ?')
+    .get(id, toId, fromId)
 
   db.transaction(() => {
     db.prepare('DELETE FROM pairs WHERE game_id = ? AND from_id = ?').run(id, fromId)
     if (other) db.prepare('DELETE FROM pairs WHERE game_id = ? AND from_id = ?').run(id, other.from_id)
 
-    db.prepare('INSERT INTO pairs (game_id, from_id, to_id, manual) VALUES (?, ?, ?, 1)').run(
-      id,
-      fromId,
-      toId,
-    )
+    db.prepare('INSERT INTO pairs (game_id, from_id, to_id, manual) VALUES (?, ?, ?, 1)').run(id, fromId, toId)
     if (other && current) {
       db.prepare('INSERT INTO pairs (game_id, from_id, to_id, manual) VALUES (?, ?, ?, 1)').run(
         id,
@@ -592,13 +591,15 @@ gamesRouter.get('/:id/notifications', (req, res) => {
   requireOrganizer(id, req.user)
   res.json(
     db
-      .prepare(`
+      .prepare(
+        `
         SELECT n.id, n.kind, n.payload, n.sent_at, n.created_at, p.name AS participant_name
         FROM notifications n
         LEFT JOIN participants p ON p.id = n.participant_id
         WHERE n.game_id = ?
         ORDER BY n.id DESC
-      `)
+      `,
+      )
       .all(id),
   )
 })
@@ -618,10 +619,12 @@ gamesRouter.post('/:id/questions', validateBody(schemas.questionCreate), (req, r
   if (count >= 10) fail(400, 'Можно добавить не больше 10 вопросов')
 
   const result = db
-    .prepare(`
+    .prepare(
+      `
       INSERT INTO questions (game_id, title, hint, type, required, position)
       VALUES (?, ?, ?, ?, ?, ?)
-    `)
+    `,
+    )
     .run(id, title, hint, type, required ? 1 : 0, position)
   addEvent(id, 'settings', `Добавлен вопрос «${title}»`, req.user?.id ?? null)
   res.status(201).json(db.prepare('SELECT * FROM questions WHERE id = ?').get(result.lastInsertRowid))
@@ -641,9 +644,11 @@ gamesRouter.patch('/:id/questions/:questionId', validateBody(schemas.questionUpd
   const required = req.body.required === undefined ? question.required : req.body.required ? 1 : 0
   const position = req.body.position === undefined ? question.position : req.body.position
 
-  db.prepare(`
+  db.prepare(
+    `
     UPDATE questions SET title = ?, hint = ?, type = ?, required = ?, position = ? WHERE id = ?
-  `).run(title, hint, type, required, position, questionId)
+  `,
+  ).run(title, hint, type, required, position, questionId)
   res.json(db.prepare('SELECT * FROM questions WHERE id = ?').get(questionId))
 })
 
@@ -664,14 +669,16 @@ gamesRouter.get('/:id/answers', (req, res) => {
   requireOrganizer(id, req.user)
   res.json(
     db
-      .prepare(`
+      .prepare(
+        `
         SELECT answers.*, questions.title AS question_title, participants.name AS participant_name
         FROM answers
         JOIN questions ON questions.id = answers.question_id
         JOIN participants ON participants.id = answers.participant_id
         WHERE questions.game_id = ?
         ORDER BY questions.position, questions.id, participants.id
-      `)
+      `,
+      )
       .all(id),
   )
 })
@@ -680,20 +687,20 @@ gamesRouter.get('/:id/participants/:participantId/answers', (req, res) => {
   const id = resolveGameId(req.params.id)
   getGame(id)
   const participantId = Number(req.params.participantId)
-  const participant = db
-    .prepare('SELECT id FROM participants WHERE id = ? AND game_id = ?')
-    .get(participantId, id)
+  const participant = db.prepare('SELECT id FROM participants WHERE id = ? AND game_id = ?').get(participantId, id)
   if (!participant) fail(404, 'Участник не найден')
 
   res.json(
     db
-      .prepare(`
+      .prepare(
+        `
         SELECT answers.question_id, answers.value
         FROM answers
         JOIN questions ON questions.id = answers.question_id
         WHERE answers.participant_id = ? AND questions.game_id = ?
         ORDER BY questions.position, questions.id
-      `)
+      `,
+      )
       .all(participantId, id),
   )
 })
@@ -702,9 +709,7 @@ gamesRouter.put('/:id/participants/:participantId/answers', validateBody(schemas
   const id = resolveGameId(req.params.id)
   getGame(id)
   const participantId = Number(req.params.participantId)
-  const participant = db
-    .prepare('SELECT id FROM participants WHERE id = ? AND game_id = ?')
-    .get(participantId, id)
+  const participant = db.prepare('SELECT id FROM participants WHERE id = ? AND game_id = ?').get(participantId, id)
   if (!participant) fail(404, 'Участник не найден')
 
   const questions = db.prepare('SELECT * FROM questions WHERE game_id = ?').all(id)
@@ -717,7 +722,11 @@ gamesRouter.put('/:id/participants/:participantId/answers', validateBody(schemas
     if (question.type === 'number' && answer.value && Number.isNaN(Number(answer.value))) {
       fail(400, `Вопрос «${question.title}» требует число`)
     }
-    if (question.type === 'boolean' && answer.value && !['да', 'нет', 'true', 'false', '1', '0'].includes(answer.value.toLowerCase())) {
+    if (
+      question.type === 'boolean' &&
+      answer.value &&
+      !['да', 'нет', 'true', 'false', '1', '0'].includes(answer.value.toLowerCase())
+    ) {
       fail(400, `Вопрос «${question.title}» требует да/нет`)
     }
     values.set(answer.questionId, answer.value)
@@ -737,13 +746,15 @@ gamesRouter.put('/:id/participants/:participantId/answers', validateBody(schemas
 
   res.json(
     db
-      .prepare(`
+      .prepare(
+        `
         SELECT answers.question_id, answers.value
         FROM answers
         JOIN questions ON questions.id = answers.question_id
         WHERE answers.participant_id = ? AND questions.game_id = ?
         ORDER BY questions.position, questions.id
-      `)
+      `,
+      )
       .all(participantId, id),
   )
 })
@@ -752,14 +763,18 @@ gamesRouter.get('/:id/messages', (req, res) => {
   const id = resolveGameId(req.params.id)
   getGame(id)
   res.json(
-    db.prepare(`
+    db
+      .prepare(
+        `
       SELECT messages.*, sender.name AS from_name, receiver.name AS to_name
       FROM messages
       LEFT JOIN participants sender ON sender.id = messages.from_id
       LEFT JOIN participants receiver ON receiver.id = messages.to_id
       WHERE messages.game_id = ?
       ORDER BY messages.id DESC
-    `).all(id),
+    `,
+      )
+      .all(id),
   )
 })
 
@@ -770,7 +785,12 @@ gamesRouter.post('/:id/messages', validateBody(schemas.message), (req, res) => {
   const { body } = req.body
   const fromId = req.body.fromId ?? null
   const toId = req.body.toId ?? null
-  const participantIds = new Set(db.prepare('SELECT id FROM participants WHERE game_id = ?').all(id).map((person) => person.id))
+  const participantIds = new Set(
+    db
+      .prepare('SELECT id FROM participants WHERE game_id = ?')
+      .all(id)
+      .map((person) => person.id),
+  )
   if (fromId !== null && !participantIds.has(fromId)) fail(400, 'Отправитель не участвует в игре')
   if (toId !== null && !participantIds.has(toId)) fail(400, 'Получатель не участвует в игре')
 
@@ -786,78 +806,90 @@ gamesRouter.get('/:id/reminders', (req, res) => {
   getGame(id)
   requireOrganizer(id, req.user)
   res.json(
-    db.prepare(`
+    db
+      .prepare(
+        `
       SELECT messages.*, participants.name AS participant_name
       FROM messages
       LEFT JOIN participants ON participants.id = messages.to_id
       WHERE messages.game_id = ? AND messages.from_id IS NULL
       ORDER BY messages.id DESC
-    `).all(id),
+    `,
+      )
+      .all(id),
   )
 })
 
-gamesRouter.post(
-  '/:id/reminders',
-  reminderRateLimit,
-  validateBody(schemas.reminder),
-  (req, res) => {
-    const id = resolveGameId(req.params.id)
-    getGame(id)
-    requireOrganizer(id, req.user)
-    const { body, recipientIds } = req.body
-    const uniqueIds = [...new Set(recipientIds.map(Number))]
-    const participants = db
-      .prepare(`SELECT id, name, email FROM participants WHERE game_id = ? AND id IN (${uniqueIds.map(() => '?').join(',')})`)
-      .all(id, ...uniqueIds)
-    if (participants.length !== uniqueIds.length) fail(400, 'Некоторые участники не найдены')
+gamesRouter.post('/:id/reminders', reminderRateLimit, validateBody(schemas.reminder), (req, res) => {
+  const id = resolveGameId(req.params.id)
+  getGame(id)
+  requireOrganizer(id, req.user)
+  const { body, recipientIds } = req.body
+  const uniqueIds = [...new Set(recipientIds.map(Number))]
+  const participants = db
+    .prepare(
+      `SELECT id, name, email FROM participants WHERE game_id = ? AND id IN (${uniqueIds.map(() => '?').join(',')})`,
+    )
+    .all(id, ...uniqueIds)
+  if (participants.length !== uniqueIds.length) fail(400, 'Некоторые участники не найдены')
 
-    const dedupeKey = createHash('sha256')
-      .update(`${id}|${uniqueIds.sort((a, b) => a - b).join(',')}|${body}`)
-      .digest('hex')
-    const duplicate = db
-      .prepare(`
+  const dedupeKey = createHash('sha256')
+    .update(`${id}|${uniqueIds.sort((a, b) => a - b).join(',')}|${body}`)
+    .digest('hex')
+  const duplicate = db
+    .prepare(
+      `
         SELECT id FROM messages
         WHERE game_id = ? AND dedupe_key = ? AND created_at >= datetime('now', '-5 minutes')
-      `)
-      .get(id, dedupeKey)
-    if (duplicate) fail(409, 'Такое напоминание уже отправлено')
+      `,
+    )
+    .get(id, dedupeKey)
+  if (duplicate) fail(409, 'Такое напоминание уже отправлено')
 
-    const insert = db.prepare(`
+  const insert = db.prepare(`
       INSERT INTO messages (game_id, from_id, to_id, body, recipient_email, status, error, dedupe_key)
       VALUES (?, NULL, ?, ?, ?, ?, ?, ?)
     `)
-    const created = db.transaction(() =>
-      participants.map((person) => {
-        const status = person.email ? 'sent' : 'queued'
-        const error = person.email ? null : 'Email не указан'
-        const result = insert.run(id, person.id, body, person.email, status, error, dedupeKey)
-        return db.prepare(`
+  const created = db.transaction(() =>
+    participants.map((person) => {
+      const status = person.email ? 'sent' : 'queued'
+      const error = person.email ? null : 'Email не указан'
+      const result = insert.run(id, person.id, body, person.email, status, error, dedupeKey)
+      return db
+        .prepare(
+          `
           SELECT messages.*, participants.name AS participant_name
           FROM messages JOIN participants ON participants.id = messages.to_id
           WHERE messages.id = ?
-        `).get(result.lastInsertRowid)
-      }),
-    )()
-    addEvent(id, 'message', `Отправлено напоминаний: ${created.length}`, req.user?.id ?? null)
-    res.status(201).json(created)
-  },
-)
+        `,
+        )
+        .get(result.lastInsertRowid)
+    }),
+  )()
+  addEvent(id, 'message', `Отправлено напоминаний: ${created.length}`, req.user?.id ?? null)
+  res.status(201).json(created)
+})
 
 gamesRouter.get('/:id/organizers', (req, res) => {
   const id = resolveGameId(req.params.id)
   getGame(id)
   requireOrganizer(id, req.user)
   res.json(
-    db.prepare(`
+    db
+      .prepare(
+        `
       SELECT organizers.*, users.token AS user_token, users.email AS user_email
       FROM organizers
       LEFT JOIN users ON users.id = organizers.user_id
       WHERE organizers.game_id = ?
       ORDER BY organizers.id
-    `).all(id).map((organizer) => ({
-      ...organizer,
-      url: organizer.invited_token ? publicLink(req, `/organizer/${organizer.invited_token}`) : null,
-    })),
+    `,
+      )
+      .all(id)
+      .map((organizer) => ({
+        ...organizer,
+        url: organizer.invited_token ? publicLink(req, `/organizer/${organizer.invited_token}`) : null,
+      })),
   )
 })
 
@@ -891,10 +923,12 @@ gamesRouter.post('/:id/organizers/invite', (req, res) => {
 
   const token = inviteToken()
   const result = db
-    .prepare(`
+    .prepare(
+      `
       INSERT INTO organizers (game_id, user_id, role, invited_token)
       VALUES (?, NULL, 'organizer', ?)
-    `)
+    `,
+    )
     .run(id, token)
   addEvent(id, 'settings', 'Создано приглашение организатора', req.user?.id ?? null)
   res.status(201).json({
@@ -918,10 +952,12 @@ gamesRouter.delete('/:id/organizers/:organizerId', (req, res) => {
   if (count <= 1) fail(409, 'Нельзя удалить последнего организатора')
   if (organizer.role === 'owner') {
     const accepted = db
-      .prepare(`
+      .prepare(
+        `
         SELECT COUNT(*) AS total FROM organizers
         WHERE game_id = ? AND user_id IS NOT NULL AND id <> ?
-      `)
+      `,
+      )
       .get(id, organizerId).total
     if (!accepted) fail(409, 'Сначала передайте управление принявшему приглашение организатору')
   }

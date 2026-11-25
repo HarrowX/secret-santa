@@ -50,11 +50,7 @@ authRouter.post('/register', validateBody(schemas.credentials), (req, res) => {
   if (req.user) {
     if (req.user.email || req.user.has_password) fail(409, 'У пользователя уже есть регистрация')
     try {
-      db.prepare('UPDATE users SET email = ?, password_hash = ? WHERE id = ?').run(
-        email,
-        passwordHash,
-        req.user.id,
-      )
+      db.prepare('UPDATE users SET email = ?, password_hash = ? WHERE id = ?').run(email, passwordHash, req.user.id)
     } catch (error) {
       if (String(error.message).includes('UNIQUE')) fail(409, 'Этот email уже занят')
       throw error
@@ -97,12 +93,14 @@ authRouter.post('/login', validateBody(schemas.credentials), (req, res) => {
 authRouter.post('/recovery', validateBody(schemas.recovery), (req, res) => {
   const code = req.body.code
   const row = db
-    .prepare(`
+    .prepare(
+      `
       SELECT r.id, r.user_id, u.token, u.email, u.created_at
       FROM recovery_codes r
       JOIN users u ON u.id = r.user_id
       WHERE r.code_hash = ? AND r.used_at IS NULL
-    `)
+    `,
+    )
     .get(hashToken(code))
   if (!row) fail(400, 'Код восстановления не найден или уже использован')
 

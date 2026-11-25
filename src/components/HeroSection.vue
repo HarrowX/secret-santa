@@ -8,10 +8,17 @@ const emit = defineEmits(['open-demo'])
 </script>
 
 <template>
-  <section class="relative mx-auto grid max-w-6xl gap-12 px-5 py-14 lg:grid-cols-[1.05fr_.95fr] lg:items-center lg:py-20">
-    <div class="pointer-events-none absolute inset-0 opacity-[0.12]" style="background-image: radial-gradient(currentColor 1px, transparent 1px); background-size: 28px 28px;"></div>
+  <section
+    class="relative mx-auto grid max-w-6xl gap-12 px-5 py-14 lg:grid-cols-[1.05fr_.95fr] lg:items-center lg:py-20"
+  >
+    <div
+      class="pointer-events-none absolute inset-0 opacity-[0.12]"
+      style="background-image: radial-gradient(currentColor 1px, transparent 1px); background-size: 28px 28px"
+    ></div>
     <div>
-      <span class="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-4 py-1.5 text-xs font-medium backdrop-blur">
+      <span
+        class="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-4 py-1.5 text-xs font-medium backdrop-blur"
+      >
         <span class="h-2 w-2 rounded-full" :style="{ background: accent }"></span>
         Бесплатно · без регистрации и email
       </span>
@@ -21,7 +28,8 @@ const emit = defineEmits(['open-demo'])
       </h1>
 
       <p class="mt-5 max-w-xl text-lg leading-relaxed opacity-75">
-        Создайте игру, позовите друзей или коллег, соберите пожелания и проведите жеребьёвку. Всё в одном месте и без лишних шагов.
+        Создайте игру, позовите друзей или коллег, соберите пожелания и проведите жеребьёвку. Всё в одном месте и без
+        лишних шагов.
       </p>
 
       <div class="mt-8 flex flex-wrap gap-3">
@@ -57,7 +65,9 @@ const emit = defineEmits(['open-demo'])
             <p class="text-xs uppercase tracking-widest opacity-60">Ваша игра</p>
             <h2 class="mt-1 text-xl font-bold">Новогодняя вечеринка</h2>
           </div>
-          <span class="rounded-full border border-white/20 px-3 py-1 text-xs" :style="{ color: accent }">Ждёт жеребьёвку</span>
+          <span class="rounded-full border border-white/20 px-3 py-1 text-xs" :style="{ color: accent }"
+            >Ждёт жеребьёвку</span
+          >
         </div>
 
         <div class="mt-6 rounded-2xl border border-white/10 bg-slate-950/20 p-4">
@@ -76,7 +86,9 @@ const emit = defineEmits(['open-demo'])
             >
               {{ ['О', 'М', 'А', 'Б', 'В'][n - 1] }}
             </span>
-            <span class="grid h-8 w-8 place-items-center rounded-full border border-white/20 bg-white/10 text-xs">+7</span>
+            <span class="grid h-8 w-8 place-items-center rounded-full border border-white/20 bg-white/10 text-xs"
+              >+7</span
+            >
           </div>
         </div>
 
@@ -91,7 +103,12 @@ const emit = defineEmits(['open-demo'])
           </div>
         </div>
 
-        <button type="button" class="mt-5 w-full rounded-full py-3 font-semibold text-slate-950" :style="{ background: accent }" @click="emit('open-demo')">
+        <button
+          type="button"
+          class="mt-5 w-full rounded-full py-3 font-semibold text-slate-950"
+          :style="{ background: accent }"
+          @click="emit('open-demo')"
+        >
           Открыть кабинет организатора
         </button>
       </div>

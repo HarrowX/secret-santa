@@ -11,11 +11,13 @@ export const gamesRepository = {
 
   list() {
     return db
-      .prepare(`
+      .prepare(
+        `
         SELECT g.*, (SELECT COUNT(*) FROM participants p WHERE p.game_id = g.id) AS participants_count
         FROM games g
         ORDER BY g.id DESC
-      `)
+      `,
+      )
       .all()
   },
 }

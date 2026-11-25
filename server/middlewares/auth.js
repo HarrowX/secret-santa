@@ -7,12 +7,14 @@ export function authMiddleware(req, _res, next) {
 
   if (token) {
     const session = db
-      .prepare(`
+      .prepare(
+        `
         SELECT u.id, u.token, u.email, u.password_hash, u.created_at, s.expires_at
         FROM sessions s
         JOIN users u ON u.id = s.user_id
         WHERE s.token_hash = ?
-      `)
+      `,
+      )
       .get(hashToken(token))
 
     if (session && new Date(session.expires_at) > new Date()) {

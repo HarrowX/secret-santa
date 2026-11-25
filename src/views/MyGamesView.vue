@@ -142,8 +142,16 @@ load()
       <p v-if="authError" role="alert" class="mt-2 text-sm text-rose-300">{{ authError }}</p>
     </div>
 
-    <p v-if="loading" class="mt-8 rounded-2xl border border-white/10 bg-white/5 p-6 text-sm opacity-70">Загружаем кабинет…</p>
-    <p v-else-if="error" role="alert" class="mt-8 rounded-2xl border border-rose-400/30 bg-rose-500/10 p-6 text-sm text-rose-200">{{ error }}</p>
+    <p v-if="loading" class="mt-8 rounded-2xl border border-white/10 bg-white/5 p-6 text-sm opacity-70">
+      Загружаем кабинет…
+    </p>
+    <p
+      v-else-if="error"
+      role="alert"
+      class="mt-8 rounded-2xl border border-rose-400/30 bg-rose-500/10 p-6 text-sm text-rose-200"
+    >
+      {{ error }}
+    </p>
 
     <div v-else class="mt-8 grid gap-4">
       <div class="rounded-2xl border border-white/10 bg-white/5 p-5">
@@ -160,7 +168,9 @@ load()
               <span class="font-semibold">{{ game.title }}</span>
               <span class="text-xs opacity-60">{{ roleLabel(game.role) }}</span>
             </span>
-            <span class="mt-1 block text-xs opacity-60">{{ game.budget || 'без бюджета' }} · {{ game.exchange_date || 'дата не задана' }}</span>
+            <span class="mt-1 block text-xs opacity-60"
+              >{{ game.budget || 'без бюджета' }} · {{ game.exchange_date || 'дата не задана' }}</span
+            >
             <span
               v-if="game.token"
               role="button"
@@ -179,10 +189,18 @@ load()
       <div class="rounded-2xl border border-white/10 bg-white/5 p-5">
         <h2 class="font-bold">Мой обмен</h2>
         <div class="mt-3 grid gap-3 sm:grid-cols-2">
-          <div v-for="exchange in exchanges" :key="exchange.game_id" class="rounded-xl border border-white/10 bg-white/5 p-4 text-sm">
+          <div
+            v-for="exchange in exchanges"
+            :key="exchange.game_id"
+            class="rounded-xl border border-white/10 bg-white/5 p-4 text-sm"
+          >
             <p class="text-xs uppercase tracking-widest opacity-50">{{ exchange.title }}</p>
-            <p class="mt-2 font-bold" :style="{ color: preferences.theme.accent }">Вы дарите: {{ exchange.receiver_name }}</p>
-            <p v-if="!exchange.revealed_at" class="mt-2 text-xs opacity-60">Карточка откроется после того, как организатор раскроет пару</p>
+            <p class="mt-2 font-bold" :style="{ color: preferences.theme.accent }">
+              Вы дарите: {{ exchange.receiver_name }}
+            </p>
+            <p v-if="!exchange.revealed_at" class="mt-2 text-xs opacity-60">
+              Карточка откроется после того, как организатор раскроет пару
+            </p>
             <template v-else>
               <p v-if="exchange.wishlist" class="mt-2 opacity-80">Желания: {{ exchange.wishlist }}</p>
               <p v-if="exchange.address" class="mt-1 opacity-80">Адрес: {{ exchange.address }}</p>

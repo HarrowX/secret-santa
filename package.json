@@ -10,6 +10,10 @@
     "build": "vite build",
     "test": "node --test",
     "test:watch": "node --test --watch",
+    "lint": "eslint .",
+    "format": "prettier --check \"src/**/*.{js,vue,css}\" \"server/**/*.js\" \"tests/**/*.js\" \"*.{js,json,md}\"",
+    "format:fix": "prettier --write \"src/**/*.{js,vue,css}\" \"server/**/*.js\" \"tests/**/*.js\" \"*.{js,json,md}\"",
+    "typecheck": "vue-tsc --noEmit",
     "start": "NODE_ENV=production node --env-file-if-exists=.env server/index.js",
     "preview": "vite preview"
   },
@@ -22,10 +26,18 @@
     "zod": "^4.6.7"
   },
   "devDependencies": {
+    "@eslint/js": "^9.39.5",
     "@tailwindcss/vite": "^4.1.0",
+    "@types/node": "^26.6.10",
     "@vitejs/plugin-vue": "^6.0.0",
     "concurrently": "^9.2.0",
+    "eslint": "^9.39.5",
+    "eslint-plugin-vue": "^10.12.1",
+    "globals": "^17.14.0",
+    "prettier": "^3.10.1",
     "tailwindcss": "^4.1.0",
-    "vite": "^7.0.0"
+    "typescript": "^6.0.3",
+    "vite": "^7.0.0",
+    "vue-tsc": "^3.3.14"
   }
 }

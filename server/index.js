@@ -5,7 +5,9 @@ import { createApp } from './app.js'
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
 try {
   process.loadEnvFile(path.join(root, '.env'))
-} catch {}
+} catch (error) {
+  if (error.code !== 'ENOENT') throw error
+}
 
 const port = process.env.PORT || 3000
 

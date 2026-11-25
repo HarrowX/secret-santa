@@ -23,9 +23,12 @@ const selectedTheme = ref(props.themeId)
 const busy = ref(false)
 const error = ref('')
 
-watch(() => props.themeId, (value) => {
-  selectedTheme.value = value
-})
+watch(
+  () => props.themeId,
+  (value) => {
+    selectedTheme.value = value
+  },
+)
 
 function applyPreset(id) {
   const preset = presets.find((item) => item.id === id)

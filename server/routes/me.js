@@ -9,7 +9,8 @@ meRouter.get('/games', (req, res) => {
 
   res.json(
     db
-      .prepare(`
+      .prepare(
+        `
         SELECT DISTINCT g.id, g.token, g.title, g.budget, g.exchange_date, g.rules, g.theme_id,
           CASE WHEN o.id IS NOT NULL THEN o.role ELSE 'participant' END AS role
         FROM games g
@@ -17,7 +18,8 @@ meRouter.get('/games', (req, res) => {
         LEFT JOIN participants p ON p.game_id = g.id AND p.user_id = ?
         WHERE o.id IS NOT NULL OR p.id IS NOT NULL
         ORDER BY g.id DESC
-      `)
+      `,
+      )
       .all(req.user.id, req.user.id),
   )
 })
@@ -27,13 +29,15 @@ meRouter.get('/past-games', (req, res) => {
 
   res.json(
     db
-      .prepare(`
+      .prepare(
+        `
         SELECT DISTINCT g.id, g.token, g.title, g.exchange_date
         FROM games g
         JOIN participants p ON p.game_id = g.id
         WHERE p.user_id = ?
         ORDER BY g.id DESC
-      `)
+      `,
+      )
       .all(req.user.id),
   )
 })
@@ -43,7 +47,8 @@ meRouter.get('/exchanges', (req, res) => {
 
   res.json(
     db
-      .prepare(`
+      .prepare(
+        `
         SELECT g.id AS game_id, g.token AS game_token, g.title, g.budget, g.exchange_date, g.rules,
           p.id AS participant_id, p.name AS player_name,
           recipient.id AS receiver_id, recipient.name AS receiver_name,
@@ -55,7 +60,8 @@ meRouter.get('/exchanges', (req, res) => {
         JOIN participants recipient ON recipient.id = pairs.to_id
         WHERE p.user_id = ?
         ORDER BY g.id DESC
-      `)
+      `,
+      )
       .all(req.user.id),
   )
 })

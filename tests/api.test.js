@@ -220,9 +220,8 @@ describe('API', () => {
     assert.equal(extra.status, 200)
     assert.equal(extra.body.length, 4)
     assert.ok(
-      extra.body.some(
-        (pair) => pair.from_id === first.id && pair.to_id === second.id,
-      ) || extra.body.some((pair) => pair.from_id === second.id && pair.to_id === first.id),
+      extra.body.some((pair) => pair.from_id === first.id && pair.to_id === second.id) ||
+        extra.body.some((pair) => pair.from_id === second.id && pair.to_id === first.id),
     )
     const newPairs = extra.body.filter((pair) => [third.id, fourth.id].includes(pair.from_id))
     assert.equal(newPairs.length, 2)
@@ -300,11 +299,7 @@ describe('API', () => {
     for (let attempt = 0; attempt < 5; attempt += 1) {
       const drawn = await request('POST', `/games/${game.id}/draw`, {})
       assert.equal(drawn.status, 200)
-      assert.ok(
-        drawn.body.every(
-          (pair) => !(pair.from_id === people[0].id && pair.to_id === people[1].id),
-        ),
-      )
+      assert.ok(drawn.body.every((pair) => !(pair.from_id === people[0].id && pair.to_id === people[1].id)))
     }
   })
 
@@ -355,12 +350,7 @@ describe('API', () => {
     const current = await request('GET', '/auth/session', undefined, cookieHeader(created))
     assert.equal(current.body.user.id, created.body.user.id)
 
-    const email = await request(
-      'PATCH',
-      '/auth/email',
-      { email: 'santa@example.com' },
-      cookieHeader(created),
-    )
+    const email = await request('PATCH', '/auth/email', { email: 'santa@example.com' }, cookieHeader(created))
     assert.equal(email.status, 200)
     assert.equal(email.body.user.email, 'santa@example.com')
 
@@ -416,10 +406,7 @@ describe('API', () => {
     assert.equal(response.status, 200)
     assert.equal(response.body.length, 3)
     assert.ok(response.body.every((pair) => pair.from !== pair.to))
-    assert.deepEqual(
-      new Set(response.body.map((pair) => pair.to)),
-      new Set(['Аня', 'Борис', 'Вика']),
-    )
+    assert.deepEqual(new Set(response.body.map((pair) => pair.to)), new Set(['Аня', 'Борис', 'Вика']))
 
     const invalid = await request('POST', '/randomizer', { names: 'Аня' })
     assert.equal(invalid.status, 400)
@@ -545,21 +532,11 @@ describe('API', () => {
     const owner = await request('POST', '/auth/session', {})
     const session = await request('POST', '/auth/session', {})
     const game = await createGame('Организаторы', cookieHeader(owner))
-    const invite = await request(
-      'POST',
-      `/games/${game.id}/organizers/invite`,
-      undefined,
-      cookieHeader(owner),
-    )
+    const invite = await request('POST', `/games/${game.id}/organizers/invite`, undefined, cookieHeader(owner))
     assert.equal(invite.status, 201)
     assert.match(invite.body.url, /https:\/\/santa\.local\/organizer\//)
 
-    const pending = await request(
-      'GET',
-      `/games/${game.id}/organizers`,
-      undefined,
-      cookieHeader(owner),
-    )
+    const pending = await request('GET', `/games/${game.id}/organizers`, undefined, cookieHeader(owner))
     assert.ok(pending.body.some((organizer) => organizer.url === invite.body.url))
     const earlyOwnerRemoval = await request(
       'DELETE',
@@ -569,37 +546,17 @@ describe('API', () => {
     )
     assert.equal(earlyOwnerRemoval.status, 409)
 
-    const accepted = await request(
-      'POST',
-      `/organizer-invites/${invite.body.token}/accept`,
-      {},
-      cookieHeader(session),
-    )
+    const accepted = await request('POST', `/organizer-invites/${invite.body.token}/accept`, {}, cookieHeader(session))
     assert.equal(accepted.status, 200)
     assert.equal(accepted.body.id, game.id)
     assert.equal(accepted.body.token, game.token)
 
-    const organizers = await request(
-      'GET',
-      `/games/${game.id}/organizers`,
-      undefined,
-      cookieHeader(owner),
-    )
+    const organizers = await request('GET', `/games/${game.id}/organizers`, undefined, cookieHeader(owner))
     assert.equal(organizers.body.length, 2)
 
-    const third = await request(
-      'POST',
-      `/games/${game.id}/organizers/invite`,
-      undefined,
-      cookieHeader(owner),
-    )
+    const third = await request('POST', `/games/${game.id}/organizers/invite`, undefined, cookieHeader(owner))
     assert.equal(third.status, 201)
-    const fourth = await request(
-      'POST',
-      `/games/${game.id}/organizers/invite`,
-      undefined,
-      cookieHeader(owner),
-    )
+    const fourth = await request('POST', `/games/${game.id}/organizers/invite`, undefined, cookieHeader(owner))
     assert.equal(fourth.status, 409)
 
     const firstRemoval = await request(
@@ -664,12 +621,7 @@ describe('API', () => {
       cookieHeader(owner),
     )
     assert.equal(message.status, 201)
-    const messages = await request(
-      'GET',
-      `/games/${game.id}/messages`,
-      undefined,
-      cookieHeader(owner),
-    )
+    const messages = await request('GET', `/games/${game.id}/messages`, undefined, cookieHeader(owner))
     assert.equal(messages.body.length, 1)
 
     const organizer = await request(
@@ -679,12 +631,7 @@ describe('API', () => {
       cookieHeader(owner),
     )
     assert.equal(organizer.status, 201)
-    const organizers = await request(
-      'GET',
-      `/games/${game.id}/organizers`,
-      undefined,
-      cookieHeader(owner),
-    )
+    const organizers = await request('GET', `/games/${game.id}/organizers`, undefined, cookieHeader(owner))
     assert.equal(organizers.body.length, 2)
 
     const tenant = await request(
@@ -699,19 +646,9 @@ describe('API', () => {
     const current = await request('GET', '/tenants/current')
     assert.equal(current.body.tenant, null)
 
-    const invalid = await request(
-      'POST',
-      '/tenants',
-      { slug: 'bad slug', gameId: game.id },
-      cookieHeader(owner),
-    )
+    const invalid = await request('POST', '/tenants', { slug: 'bad slug', gameId: game.id }, cookieHeader(owner))
     assert.equal(invalid.status, 400)
-    const reserved = await request(
-      'POST',
-      '/tenants',
-      { slug: 'admin', gameId: game.id },
-      cookieHeader(owner),
-    )
+    const reserved = await request('POST', '/tenants', { slug: 'admin', gameId: game.id }, cookieHeader(owner))
     assert.equal(reserved.status, 409)
   })
 
@@ -723,12 +660,7 @@ describe('API', () => {
       await addParticipants(gameId, [name], cookieHeader(anna))
       const invite = await request('GET', `/games/${gameId}/invite`, undefined, cookieHeader(anna))
       const person = invite.body.participants.find((item) => item.name === name)
-      const accepted = await request(
-        'POST',
-        `/invites/${person.invite_token}/accept`,
-        {},
-        cookieHeader(session),
-      )
+      const accepted = await request('POST', `/invites/${person.invite_token}/accept`, {}, cookieHeader(session))
       assert.equal(accepted.status, 200)
     }
 
@@ -758,17 +690,14 @@ describe('API', () => {
     assert.equal(loaded.body.pastPairsCount, 2)
     assert.equal(loaded.body.pastPairs, undefined)
 
-    db.prepare(`
+    db.prepare(
+      `
       INSERT OR IGNORE INTO past_pairs (game_id, from_token, to_token)
       VALUES (?, ?, ?)
-    `).run(current.id, boris.body.user.token, anna.body.user.token)
+    `,
+    ).run(current.id, boris.body.user.token, anna.body.user.token)
 
-    const blocked = await request(
-      'POST',
-      `/games/${current.id}/draw`,
-      undefined,
-      cookieHeader(anna),
-    )
+    const blocked = await request('POST', `/games/${current.id}/draw`, undefined, cookieHeader(anna))
     assert.equal(blocked.status, 409)
     assert.match(blocked.body.error.message, /ограничениями/)
   })
@@ -829,12 +758,7 @@ describe('API', () => {
     assert.equal(duplicate.status, 409)
     assert.match(duplicate.body.error.message, /уже отправлено/)
 
-    const reminders = await request(
-      'GET',
-      `/games/${game.id}/reminders`,
-      undefined,
-      cookieHeader(owner),
-    )
+    const reminders = await request('GET', `/games/${game.id}/reminders`, undefined, cookieHeader(owner))
     assert.equal(reminders.body.length, 2)
   })
 

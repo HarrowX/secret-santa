@@ -121,15 +121,15 @@ export const api = {
     organizers: (id) => request(`/games/${encodeURIComponent(id)}/organizers`),
     addOrganizer: (id, body) =>
       request(`/games/${encodeURIComponent(id)}/organizers`, { method: 'POST', body: JSON.stringify(body) }),
-    inviteOrganizer: (id) =>
-      request(`/games/${encodeURIComponent(id)}/organizers/invite`, { method: 'POST' }),
+    inviteOrganizer: (id) => request(`/games/${encodeURIComponent(id)}/organizers/invite`, { method: 'POST' }),
     removeOrganizer: (id, organizerId) =>
       request(`/games/${encodeURIComponent(id)}/organizers/${organizerId}`, { method: 'DELETE' }),
   },
   organizerInvites: {
-    accept: (token) => request(`/organizer-invites/${encodeURIComponent(token)}/accept`, {
-      method: 'POST',
-    }),
+    accept: (token) =>
+      request(`/organizer-invites/${encodeURIComponent(token)}/accept`, {
+        method: 'POST',
+      }),
   },
   me: {
     games: () => request('/me/games'),

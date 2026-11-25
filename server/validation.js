@@ -42,9 +42,7 @@ export const schemas = {
     .strict(),
   answersSave: z
     .object({
-      answers: z
-        .array(z.object({ questionId: identifier, value: z.string().trim().max(2000) }).strict())
-        .max(10),
+      answers: z.array(z.object({ questionId: identifier, value: z.string().trim().max(2000) }).strict()).max(10),
     })
     .strict(),
   exclusion: z.object({ fromId: identifier, toId: identifier }).strict(),

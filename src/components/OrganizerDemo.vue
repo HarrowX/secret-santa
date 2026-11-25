@@ -52,9 +52,7 @@ const progress = computed(() => {
 })
 
 const filteredEvents = computed(() =>
-  historyFilter.value === 'all'
-    ? events.value
-    : events.value.filter((event) => event.kind === historyFilter.value),
+  historyFilter.value === 'all' ? events.value : events.value.filter((event) => event.kind === historyFilter.value),
 )
 
 function nameOf(id) {
@@ -90,12 +88,14 @@ function fillRemaining() {
   const ids = people.value.map((person) => person.id)
   const available = ids.filter((id) => !Object.values(pairs.value).includes(id))
 
-  ids.filter((id) => !pairs.value[id]).forEach((id) => {
-    if (!available.length) return
-    const index = available.findIndex((candidate) => candidate !== id)
-    const [recipient] = available.splice(index === -1 ? 0 : index, 1)
-    pairs.value[id] = recipient
-  })
+  ids
+    .filter((id) => !pairs.value[id])
+    .forEach((id) => {
+      if (!available.length) return
+      const index = available.findIndex((candidate) => candidate !== id)
+      const [recipient] = available.splice(index === -1 ? 0 : index, 1)
+      pairs.value[id] = recipient
+    })
 
   saved.value = false
 }
@@ -105,9 +105,7 @@ function assign(id, value) {
   if (!recipient || recipient === id) return
 
   const current = pairs.value[id]
-  const otherId = Object.keys(pairs.value).find(
-    (key) => Number(key) !== id && pairs.value[key] === recipient,
-  )
+  const otherId = Object.keys(pairs.value).find((key) => Number(key) !== id && pairs.value[key] === recipient)
 
   if (otherId !== undefined && current) pairs.value[otherId] = current
   pairs.value[id] = recipient
@@ -123,10 +121,17 @@ function save() {
 <template>
   <div class="mx-auto max-w-6xl px-5 py-10">
     <div class="flex flex-wrap items-center justify-between gap-4">
-      <button type="button" class="rounded-full border border-white/20 px-4 py-2 text-sm font-semibold text-inherit opacity-75 transition hover:opacity-100" @click="emit('back')">
+      <button
+        type="button"
+        class="rounded-full border border-white/20 px-4 py-2 text-sm font-semibold text-inherit opacity-75 transition hover:opacity-100"
+        @click="emit('back')"
+      >
         ← На главную
       </button>
-      <span class="rounded-full border border-white/20 bg-white/10 px-4 py-1.5 text-xs uppercase tracking-widest opacity-70">демо-данные</span>
+      <span
+        class="rounded-full border border-white/20 bg-white/10 px-4 py-1.5 text-xs uppercase tracking-widest opacity-70"
+        >демо-данные</span
+      >
     </div>
 
     <div class="mt-8 flex flex-wrap items-end justify-between gap-5">
@@ -164,7 +169,11 @@ function save() {
     <div class="mt-6">
       <div v-if="tab === 'overview'" class="space-y-4">
         <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
-          <article v-for="item in progress" :key="item.label" class="rounded-2xl border border-white/10 bg-white/5 p-4 backdrop-blur">
+          <article
+            v-for="item in progress"
+            :key="item.label"
+            class="rounded-2xl border border-white/10 bg-white/5 p-4 backdrop-blur"
+          >
             <p class="text-xs opacity-60">{{ item.label }}</p>
             <p class="mt-2 text-2xl font-black">
               {{ item.value }}<span class="text-sm font-medium opacity-50">/{{ item.total }}</span>
@@ -191,7 +200,11 @@ function save() {
               >
                 {{ letter }}
               </span>
-              <button type="button" class="grid h-11 w-11 place-items-center rounded-full border border-dashed border-white/30 text-xl opacity-60 transition hover:opacity-100" aria-label="Добавить организатора">
+              <button
+                type="button"
+                class="grid h-11 w-11 place-items-center rounded-full border border-dashed border-white/30 text-xl opacity-60 transition hover:opacity-100"
+                aria-label="Добавить организатора"
+              >
                 +
               </button>
               <span class="ml-2 text-sm opacity-60">Добавить помощника</span>
@@ -208,7 +221,10 @@ function save() {
         </div>
       </div>
 
-      <div v-else-if="tab === 'participants'" class="overflow-hidden rounded-3xl border border-white/10 bg-white/5 backdrop-blur">
+      <div
+        v-else-if="tab === 'participants'"
+        class="overflow-hidden rounded-3xl border border-white/10 bg-white/5 backdrop-blur"
+      >
         <div class="overflow-x-auto">
           <table class="w-full min-w-[640px] text-left text-sm">
             <thead class="border-b border-white/10 text-xs uppercase tracking-wider opacity-60">
@@ -227,7 +243,9 @@ function save() {
                   {{ revealed && pairs[person.id] ? nameOf(pairs[person.id]) : 'Скрыто' }}
                 </td>
                 <td class="px-5 py-3">
-                  <span class="rounded-full border border-white/15 px-3 py-1 text-xs opacity-80">{{ statusOf(person) }}</span>
+                  <span class="rounded-full border border-white/15 px-3 py-1 text-xs opacity-80">{{
+                    statusOf(person)
+                  }}</span>
                 </td>
               </tr>
             </tbody>
@@ -238,12 +256,37 @@ function save() {
       <div v-else-if="tab === 'draw'" class="grid gap-4 lg:grid-cols-[.75fr_1.25fr]">
         <div class="rounded-3xl border border-white/10 bg-white/5 p-6 backdrop-blur">
           <h3 class="text-lg font-bold">Управление парами</h3>
-          <p class="mt-2 text-sm leading-relaxed opacity-65">Ручные назначения сохраняются. Уведомления уходят только после сохранения.</p>
+          <p class="mt-2 text-sm leading-relaxed opacity-65">
+            Ручные назначения сохраняются. Уведомления уходят только после сохранения.
+          </p>
           <div class="mt-5 grid gap-2">
-            <button type="button" class="rounded-xl border border-white/15 px-4 py-3 text-left text-sm font-semibold transition hover:bg-white/10" @click="shuffle">Перемешать заново</button>
-            <button type="button" class="rounded-xl border border-white/15 px-4 py-3 text-left text-sm font-semibold transition hover:bg-white/10" @click="clearPairs">Очистить пары</button>
-            <button type="button" class="rounded-xl border border-white/15 px-4 py-3 text-left text-sm font-semibold transition hover:bg-white/10" @click="fillRemaining">Заполнить оставшиеся</button>
-            <button type="button" class="rounded-xl border border-white/15 px-4 py-3 text-left text-sm font-semibold transition hover:bg-white/10" :aria-pressed="revealed" @click="revealed = !revealed">
+            <button
+              type="button"
+              class="rounded-xl border border-white/15 px-4 py-3 text-left text-sm font-semibold transition hover:bg-white/10"
+              @click="shuffle"
+            >
+              Перемешать заново
+            </button>
+            <button
+              type="button"
+              class="rounded-xl border border-white/15 px-4 py-3 text-left text-sm font-semibold transition hover:bg-white/10"
+              @click="clearPairs"
+            >
+              Очистить пары
+            </button>
+            <button
+              type="button"
+              class="rounded-xl border border-white/15 px-4 py-3 text-left text-sm font-semibold transition hover:bg-white/10"
+              @click="fillRemaining"
+            >
+              Заполнить оставшиеся
+            </button>
+            <button
+              type="button"
+              class="rounded-xl border border-white/15 px-4 py-3 text-left text-sm font-semibold transition hover:bg-white/10"
+              :aria-pressed="revealed"
+              @click="revealed = !revealed"
+            >
               {{ revealed ? 'Скрыть пары' : 'Показать пары' }}
             </button>
           </div>
@@ -254,10 +297,16 @@ function save() {
         <div class="rounded-3xl border border-white/10 bg-white/5 p-6 backdrop-blur">
           <div class="flex items-center justify-between gap-4">
             <h3 class="text-lg font-bold">Распределение</h3>
-            <span class="text-xs opacity-60" :style="{ color: accent }">{{ Object.keys(pairs).length }} из {{ people.length }}</span>
+            <span class="text-xs opacity-60" :style="{ color: accent }"
+              >{{ Object.keys(pairs).length }} из {{ people.length }}</span
+            >
           </div>
           <div class="mt-4 grid gap-2 sm:grid-cols-2">
-            <div v-for="person in people" :key="person.id" class="flex items-center gap-2 rounded-xl border border-white/10 bg-slate-950/15 px-4 py-3 text-sm">
+            <div
+              v-for="person in people"
+              :key="person.id"
+              class="flex items-center gap-2 rounded-xl border border-white/10 bg-slate-950/15 px-4 py-3 text-sm"
+            >
               <span class="font-semibold">{{ person.name }}</span>
               <span class="ml-auto opacity-40">→</span>
               <span v-if="!revealed" class="font-semibold" :style="pairs[person.id] ? { color: accent } : {}">
@@ -309,7 +358,9 @@ function save() {
               <p class="mt-1 text-xs opacity-50">{{ event.time }}</p>
             </div>
           </div>
-          <p v-if="!filteredEvents.length" class="py-6 text-center text-sm opacity-50">Событий в этой категории пока нет.</p>
+          <p v-if="!filteredEvents.length" class="py-6 text-center text-sm opacity-50">
+            Событий в этой категории пока нет.
+          </p>
         </div>
       </div>
     </div>

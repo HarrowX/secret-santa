@@ -7,13 +7,15 @@ export const invitesRouter = Router()
 
 invitesRouter.get('/:token', (req, res) => {
   const participant = db
-    .prepare(`
+    .prepare(
+      `
       SELECT p.id, p.name, p.email, p.wishlist, p.address, p.notes, p.preferred,
         p.filled, p.invite_token, g.id AS game_id, g.title, g.theme_id
       FROM participants p
       JOIN games g ON g.id = p.game_id
       WHERE p.invite_token = ?
-    `)
+    `,
+    )
     .get(req.params.token)
   if (!participant) fail(404, 'Приглашение не найдено')
 
@@ -37,28 +39,18 @@ invitesRouter.get('/:token', (req, res) => {
 })
 
 invitesRouter.post('/:token/accept', validateBody(schemas.inviteAccept), (req, res) => {
-  const participant = db
-    .prepare('SELECT * FROM participants WHERE invite_token = ?')
-    .get(req.params.token)
+  const participant = db.prepare('SELECT * FROM participants WHERE invite_token = ?').get(req.params.token)
   if (!participant) fail(404, 'Приглашение не найдено')
 
   const value = (key) => (req.body[key] === undefined ? participant[key] : req.body[key])
   const userId = req.user?.id ?? participant.user_id
-  db
-    .prepare(`
+  db.prepare(
+    `
       UPDATE participants
       SET user_id = ?, email = ?, wishlist = ?, address = ?, notes = ?, preferred = ?, filled = 1
       WHERE id = ?
-    `)
-    .run(
-      userId,
-      value('email'),
-      value('wishlist'),
-      value('address'),
-      value('notes'),
-      value('preferred'),
-      participant.id,
-    )
+    `,
+  ).run(userId, value('email'), value('wishlist'), value('address'), value('notes'), value('preferred'), participant.id)
   db.prepare('INSERT INTO events (game_id, kind, text, actor) VALUES (?, ?, ?, ?)').run(
     participant.game_id,
     'join',
@@ -66,9 +58,11 @@ invitesRouter.post('/:token/accept', validateBody(schemas.inviteAccept), (req, r
     participant.name,
   )
   const updated = db.prepare('SELECT * FROM participants WHERE id = ?').get(participant.id)
-  db.prepare(`
+  db.prepare(
+    `
     INSERT INTO notifications (game_id, participant_id, kind, payload) VALUES (?, ?, ?, ?)
-  `).run(participant.game_id, participant.id, 'card_updated', JSON.stringify(updated))
+  `,
+  ).run(participant.game_id, participant.id, 'card_updated', JSON.stringify(updated))
   res.json({ ok: true, participant: updated })
 })
 

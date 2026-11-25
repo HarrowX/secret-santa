@@ -57,11 +57,7 @@ function acceptCookies() {
       <RouterView />
     </main>
 
-    <div
-      v-if="!cookieConsent"
-      class="fixed inset-x-0 bottom-0 z-50 mx-auto max-w-3xl px-5 pb-5"
-      role="status"
-    >
+    <div v-if="!cookieConsent" class="fixed inset-x-0 bottom-0 z-50 mx-auto max-w-3xl px-5 pb-5" role="status">
       <div class="rounded-2xl border border-white/15 bg-slate-950/90 p-4 text-sm shadow-2xl backdrop-blur">
         <p class="opacity-80">
           Используем только технические cookie для входа и сохранения сессии. Подробнее — в

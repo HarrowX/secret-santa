@@ -70,7 +70,11 @@ async function copyResult() {
           </button>
         </div>
         <ol class="mt-3 grid gap-2 text-sm">
-          <li v-for="(pair, index) in pairs" :key="index" class="rounded-xl border border-white/10 bg-white/5 px-4 py-2">
+          <li
+            v-for="(pair, index) in pairs"
+            :key="index"
+            class="rounded-xl border border-white/10 bg-white/5 px-4 py-2"
+          >
             {{ pair.from }} → {{ pair.to }}
           </li>
         </ol>

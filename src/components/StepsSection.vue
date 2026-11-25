@@ -28,10 +28,22 @@ const steps = [
     <h2 class="mt-2 text-3xl font-bold tracking-tight">От идеи до подарка — три шага</h2>
 
     <div class="mt-8 grid gap-4 md:grid-cols-3">
-      <article v-for="(step, index) in steps" :key="step.title" class="rounded-3xl border border-white/10 bg-white/5 p-6 backdrop-blur">
+      <article
+        v-for="(step, index) in steps"
+        :key="step.title"
+        class="rounded-3xl border border-white/10 bg-white/5 p-6 backdrop-blur"
+      >
         <div class="flex items-center justify-between">
           <span class="grid h-11 w-11 place-items-center rounded-2xl bg-white/10" :style="{ color: accent }">
-            <svg viewBox="0 0 24 24" class="h-6 w-6" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+            <svg
+              viewBox="0 0 24 24"
+              class="h-6 w-6"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.6"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
               <path :d="step.icon" />
             </svg>
           </span>

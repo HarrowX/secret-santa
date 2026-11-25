@@ -54,9 +54,7 @@ function toggle(questionId, option) {
     .split(',')
     .map((item) => item.trim())
     .filter(Boolean)
-  const next = checked(questionId, option)
-    ? current.filter((item) => item !== option)
-    : [...current, option]
+  const next = checked(questionId, option) ? current.filter((item) => item !== option) : [...current, option]
   values.value[questionId] = next.join(', ')
 }
 
@@ -78,7 +76,9 @@ function save() {
         {{ question.title }}
         <span v-if="question.required" class="opacity-60">*</span>
       </span>
-      <span v-if="question.hint && !['single', 'multi'].includes(question.type)" class="text-xs opacity-50">{{ question.hint }}</span>
+      <span v-if="question.hint && !['single', 'multi'].includes(question.type)" class="text-xs opacity-50">{{
+        question.hint
+      }}</span>
       <input
         v-if="question.type === 'number'"
         v-model="values[question.id]"

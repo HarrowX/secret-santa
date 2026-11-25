@@ -49,7 +49,9 @@ export function createApp() {
       res.status(error.status).json({ error: { message: error.message } })
       return
     }
-    console.log(JSON.stringify({ level: 'error', msg: 'request_failed', path: req.originalUrl.split('?')[0], name: error.name }))
+    console.log(
+      JSON.stringify({ level: 'error', msg: 'request_failed', path: req.originalUrl.split('?')[0], name: error.name }),
+    )
     res.status(500).json({ error: { message: 'Внутренняя ошибка сервера' } })
   })
 

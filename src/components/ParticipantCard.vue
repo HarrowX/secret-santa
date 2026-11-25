@@ -64,7 +64,8 @@ function save() {
         <span
           class="grid h-8 w-8 shrink-0 place-items-center rounded-full text-xs font-bold"
           :style="{ background: accent, color: '#0b1120' }"
-        >{{ initials }}</span>
+          >{{ initials }}</span
+        >
         <span class="grid text-left">
           <span class="font-semibold">{{ person.name }}</span>
           <span v-if="receiverName" class="text-xs opacity-50">дарит → {{ receiverName }}</span>

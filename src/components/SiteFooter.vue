@@ -6,10 +6,7 @@ defineProps({
 </script>
 
 <template>
-  <footer
-    class="mt-10 border-t"
-    :class="isDay ? 'border-slate-900/10 bg-white/30' : 'border-white/10 bg-slate-950/25'"
-  >
+  <footer class="mt-10 border-t" :class="isDay ? 'border-slate-900/10 bg-white/30' : 'border-white/10 bg-slate-950/25'">
     <div class="mx-auto grid max-w-6xl gap-8 px-5 py-12 sm:grid-cols-2 lg:grid-cols-4">
       <div>
         <p class="text-lg font-black tracking-tight">тайный санта<span :style="{ color: accent }">.</span></p>
@@ -43,6 +40,8 @@ defineProps({
         </div>
       </div>
     </div>
-    <div class="border-t border-white/10 px-5 py-5 text-center text-xs opacity-50">© 2014–2026 Тайный Санта · дизайн-прототип</div>
+    <div class="border-t border-white/10 px-5 py-5 text-center text-xs opacity-50">
+      © 2014–2026 Тайный Санта · дизайн-прототип
+    </div>
   </footer>
 </template>

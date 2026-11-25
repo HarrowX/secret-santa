@@ -54,18 +54,40 @@ const idleClass = 'text-inherit opacity-70 hover:opacity-100'
         @click="emit('update:themeId', item.id)"
       >
         <div class="grid grid-cols-2 gap-1.5">
-          <div class="relative h-20 overflow-hidden rounded-xl border border-white/15" :style="{ background: item.night }">
-            <span class="absolute bottom-1.5 left-2 text-[10px] font-semibold uppercase tracking-widest text-white/70">Ночь</span>
+          <div
+            class="relative h-20 overflow-hidden rounded-xl border border-white/15"
+            :style="{ background: item.night }"
+          >
+            <span class="absolute bottom-1.5 left-2 text-[10px] font-semibold uppercase tracking-widest text-white/70"
+              >Ночь</span
+            >
           </div>
-          <div class="relative h-20 overflow-hidden rounded-xl border border-black/10" :style="{ background: item.day }">
-            <span class="absolute bottom-1.5 left-2 text-[10px] font-semibold uppercase tracking-widest text-slate-900/60">День</span>
+          <div
+            class="relative h-20 overflow-hidden rounded-xl border border-black/10"
+            :style="{ background: item.day }"
+          >
+            <span
+              class="absolute bottom-1.5 left-2 text-[10px] font-semibold uppercase tracking-widest text-slate-900/60"
+              >День</span
+            >
           </div>
         </div>
         <span class="flex items-center justify-between gap-2 px-3 py-3">
           <span class="font-semibold">{{ item.name }}</span>
           <span class="flex items-center gap-2">
             <span class="text-xs opacity-60">{{ item.tag }}</span>
-            <svg v-if="item.id === themeId" viewBox="0 0 24 24" class="h-4 w-4" :style="{ color: item.accent }" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <svg
+              v-if="item.id === themeId"
+              viewBox="0 0 24 24"
+              class="h-4 w-4"
+              :style="{ color: item.accent }"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2.5"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              aria-hidden="true"
+            >
               <path d="M5 13l4 4L19 7" />
             </svg>
           </span>

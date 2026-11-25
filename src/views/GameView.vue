@@ -176,9 +176,7 @@ function canRemoveOrganizer(organizer) {
 }
 
 function removeOrganizer(organizer) {
-  const text = organizer.invited_token
-    ? 'Отменить приглашение организатора?'
-    : 'Удалить организатора?'
+  const text = organizer.invited_token ? 'Отменить приглашение организатора?' : 'Удалить организатора?'
   if (!window.confirm(text)) return
   return runAction(() => api.games.removeOrganizer(route.params.token, organizer.id))
 }
@@ -301,14 +299,24 @@ function sendReminder() {
       <h1 class="mt-2 text-3xl font-bold tracking-tight sm:text-4xl">{{ data?.game.title ?? 'Загрузка игры' }}</h1>
     </div>
 
-    <p v-if="loading" class="mt-8 rounded-2xl border border-white/10 bg-white/5 p-6 text-sm opacity-70">Загружаем данные игры…</p>
-    <p v-else-if="error" role="alert" class="mt-8 rounded-2xl border border-rose-400/30 bg-rose-500/10 p-6 text-sm text-rose-200">{{ error }}</p>
+    <p v-if="loading" class="mt-8 rounded-2xl border border-white/10 bg-white/5 p-6 text-sm opacity-70">
+      Загружаем данные игры…
+    </p>
+    <p
+      v-else-if="error"
+      role="alert"
+      class="mt-8 rounded-2xl border border-rose-400/30 bg-rose-500/10 p-6 text-sm text-rose-200"
+    >
+      {{ error }}
+    </p>
 
     <div v-else-if="data" class="mt-8 grid gap-4">
       <div class="grid gap-3 sm:grid-cols-3">
         <div class="rounded-2xl border border-white/10 bg-white/5 p-5">
           <p class="text-xs uppercase tracking-widest opacity-50">Участников</p>
-          <p class="mt-1 text-2xl font-black" :style="{ color: preferences.theme.accent }">{{ data.participants.length }}</p>
+          <p class="mt-1 text-2xl font-black" :style="{ color: preferences.theme.accent }">
+            {{ data.participants.length }}
+          </p>
         </div>
         <div class="rounded-2xl border border-white/10 bg-white/5 p-5">
           <p class="text-xs uppercase tracking-widest opacity-50">Бюджет</p>
@@ -403,7 +411,9 @@ function sendReminder() {
             </button>
             <span class="text-xs opacity-50">{{ person.filled ? 'подтвердил' : 'ожидаем' }}</span>
           </div>
-          <p v-if="!invite.participants.length" class="opacity-50">Добавьте участников, чтобы получить персональные ссылки</p>
+          <p v-if="!invite.participants.length" class="opacity-50">
+            Добавьте участников, чтобы получить персональные ссылки
+          </p>
         </div>
       </div>
 
@@ -490,10 +500,15 @@ function sendReminder() {
           >
             <div class="flex flex-wrap items-center justify-between gap-2">
               <span>
-                {{ organizer.user_email ?? (organizer.role === 'owner' ? 'Создатель (вход не выполнен)' : 'Приглашение ещё не принято') }}
+                {{
+                  organizer.user_email ??
+                  (organizer.role === 'owner' ? 'Создатель (вход не выполнен)' : 'Приглашение ещё не принято')
+                }}
               </span>
               <span class="flex items-center gap-3 text-xs opacity-60">
-                <span>{{ organizer.invited_token ? 'приглашён' : organizer.role === 'owner' ? 'создатель' : 'организатор' }}</span>
+                <span>{{
+                  organizer.invited_token ? 'приглашён' : organizer.role === 'owner' ? 'создатель' : 'организатор'
+                }}</span>
                 <button
                   type="button"
                   class="underline transition hover:opacity-100 disabled:opacity-50"
@@ -584,7 +599,11 @@ function sendReminder() {
             <div class="mt-3">
               <QuestionnaireForm
                 :questions="data.questions"
-                :answers="answers.filter((item) => item.participant_id === person.id).map(({ question_id, value }) => ({ question_id, value }))"
+                :answers="
+                  answers
+                    .filter((item) => item.participant_id === person.id)
+                    .map(({ question_id, value }) => ({ question_id, value }))
+                "
                 :accent="preferences.theme.accent"
                 :editable="false"
               />
@@ -663,7 +682,11 @@ function sendReminder() {
           </button>
         </form>
         <ul class="mt-3 grid gap-1 text-sm opacity-70">
-          <li v-for="item in data.exclusions" :key="`${item.from_id}-${item.to_id}`" class="flex items-center justify-between gap-3">
+          <li
+            v-for="item in data.exclusions"
+            :key="`${item.from_id}-${item.to_id}`"
+            class="flex items-center justify-between gap-3"
+          >
             <span>{{ participantName(item.from_id) }} не дарит {{ participantName(item.to_id) }}</span>
             <button
               type="button"

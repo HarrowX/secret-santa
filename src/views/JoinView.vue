@@ -38,10 +38,7 @@ watch(
       preferred.value = response.participant.preferred ?? ''
       preferences.setTheme(response.game.themeId)
       questions.value = await api.games.questions(response.game.id)
-      answers.value = await api.games.participantAnswers(
-        response.game.id,
-        response.participant.id,
-      )
+      answers.value = await api.games.participantAnswers(response.game.id, response.participant.id)
     } catch (requestError) {
       error.value = requestError.message
     } finally {
@@ -77,10 +74,7 @@ async function saveAnswers(payload) {
     await api.games.saveAnswers(invite.value.game.id, invite.value.participant.id, {
       answers: payload,
     })
-    answers.value = await api.games.participantAnswers(
-      invite.value.game.id,
-      invite.value.participant.id,
-    )
+    answers.value = await api.games.participantAnswers(invite.value.game.id, invite.value.participant.id)
   } catch (requestError) {
     error.value = requestError.message
   } finally {
@@ -93,8 +87,16 @@ async function saveAnswers(payload) {
   <section class="mx-auto max-w-2xl px-5 py-16">
     <p class="text-xs font-semibold uppercase tracking-[0.3em] opacity-60">Приглашение</p>
 
-    <p v-if="loading" class="mt-6 rounded-2xl border border-white/10 bg-white/5 p-6 text-sm opacity-70">Открываем приглашение…</p>
-    <p v-else-if="error" role="alert" class="mt-6 rounded-2xl border border-rose-400/30 bg-rose-500/10 p-6 text-sm text-rose-200">{{ error }}</p>
+    <p v-if="loading" class="mt-6 rounded-2xl border border-white/10 bg-white/5 p-6 text-sm opacity-70">
+      Открываем приглашение…
+    </p>
+    <p
+      v-else-if="error"
+      role="alert"
+      class="mt-6 rounded-2xl border border-rose-400/30 bg-rose-500/10 p-6 text-sm text-rose-200"
+    >
+      {{ error }}
+    </p>
 
     <div v-else-if="invite" class="mt-6 rounded-3xl border border-white/10 bg-white/5 p-6 backdrop-blur">
       <h1 class="text-2xl font-bold">{{ invite.game.title }}</h1>
