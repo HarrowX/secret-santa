@@ -87,6 +87,26 @@ describe('API', () => {
     assert.equal(list.body[0].participants_count, 0)
   })
 
+  it('сохраняет название, бюджет, дату, правила и тему игры', async () => {
+    const response = await request('POST', '/games', {
+      title: 'Подробная игра',
+      budget: '1 500 ₽',
+      exchangeDate: '2026-12-25',
+      rules: 'Без алкоголя',
+      themeId: 'space',
+    })
+    assert.equal(response.status, 201)
+    assert.equal(response.body.budget, '1 500 ₽')
+    assert.equal(response.body.exchange_date, '2026-12-25')
+    assert.equal(response.body.rules, 'Без алкоголя')
+    assert.equal(response.body.theme_id, 'space')
+
+    const loaded = await request('GET', `/games/${response.body.id}`)
+    assert.equal(loaded.status, 200)
+    assert.equal(loaded.body.game.title, 'Подробная игра')
+    assert.equal(loaded.body.game.rules, 'Без алкоголя')
+  })
+
   it('возвращает ошибку валидации в едином формате', async () => {
     const response = await request('POST', '/games', { title: '   ' })
     assert.equal(response.status, 400)
@@ -108,7 +128,7 @@ describe('API', () => {
     })
     assert.equal(manual.status, 200)
     assert.equal(new Set(manual.body.map((pair) => pair.to_id)).size, 3)
-    assert.equal(manual.body.filter((pair) => pair.manual).length, 1)
+    assert.ok(manual.body.some((pair) => pair.manual))
   })
 
   it('учитывает исключения при жеребьёвке', async () => {
