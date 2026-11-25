@@ -17,7 +17,7 @@ const idleClass = 'text-inherit opacity-70 hover:opacity-100'
       <div>
         <p class="text-xs font-semibold uppercase tracking-[0.3em] opacity-60">Выберите свой мир</p>
         <h2 class="mt-2 text-2xl font-bold tracking-tight">Атмосфера вашей игры</h2>
-        <p class="mt-2 text-sm opacity-60">{{ themes.length }} оформлений · каждая доступна бесплатно</p>
+        <p class="mt-2 text-sm opacity-60">{{ themes.length }} оформлений · каждое бесплатно</p>
       </div>
 
       <div class="inline-flex rounded-full border border-white/20 bg-white/10 p-1 text-sm">
@@ -42,32 +42,44 @@ const idleClass = 'text-inherit opacity-70 hover:opacity-100'
       </div>
     </div>
 
-    <div class="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+    <div class="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
       <button
         v-for="item in themes"
         :key="item.id"
         type="button"
-        class="group overflow-hidden rounded-2xl border p-1.5 text-left transition duration-300"
-        :class="item.id === themeId ? 'bg-white/10' : 'border-white/10 hover:border-white/40 hover:bg-white/5'"
-        :style="item.id === themeId ? { borderColor: item.accent } : {}"
+        class="group overflow-hidden rounded-3xl border p-2 text-left transition duration-300 hover:-translate-y-0.5"
+        :class="item.id === themeId
+          ? 'border-transparent'
+          : mode === 'day'
+            ? 'border-slate-900/10 hover:border-slate-900/25'
+            : 'border-white/10 hover:border-white/30'"
+        :style="item.id === themeId ? { boxShadow: `0 0 0 2px ${item.accent}, 0 18px 40px -24px ${item.glow}` } : {}"
         :aria-pressed="item.id === themeId"
         @click="emit('update:themeId', item.id)"
       >
-        <div class="relative h-24 overflow-hidden rounded-xl border border-white/15" :style="{ background: item.night }">
-          <div class="absolute inset-0" :style="{ background: item.day, clipPath: 'polygon(100% 0, 100% 100%, 0 100%)' }"></div>
-          <div class="absolute inset-0" style="background: linear-gradient(135deg, transparent calc(50% - 1px), rgb(255 255 255 / 0.7) 50%, transparent calc(50% + 1px));"></div>
-          <span class="absolute left-2 top-2 text-[10px] font-semibold uppercase tracking-widest text-white/80">Ночь</span>
-          <span class="absolute bottom-2 right-2 text-[10px] font-semibold uppercase tracking-widest text-slate-900/70">День</span>
-        </div>
-        <span class="flex items-center justify-between gap-2 px-3 py-3">
-          <span class="font-semibold">{{ item.name }}</span>
-          <span class="flex items-center gap-2">
-            <span class="text-xs opacity-60">{{ item.tag }}</span>
-            <svg v-if="item.id === themeId" viewBox="0 0 24 24" class="h-4 w-4" :style="{ color: item.accent }" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <div class="relative h-28 overflow-hidden rounded-2xl" :style="{ background: mode === 'day' ? item.day : item.night }">
+          <div
+            class="absolute inset-0"
+            :style="{ background: mode === 'day' ? 'linear-gradient(to top, rgb(255 255 255 / 0.3), transparent)' : 'linear-gradient(to top, rgb(2 6 23 / 0.45), transparent 60%)' }"
+          ></div>
+          <span
+            class="absolute left-3 top-3 rounded-full px-3 py-1 text-[10px] font-semibold uppercase tracking-widest backdrop-blur"
+            :class="mode === 'day' ? 'bg-white/60 text-slate-800' : 'bg-slate-950/35 text-white/80'"
+          >
+            {{ item.tag }}
+          </span>
+          <span v-if="item.id === themeId" class="absolute right-3 top-3 grid h-7 w-7 place-items-center rounded-full bg-white/90 text-slate-950 shadow-sm">
+            <svg viewBox="0 0 24 24" class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
               <path d="M5 13l4 4L19 7" />
             </svg>
           </span>
-        </span>
+        </div>
+        <div class="flex items-center justify-between gap-2 px-3 py-3">
+          <span class="font-semibold">{{ item.name }}</span>
+          <span class="text-[11px] opacity-50 transition group-hover:opacity-80">
+            {{ item.id === themeId ? 'Выбрано' : 'Выбрать' }}
+          </span>
+        </div>
       </button>
     </div>
   </section>
