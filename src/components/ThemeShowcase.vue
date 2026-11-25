@@ -53,13 +53,11 @@ const idleClass = 'text-inherit opacity-70 hover:opacity-100'
         :aria-pressed="item.id === themeId"
         @click="emit('update:themeId', item.id)"
       >
-        <div class="grid grid-cols-2 gap-1.5">
-          <div class="relative h-20 overflow-hidden rounded-xl border border-white/15" :style="{ background: item.night }">
-            <span class="absolute bottom-1.5 left-2 text-[10px] font-semibold uppercase tracking-widest text-white/70">Ночь</span>
-          </div>
-          <div class="relative h-20 overflow-hidden rounded-xl border border-black/10" :style="{ background: item.day }">
-            <span class="absolute bottom-1.5 left-2 text-[10px] font-semibold uppercase tracking-widest text-slate-900/60">День</span>
-          </div>
+        <div class="relative h-24 overflow-hidden rounded-xl border border-white/15" :style="{ background: item.night }">
+          <div class="absolute inset-0" :style="{ background: item.day, clipPath: 'polygon(100% 0, 100% 100%, 0 100%)' }"></div>
+          <div class="absolute inset-0" style="background: linear-gradient(135deg, transparent calc(50% - 1px), rgb(255 255 255 / 0.7) 50%, transparent calc(50% + 1px));"></div>
+          <span class="absolute left-2 top-2 text-[10px] font-semibold uppercase tracking-widest text-white/80">Ночь</span>
+          <span class="absolute bottom-2 right-2 text-[10px] font-semibold uppercase tracking-widest text-slate-900/70">День</span>
         </div>
         <span class="flex items-center justify-between gap-2 px-3 py-3">
           <span class="font-semibold">{{ item.name }}</span>
