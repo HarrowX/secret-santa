@@ -1,4 +1,12 @@
+@import url("https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=Work+Sans:wght@300;400;500;600;700&display=swap");
 @import "tailwindcss";
+
+:root {
+  --color-background: #0f172a;
+  --color-card: #192134;
+  --color-border: rgb(255 255 255 / 0.08);
+  --color-ring: #8ec5ff;
+}
 
 html {
   scroll-behavior: smooth;
@@ -6,9 +14,44 @@ html {
 
 body {
   margin: 0;
-  font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  font-family: "Work Sans", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+
+h1,
+h2,
+h3,
+h4 {
+  font-family: "Outfit", "Work Sans", ui-sans-serif, system-ui, sans-serif;
+  letter-spacing: -0.02em;
+}
+
+:where(button, a) {
+  cursor: pointer;
+}
+
+:where(button, a):focus-visible {
+  outline: 2px solid var(--accent, var(--color-ring));
+  outline-offset: 3px;
+}
+
+:where(button:disabled) {
+  cursor: default;
 }
 
 ::selection {
   background: rgb(255 255 255 / 0.2);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
 }

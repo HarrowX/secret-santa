@@ -22,7 +22,7 @@ const background = computed(() => (isDay.value ? theme.value.day : theme.value.n
   <div
     class="min-h-screen transition-all duration-500"
     :class="isDay ? 'text-slate-900' : 'text-slate-100'"
-    :style="{ background }"
+    :style="{ background, '--accent': theme.accent }"
   >
     <SiteHeader :page="page" :accent="theme.accent" :is-day="isDay" @navigate="page = $event" />
 
