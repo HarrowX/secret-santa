@@ -16,6 +16,10 @@ const loading = ref(true)
 const busy = ref(false)
 const newParticipant = ref('')
 const bulkNames = ref('')
+const exclusionFrom = ref('')
+const exclusionTo = ref('')
+const manualFrom = ref('')
+const manualTo = ref('')
 
 async function load(id) {
   loading.value = true
@@ -75,6 +79,38 @@ async function copyLink(value) {
   } catch {
     actionError.value = 'Не удалось скопировать ссылку'
   }
+}
+
+function addExclusion() {
+  const fromId = Number(exclusionFrom.value)
+  const toId = Number(exclusionTo.value)
+  if (!fromId || !toId || fromId === toId) {
+    actionError.value = 'Выберите двух разных участников'
+    return
+  }
+  exclusionFrom.value = ''
+  exclusionTo.value = ''
+  return runAction(() => api.games.addExclusion(route.params.id, { fromId, toId }))
+}
+
+function removeExclusion(fromId, toId) {
+  return runAction(() => api.games.removeExclusion(route.params.id, fromId, toId))
+}
+
+function setPair() {
+  const fromId = Number(manualFrom.value)
+  const toId = Number(manualTo.value)
+  if (!fromId || !toId || fromId === toId) {
+    actionError.value = 'Выберите двух разных участников'
+    return
+  }
+  manualFrom.value = ''
+  manualTo.value = ''
+  return runAction(() => api.games.setPair(route.params.id, { fromId, toId }))
+}
+
+function resetPairs() {
+  return runAction(() => api.games.resetPairs(route.params.id))
 }
 
 function draw() {
@@ -194,6 +230,85 @@ function reveal(pair) {
           </div>
           <p v-if="!invite.participants.length" class="opacity-50">Добавьте участников, чтобы получить персональные ссылки</p>
         </div>
+      </div>
+
+      <div class="rounded-2xl border border-white/10 bg-white/5 p-5">
+        <div class="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <h2 class="font-bold">Исключения и ручные пары</h2>
+            <p class="mt-1 text-sm opacity-60">Ограничения сохраняются при повторной жеребьёвке</p>
+          </div>
+          <button
+            type="button"
+            class="rounded-full border border-white/20 px-4 py-2 text-sm font-semibold transition hover:bg-white/10 disabled:opacity-50"
+            :disabled="busy || !data.pairs.length"
+            @click="resetPairs"
+          >
+            Сбросить пары
+          </button>
+        </div>
+
+        <form class="mt-4 grid gap-2 sm:grid-cols-[1fr_1fr_auto]" @submit.prevent="addExclusion">
+          <select
+            v-model="exclusionFrom"
+            class="rounded-xl border border-white/15 bg-slate-900/80 px-3 py-2 text-sm outline-none focus:border-white/40"
+          >
+            <option value="" disabled>Кто не дарит</option>
+            <option v-for="person in data.participants" :key="person.id" :value="person.id">{{ person.name }}</option>
+          </select>
+          <select
+            v-model="exclusionTo"
+            class="rounded-xl border border-white/15 bg-slate-900/80 px-3 py-2 text-sm outline-none focus:border-white/40"
+          >
+            <option value="" disabled>Кому не дарит</option>
+            <option v-for="person in data.participants" :key="person.id" :value="person.id">{{ person.name }}</option>
+          </select>
+          <button
+            type="submit"
+            class="rounded-xl border border-white/20 px-4 py-2 text-sm font-semibold transition hover:bg-white/10 disabled:opacity-50"
+            :disabled="busy || !exclusionFrom || !exclusionTo"
+          >
+            Исключить
+          </button>
+        </form>
+        <ul class="mt-3 grid gap-1 text-sm opacity-70">
+          <li v-for="item in data.exclusions" :key="`${item.from_id}-${item.to_id}`" class="flex items-center justify-between gap-3">
+            <span>{{ participantName(item.from_id) }} не дарит {{ participantName(item.to_id) }}</span>
+            <button
+              type="button"
+              class="text-xs underline opacity-70 transition hover:opacity-100 disabled:opacity-50"
+              :disabled="busy"
+              @click="removeExclusion(item.from_id, item.to_id)"
+            >
+              Убрать
+            </button>
+          </li>
+          <li v-if="!data.exclusions.length" class="opacity-50">Исключений пока нет</li>
+        </ul>
+
+        <form class="mt-4 grid gap-2 sm:grid-cols-[1fr_1fr_auto]" @submit.prevent="setPair">
+          <select
+            v-model="manualFrom"
+            class="rounded-xl border border-white/15 bg-slate-900/80 px-3 py-2 text-sm outline-none focus:border-white/40"
+          >
+            <option value="" disabled>Кто дарит</option>
+            <option v-for="person in data.participants" :key="person.id" :value="person.id">{{ person.name }}</option>
+          </select>
+          <select
+            v-model="manualTo"
+            class="rounded-xl border border-white/15 bg-slate-900/80 px-3 py-2 text-sm outline-none focus:border-white/40"
+          >
+            <option value="" disabled>Кому дарит</option>
+            <option v-for="person in data.participants" :key="person.id" :value="person.id">{{ person.name }}</option>
+          </select>
+          <button
+            type="submit"
+            class="rounded-xl border border-white/20 px-4 py-2 text-sm font-semibold transition hover:bg-white/10 disabled:opacity-50"
+            :disabled="busy || !manualFrom || !manualTo"
+          >
+            Зафиксировать
+          </button>
+        </form>
       </div>
 
       <div class="grid gap-4 lg:grid-cols-2">

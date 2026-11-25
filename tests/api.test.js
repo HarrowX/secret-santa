@@ -189,6 +189,40 @@ describe('API', () => {
     assert.equal(empty.status, 400)
   })
 
+  it('управляет исключениями и ручными парами при повторной жеребьёвке', async () => {
+    const game = await createGame('Управление парами')
+    const [first, second, third] = await addParticipants(game.id, ['Аня', 'Борис', 'Вика'])
+
+    const exclusion = await request('POST', `/games/${game.id}/exclusions`, {
+      fromId: first.id,
+      toId: second.id,
+    })
+    assert.equal(exclusion.status, 201)
+    const loaded = await request('GET', `/games/${game.id}`)
+    assert.equal(loaded.body.exclusions.length, 1)
+
+    const manual = await request('POST', `/games/${game.id}/pairs`, {
+      fromId: first.id,
+      toId: third.id,
+    })
+    assert.equal(manual.status, 200)
+
+    for (let attempt = 0; attempt < 3; attempt += 1) {
+      const draw = await request('POST', `/games/${game.id}/draw`)
+      assert.equal(draw.status, 200)
+      const pair = draw.body.find((item) => item.from_id === first.id)
+      assert.equal(pair.to_id, third.id)
+      assert.equal(pair.manual, 1)
+    }
+
+    const removed = await request('DELETE', `/games/${game.id}/exclusions/${first.id}/${second.id}`)
+    assert.equal(removed.status, 200)
+    const reset = await request('POST', `/games/${game.id}/pairs/reset`)
+    assert.equal(reset.status, 200)
+    const pairs = await request('GET', `/games/${game.id}/pairs`)
+    assert.equal(pairs.body.length, 0)
+  })
+
   it('распределяет круговые пары и сохраняет ручное назначение', async () => {
     const game = await createGame()
     const people = await addParticipants(game.id, ['Аня', 'Борис', 'Вера'])

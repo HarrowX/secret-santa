@@ -56,7 +56,20 @@ export const api = {
         body: JSON.stringify(body),
       }),
     invite: (id) => request(`/games/${encodeURIComponent(id)}/invite`),
+    addExclusion: (id, body) =>
+      request(`/games/${encodeURIComponent(id)}/exclusions`, {
+        method: 'POST',
+        body: JSON.stringify(body),
+      }),
+    removeExclusion: (id, fromId, toId) =>
+      request(`/games/${encodeURIComponent(id)}/exclusions/${fromId}/${toId}`, { method: 'DELETE' }),
     draw: (id) => request(`/games/${encodeURIComponent(id)}/draw`, { method: 'POST' }),
+    resetPairs: (id) => request(`/games/${encodeURIComponent(id)}/pairs/reset`, { method: 'POST' }),
+    setPair: (id, body) =>
+      request(`/games/${encodeURIComponent(id)}/pairs`, {
+        method: 'POST',
+        body: JSON.stringify(body),
+      }),
     reveal: (id, fromId) =>
       request(`/games/${encodeURIComponent(id)}/reveal`, {
         method: 'POST',

@@ -62,6 +62,7 @@ gamesRouter.get('/:id', (req, res) => {
     game,
     participants: db.prepare('SELECT * FROM participants WHERE game_id = ? ORDER BY id').all(id),
     questions: db.prepare('SELECT * FROM questions WHERE game_id = ? ORDER BY position, id').all(id),
+    exclusions: db.prepare('SELECT from_id, to_id FROM exclusions WHERE game_id = ?').all(id),
     pairs: db.prepare('SELECT * FROM pairs WHERE game_id = ? ORDER BY from_id').all(id),
     events: db.prepare('SELECT * FROM events WHERE game_id = ? ORDER BY id DESC').all(id),
   })
@@ -197,6 +198,17 @@ gamesRouter.get('/:id/exclusions', (req, res) => {
   res.json(db.prepare('SELECT from_id, to_id FROM exclusions WHERE game_id = ?').all(id))
 })
 
+gamesRouter.delete('/:id/exclusions/:fromId/:toId', (req, res) => {
+  const id = Number(req.params.id)
+  getGame(id)
+  db.prepare('DELETE FROM exclusions WHERE game_id = ? AND from_id = ? AND to_id = ?').run(
+    id,
+    Number(req.params.fromId),
+    Number(req.params.toId),
+  )
+  res.json({ ok: true })
+})
+
 gamesRouter.post('/:id/draw', (req, res) => {
   const id = Number(req.params.id)
   getGame(id)
@@ -243,6 +255,16 @@ gamesRouter.get('/:id/pairs', (req, res) => {
       `)
       .all(id),
   )
+})
+
+gamesRouter.post('/:id/pairs/reset', (req, res) => {
+  const id = Number(req.params.id)
+  getGame(id)
+  db.transaction(() => {
+    db.prepare('DELETE FROM pairs WHERE game_id = ?').run(id)
+    addEvent(id, 'settings', 'Распределение пар сброшено')
+  })()
+  res.json([])
 })
 
 gamesRouter.post('/:id/pairs', validateBody(schemas.pair), (req, res) => {
