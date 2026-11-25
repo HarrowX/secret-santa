@@ -715,6 +715,71 @@ describe('API', () => {
     assert.equal(reserved.status, 409)
   })
 
+  it('ведёт прогресс и отправляет массовые напоминания', async () => {
+    const owner = await request('POST', '/auth/session', {})
+    const game = await createGame('Прогресс', cookieHeader(owner))
+    const people = await addParticipants(game.id, ['Аня', 'Борис'], cookieHeader(owner))
+    await request(
+      'PATCH',
+      `/games/${game.id}/participants/${people[0].id}`,
+      { email: 'anya@example.com' },
+      cookieHeader(owner),
+    )
+
+    const before = await request('GET', `/games/${game.id}`, undefined, cookieHeader(owner))
+    assert.equal(before.body.progress.sent, 0)
+    assert.equal(before.body.progress.received, 0)
+
+    const sent = await request(
+      'POST',
+      `/games/${game.id}/participants/${people[0].id}/gift-sent`,
+      undefined,
+      cookieHeader(owner),
+    )
+    assert.equal(sent.status, 200)
+    const received = await request(
+      'POST',
+      `/games/${game.id}/participants/${people[0].id}/gift-received`,
+      undefined,
+      cookieHeader(owner),
+    )
+    assert.equal(received.status, 200)
+
+    const after = await request('GET', `/games/${game.id}`, undefined, cookieHeader(owner))
+    assert.equal(after.body.progress.sent, 50)
+    assert.equal(after.body.progress.received, 50)
+
+    const reminder = await request(
+      'POST',
+      `/games/${game.id}/reminders`,
+      { body: 'Не забудьте карточку', recipientIds: [people[0].id, people[1].id] },
+      cookieHeader(owner),
+    )
+    assert.equal(reminder.status, 201)
+    assert.deepEqual(
+      reminder.body.map((item) => item.status),
+      ['sent', 'queued'],
+    )
+    assert.equal(reminder.body[1].error, 'Email не указан')
+
+    const duplicate = await request(
+      'POST',
+      `/games/${game.id}/reminders`,
+      { body: 'Не забудьте карточку', recipientIds: [people[0].id, people[1].id] },
+      cookieHeader(owner),
+    )
+    assert.equal(duplicate.status, 409)
+    assert.match(duplicate.body.error.message, /уже отправлено/)
+
+    const reminders = await request(
+      'GET',
+      `/games/${game.id}/reminders`,
+      undefined,
+      cookieHeader(owner),
+    )
+    assert.equal(reminders.body.length, 2)
+  })
+
   it('проверяет права организаторов', async () => {
     const owner = await request('POST', '/auth/session', {})
     const outsider = await request('POST', '/auth/session', {})

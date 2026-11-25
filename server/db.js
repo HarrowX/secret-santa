@@ -32,6 +32,25 @@ for (const column of ['notes', 'preferred']) {
   }
 }
 
+const currentParticipantColumns = db.prepare('PRAGMA table_info(participants)').all()
+for (const column of ['gift_sent_at', 'gift_received_at']) {
+  if (!currentParticipantColumns.some((item) => item.name === column)) {
+    db.exec(`ALTER TABLE participants ADD COLUMN ${column} TEXT`)
+  }
+}
+
+const messageColumns = db.prepare('PRAGMA table_info(messages)').all()
+for (const [column, definition] of [
+  ['recipient_email', 'TEXT'],
+  ['status', "TEXT NOT NULL DEFAULT 'sent'"],
+  ['error', 'TEXT'],
+  ['dedupe_key', 'TEXT'],
+]) {
+  if (!messageColumns.some((item) => item.name === column)) {
+    db.exec(`ALTER TABLE messages ADD COLUMN ${column} ${definition}`)
+  }
+}
+
 const themeColumns = db.prepare('PRAGMA table_info(themes)').all()
 if (!themeColumns.some((column) => column.name === 'glow')) {
   db.exec('ALTER TABLE themes ADD COLUMN glow TEXT')

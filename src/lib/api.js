@@ -106,6 +106,13 @@ export const api = {
     messages: (id) => request(`/games/${encodeURIComponent(id)}/messages`),
     addMessage: (id, body) =>
       request(`/games/${encodeURIComponent(id)}/messages`, { method: 'POST', body: JSON.stringify(body) }),
+    reminders: (id) => request(`/games/${encodeURIComponent(id)}/reminders`),
+    addReminder: (id, body) =>
+      request(`/games/${encodeURIComponent(id)}/reminders`, { method: 'POST', body: JSON.stringify(body) }),
+    markGift: (id, participantId, kind) =>
+      request(`/games/${encodeURIComponent(id)}/participants/${participantId}/gift-${kind}`, {
+        method: 'POST',
+      }),
     organizers: (id) => request(`/games/${encodeURIComponent(id)}/organizers`),
     addOrganizer: (id, body) =>
       request(`/games/${encodeURIComponent(id)}/organizers`, { method: 'POST', body: JSON.stringify(body) }),

@@ -14,6 +14,13 @@ const invite = ref(null)
 const notifications = ref([])
 const answers = ref([])
 const organizers = ref([])
+const reminders = ref([])
+const reminderBody = ref('')
+const reminderRecipients = ref([])
+const giftParticipant = ref('')
+const historyKind = ref('all')
+const historyParticipant = ref('')
+const historyPeriod = ref('all')
 const lastOrganizerInvite = ref('')
 const error = ref('')
 const actionError = ref('')
@@ -39,6 +46,22 @@ const gameToken = computed(() => String(route.params.token ?? ''))
 const gameLabel = computed(() =>
   gameToken.value && gameToken.value !== 'undefined' ? gameToken.value.slice(0, 8) : 'демо',
 )
+const filteredEvents = computed(() => {
+  const events = data.value?.events ?? []
+  return events.filter((item) => {
+    if (historyKind.value !== 'all' && item.kind !== historyKind.value) return false
+    if (historyParticipant.value) {
+      const name = participantName(Number(historyParticipant.value))
+      if (!item.text.includes(name)) return false
+    }
+    if (historyPeriod.value !== 'all') {
+      const days = Number(historyPeriod.value)
+      const created = new Date(String(item.created_at).replace(' ', 'T'))
+      if (Date.now() - created.getTime() > days * 24 * 60 * 60 * 1000) return false
+    }
+    return true
+  })
+})
 
 async function load(id) {
   loading.value = true
@@ -53,6 +76,7 @@ async function load(id) {
   notifications.value = []
   answers.value = []
   organizers.value = []
+  reminders.value = []
   try {
     data.value = await api.games.get(id)
     preferences.setTheme(data.value.game.theme_id)
@@ -60,6 +84,7 @@ async function load(id) {
     notifications.value = await api.games.notifications(id)
     answers.value = await api.games.answers(id)
     organizers.value = await api.games.organizers(id)
+    reminders.value = await api.games.reminders(id)
   } catch (requestError) {
     error.value = requestError.message
   } finally {
@@ -223,6 +248,24 @@ function reveal(pair) {
   if (!window.confirm('Да, раскрыть эту пару?')) return
   return runAction(() => api.games.reveal(route.params.token, pair.from_id))
 }
+
+function markGift(kind) {
+  const participantId = Number(giftParticipant.value)
+  if (!participantId) return
+  giftParticipant.value = ''
+  return runAction(() => api.games.markGift(route.params.token, participantId, kind))
+}
+
+function sendReminder() {
+  const body = reminderBody.value.trim()
+  const recipientIds = reminderRecipients.value.map(Number)
+  if (!body || !recipientIds.length) return
+  return runAction(async () => {
+    await api.games.addReminder(route.params.token, { body, recipientIds })
+    reminderBody.value = ''
+    reminderRecipients.value = []
+  })
+}
 </script>
 
 <template>
@@ -344,6 +387,58 @@ function reveal(pair) {
           </div>
           <p v-if="!invite.participants.length" class="opacity-50">Добавьте участников, чтобы получить персональные ссылки</p>
         </div>
+      </div>
+
+      <div class="rounded-2xl border border-white/10 bg-white/5 p-5">
+        <h2 class="font-bold">Прогресс игры</h2>
+        <div class="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
+          <div
+            v-for="item in [
+              { label: 'Присоединились', value: data.progress.joined },
+              { label: 'Заполнили карточку', value: data.progress.filled },
+              { label: 'Узнали подопечного', value: data.progress.learned },
+              { label: 'Отправили подарок', value: data.progress.sent },
+              { label: 'Получили подарок', value: data.progress.received },
+            ]"
+            :key="item.label"
+            class="rounded-xl border border-white/10 bg-white/5 p-3"
+          >
+            <div class="flex items-center justify-between gap-2 text-xs opacity-70">
+              <span>{{ item.label }}</span>
+              <span class="font-bold">{{ item.value }}%</span>
+            </div>
+            <div class="mt-2 h-1.5 overflow-hidden rounded-full bg-white/10">
+              <div
+                class="h-full rounded-full"
+                :style="{ width: `${item.value}%`, background: preferences.theme.accent }"
+              ></div>
+            </div>
+          </div>
+        </div>
+        <form class="mt-4 flex flex-wrap gap-2" @submit.prevent="markGift('sent')">
+          <select
+            v-model="giftParticipant"
+            class="rounded-xl border border-white/15 bg-slate-900/80 px-3 py-2 text-sm outline-none"
+          >
+            <option value="" disabled>Выберите участника</option>
+            <option v-for="person in data.participants" :key="person.id" :value="person.id">{{ person.name }}</option>
+          </select>
+          <button
+            type="submit"
+            class="rounded-xl border border-white/20 px-4 py-2 text-sm font-semibold transition hover:bg-white/10 disabled:opacity-50"
+            :disabled="busy || !giftParticipant"
+          >
+            Подарок отправлен
+          </button>
+          <button
+            type="button"
+            class="rounded-xl border border-white/20 px-4 py-2 text-sm font-semibold transition hover:bg-white/10 disabled:opacity-50"
+            :disabled="busy || !giftParticipant"
+            @click="markGift('received')"
+          >
+            Подарок получен
+          </button>
+        </form>
       </div>
 
       <div class="rounded-2xl border border-white/10 bg-white/5 p-5">
@@ -621,12 +716,39 @@ function reveal(pair) {
       <div class="grid gap-4 lg:grid-cols-2">
         <div class="rounded-2xl border border-white/10 bg-white/5 p-5">
           <h2 class="font-bold">История</h2>
+          <div class="mt-3 grid gap-2 sm:grid-cols-3">
+            <select
+              v-model="historyKind"
+              class="rounded-xl border border-white/15 bg-slate-900/80 px-3 py-2 text-sm outline-none"
+            >
+              <option value="all">Все события</option>
+              <option value="join">Участники</option>
+              <option value="settings">Настройки</option>
+              <option value="draw">Жеребьёвка</option>
+              <option value="message">Сообщения</option>
+            </select>
+            <select
+              v-model="historyParticipant"
+              class="rounded-xl border border-white/15 bg-slate-900/80 px-3 py-2 text-sm outline-none"
+            >
+              <option value="">Все участники</option>
+              <option v-for="person in data.participants" :key="person.id" :value="person.id">{{ person.name }}</option>
+            </select>
+            <select
+              v-model="historyPeriod"
+              class="rounded-xl border border-white/15 bg-slate-900/80 px-3 py-2 text-sm outline-none"
+            >
+              <option value="all">Всё время</option>
+              <option value="1">За сутки</option>
+              <option value="7">За 7 дней</option>
+            </select>
+          </div>
           <ol class="mt-3 grid gap-2 text-sm opacity-70">
-            <li v-for="item in data.events" :key="item.id">
+            <li v-for="item in filteredEvents" :key="item.id">
               {{ item.created_at }} · {{ item.text }}
               <span v-if="item.actor" class="opacity-60">— {{ item.actor }}</span>
             </li>
-            <li v-if="!data.events.length" class="opacity-50">Событий пока нет</li>
+            <li v-if="!filteredEvents.length" class="opacity-50">Событий по фильтру нет</li>
           </ol>
         </div>
         <div class="rounded-2xl border border-white/10 bg-white/5 p-5">
@@ -636,6 +758,45 @@ function reveal(pair) {
             <li v-if="!notifications.length" class="opacity-50">Карточки ещё не менялись</li>
           </ol>
         </div>
+      </div>
+
+      <div class="rounded-2xl border border-white/10 bg-white/5 p-5">
+        <h2 class="font-bold">Массовые напоминания</h2>
+        <p class="mt-1 text-sm opacity-60">До 1000 символов, статусы доставки и защита от повторов</p>
+        <form class="mt-4 grid gap-2" @submit.prevent="sendReminder">
+          <textarea
+            v-model="reminderBody"
+            maxlength="1000"
+            rows="3"
+            placeholder="Текст напоминания"
+            class="w-full rounded-xl border border-white/15 bg-white/5 px-4 py-2 text-sm outline-none placeholder:text-current/40 focus:border-white/40"
+          ></textarea>
+          <div class="flex flex-wrap items-center justify-between gap-2">
+            <select
+              v-model="reminderRecipients"
+              multiple
+              class="min-w-48 flex-1 rounded-xl border border-white/15 bg-slate-900/80 px-3 py-2 text-sm outline-none"
+            >
+              <option v-for="person in data.participants" :key="person.id" :value="person.id">{{ person.name }}</option>
+            </select>
+            <span class="text-xs opacity-60">{{ reminderBody.length }}/1000</span>
+            <button
+              type="submit"
+              class="rounded-full px-5 py-2 text-sm font-bold transition hover:opacity-80 disabled:opacity-50"
+              :style="{ background: preferences.theme.accent, color: '#0b1120' }"
+              :disabled="busy || !reminderBody.trim() || !reminderRecipients.length"
+            >
+              Отправить
+            </button>
+          </div>
+        </form>
+        <ul class="mt-3 grid gap-1 text-sm opacity-70">
+          <li v-for="item in reminders" :key="item.id">
+            {{ item.created_at }} · {{ item.participant_name }} · {{ item.status }}
+            <span v-if="item.error" class="text-amber-300">— {{ item.error }}</span>
+          </li>
+          <li v-if="!reminders.length" class="opacity-50">Напоминаний пока нет</li>
+        </ul>
       </div>
     </div>
   </section>

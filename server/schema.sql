@@ -44,6 +44,8 @@ CREATE TABLE IF NOT EXISTS participants (
   address TEXT,
   notes TEXT,
   preferred TEXT,
+  gift_sent_at TEXT,
+  gift_received_at TEXT,
   filled INTEGER NOT NULL DEFAULT 0,
   created_at TEXT NOT NULL DEFAULT (datetime('now')),
   UNIQUE (game_id, name)
@@ -111,6 +113,10 @@ CREATE TABLE IF NOT EXISTS messages (
   from_id INTEGER REFERENCES participants(id) ON DELETE SET NULL,
   to_id INTEGER REFERENCES participants(id) ON DELETE SET NULL,
   body TEXT NOT NULL,
+  recipient_email TEXT,
+  status TEXT NOT NULL DEFAULT 'sent',
+  error TEXT,
+  dedupe_key TEXT,
   created_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
 

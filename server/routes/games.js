@@ -1,7 +1,8 @@
-import { randomUUID } from 'node:crypto'
+import { createHash, randomUUID } from 'node:crypto'
 import { Router } from 'express'
 import { db } from '../db.js'
 import { HttpError, fail } from '../http-error.js'
+import { rateLimit } from '../middlewares/rateLimit.js'
 import { requireOrganizer } from '../permissions.js'
 import { gamesRepository } from '../repositories/games.js'
 import { drawPairs } from '../services/draw.js'
@@ -66,6 +67,35 @@ function addEvent(gameId, kind, text, actor = null) {
   )
 }
 
+function percent(part, total) {
+  return total ? Math.round((part / total) * 100) : 0
+}
+
+function gameProgress(gameId) {
+  const participants = db
+    .prepare('SELECT id, user_id, gift_sent_at, gift_received_at FROM participants WHERE game_id = ?')
+    .all(gameId)
+  const answered = db
+    .prepare(`
+      SELECT DISTINCT answers.participant_id
+      FROM answers
+      JOIN questions ON questions.id = answers.question_id
+      WHERE questions.game_id = ?
+    `)
+    .all(gameId).length
+  const pairs = db.prepare('SELECT revealed_at FROM pairs WHERE game_id = ?').all(gameId)
+  const total = participants.length
+  return {
+    joined: percent(participants.filter((person) => person.user_id).length, total),
+    filled: percent(answered, total),
+    learned: percent(pairs.filter((pair) => pair.revealed_at).length, pairs.length),
+    sent: percent(participants.filter((person) => person.gift_sent_at).length, total),
+    received: percent(participants.filter((person) => person.gift_received_at).length, total),
+  }
+}
+
+const reminderRateLimit = rateLimit({ windowMs: 60_000, max: 10 })
+
 gamesRouter.get('/', (_req, res) => {
   res.json(gamesRepository.list())
 })
@@ -99,6 +129,7 @@ gamesRouter.get('/:id', (req, res) => {
 
   res.json({
     game,
+    progress: gameProgress(id),
     participants: db.prepare('SELECT * FROM participants WHERE game_id = ? ORDER BY id').all(id),
     questions: db.prepare('SELECT * FROM questions WHERE game_id = ? ORDER BY position, id').all(id),
     exclusions: db.prepare('SELECT from_id, to_id FROM exclusions WHERE game_id = ?').all(id),
@@ -199,6 +230,26 @@ gamesRouter.patch('/:id/participants/:participantId', validateBody(schemas.parti
   addNotification(id, participantId, updated)
   res.json(updated)
 })
+
+function markGift(kind) {
+  return (req, res) => {
+    const id = resolveGameId(req.params.id)
+    getGame(id)
+    requireOrganizer(id, req.user)
+    const participantId = Number(req.params.participantId)
+    const participant = db
+      .prepare('SELECT id FROM participants WHERE id = ? AND game_id = ?')
+      .get(participantId, id)
+    if (!participant) fail(404, 'Участник не найден')
+    const column = kind === 'sent' ? 'gift_sent_at' : 'gift_received_at'
+    db.prepare(`UPDATE participants SET ${column} = datetime('now') WHERE id = ?`).run(participantId)
+    addEvent(id, 'settings', kind === 'sent' ? 'Подарок отправлен' : 'Подарок получен', req.user?.id ?? null)
+    res.json({ ok: true })
+  }
+}
+
+gamesRouter.post('/:id/participants/:participantId/gift-sent', markGift('sent'))
+gamesRouter.post('/:id/participants/:participantId/gift-received', markGift('received'))
 
 gamesRouter.delete('/:id/participants/:participantId', (req, res) => {
   const id = resolveGameId(req.params.id)
@@ -644,6 +695,68 @@ gamesRouter.post('/:id/messages', validateBody(schemas.message), (req, res) => {
   addEvent(id, 'message', 'Отправлено сообщение', req.user?.id ?? null)
   res.status(201).json(db.prepare('SELECT * FROM messages WHERE id = ?').get(result.lastInsertRowid))
 })
+
+gamesRouter.get('/:id/reminders', (req, res) => {
+  const id = resolveGameId(req.params.id)
+  getGame(id)
+  requireOrganizer(id, req.user)
+  res.json(
+    db.prepare(`
+      SELECT messages.*, participants.name AS participant_name
+      FROM messages
+      LEFT JOIN participants ON participants.id = messages.to_id
+      WHERE messages.game_id = ? AND messages.from_id IS NULL
+      ORDER BY messages.id DESC
+    `).all(id),
+  )
+})
+
+gamesRouter.post(
+  '/:id/reminders',
+  reminderRateLimit,
+  validateBody(schemas.reminder),
+  (req, res) => {
+    const id = resolveGameId(req.params.id)
+    getGame(id)
+    requireOrganizer(id, req.user)
+    const { body, recipientIds } = req.body
+    const uniqueIds = [...new Set(recipientIds.map(Number))]
+    const participants = db
+      .prepare(`SELECT id, name, email FROM participants WHERE game_id = ? AND id IN (${uniqueIds.map(() => '?').join(',')})`)
+      .all(id, ...uniqueIds)
+    if (participants.length !== uniqueIds.length) fail(400, 'Некоторые участники не найдены')
+
+    const dedupeKey = createHash('sha256')
+      .update(`${id}|${uniqueIds.sort((a, b) => a - b).join(',')}|${body}`)
+      .digest('hex')
+    const duplicate = db
+      .prepare(`
+        SELECT id FROM messages
+        WHERE game_id = ? AND dedupe_key = ? AND created_at >= datetime('now', '-5 minutes')
+      `)
+      .get(id, dedupeKey)
+    if (duplicate) fail(409, 'Такое напоминание уже отправлено')
+
+    const insert = db.prepare(`
+      INSERT INTO messages (game_id, from_id, to_id, body, recipient_email, status, error, dedupe_key)
+      VALUES (?, NULL, ?, ?, ?, ?, ?, ?)
+    `)
+    const created = db.transaction(() =>
+      participants.map((person) => {
+        const status = person.email ? 'sent' : 'queued'
+        const error = person.email ? null : 'Email не указан'
+        const result = insert.run(id, person.id, body, person.email, status, error, dedupeKey)
+        return db.prepare(`
+          SELECT messages.*, participants.name AS participant_name
+          FROM messages JOIN participants ON participants.id = messages.to_id
+          WHERE messages.id = ?
+        `).get(result.lastInsertRowid)
+      }),
+    )()
+    addEvent(id, 'message', `Отправлено напоминаний: ${created.length}`, req.user?.id ?? null)
+    res.status(201).json(created)
+  },
+)
 
 gamesRouter.get('/:id/organizers', (req, res) => {
   const id = resolveGameId(req.params.id)

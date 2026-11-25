@@ -75,6 +75,12 @@ export const schemas = {
       toId: identifier.optional().nullable(),
     })
     .strict(),
+  reminder: z
+    .object({
+      body: text.max(1000),
+      recipientIds: z.array(identifier).min(1).max(100),
+    })
+    .strict(),
   organizer: z.object({ token: text.max(80) }).strict(),
   credentials: z
     .object({
