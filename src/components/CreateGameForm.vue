@@ -113,7 +113,7 @@ async function submit() {
           <span class="text-xs font-semibold uppercase tracking-widest opacity-60">Формат</span>
           <select
             :value="format"
-            class="rounded-xl border border-white/15 bg-slate-900/80 px-4 py-2.5 text-sm outline-none focus:border-white/40"
+            class="rounded-xl border border-white/15 px-4 py-2.5 text-sm outline-none focus:border-white/40"
             @change="applyPreset($event.target.value)"
           >
             <option value="">Без пресета</option>
@@ -124,7 +124,7 @@ async function submit() {
           <span class="text-xs font-semibold uppercase tracking-widest opacity-60">Тема</span>
           <select
             v-model="selectedTheme"
-            class="rounded-xl border border-white/15 bg-slate-900/80 px-4 py-2.5 text-sm outline-none focus:border-white/40"
+            class="rounded-xl border border-white/15 px-4 py-2.5 text-sm outline-none focus:border-white/40"
           >
             <option v-for="item in themes" :key="item.id" :value="item.id">{{ item.name }}</option>
           </select>

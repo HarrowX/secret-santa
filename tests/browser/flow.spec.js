@@ -72,7 +72,10 @@ test('participants join by the common link and the organizer can remove a bad na
   await expect(organizer).toHaveURL(/\/game\//)
 
   await organizer.getByLabel('Название вопроса').fill('Любите ли вы читать?')
-  await organizer.getByLabel('Тип вопроса').selectOption('boolean')
+  const questionTypeSelect = organizer.getByLabel('Тип вопроса')
+  await expect(questionTypeSelect).toHaveCSS('appearance', 'none')
+  await expect(questionTypeSelect).toHaveCSS('color-scheme', 'dark')
+  await questionTypeSelect.selectOption('boolean')
   await organizer.getByRole('button', { name: 'Добавить вопрос' }).click()
   await expect(organizer.getByText('Любите ли вы читать? · Да/Нет')).toBeVisible()
 

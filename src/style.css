@@ -35,6 +35,34 @@ h4 {
   cursor: pointer;
 }
 
+select {
+  appearance: none;
+  color-scheme: dark;
+  color: inherit;
+  background-color: rgb(15 23 42 / 0.8);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23cbd5e1' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 0.65rem center;
+  background-size: 1.1rem;
+  padding-right: 2.25rem;
+}
+
+select option,
+select optgroup {
+  background-color: #0f172a;
+  color: #e5e7eb;
+}
+
+select:focus-visible {
+  outline: 2px solid var(--accent, var(--color-ring));
+  outline-offset: 3px;
+}
+
+select:disabled {
+  cursor: default;
+  opacity: 0.5;
+}
+
 :where(button, a):focus-visible {
   outline: 2px solid var(--accent, var(--color-ring));
   outline-offset: 3px;

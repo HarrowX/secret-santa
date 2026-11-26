@@ -175,7 +175,7 @@ async function send() {
         Собеседник
         <select
           v-model="selectedToId"
-          class="mt-1 w-full rounded-xl border border-white/15 bg-slate-900/80 px-3 py-2 text-sm text-current outline-none"
+          class="mt-1 w-full rounded-xl border border-white/15 px-3 py-2 text-sm text-current outline-none"
           aria-label="Выберите собеседника"
         >
           <option

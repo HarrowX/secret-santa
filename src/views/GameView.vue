@@ -603,7 +603,7 @@ function saveTenant() {
             <select
               v-model="settings.format"
               aria-label="Формат игры"
-              class="rounded-xl border border-white/15 bg-slate-900/80 px-3 py-2 text-sm outline-none focus:border-white/40"
+              class="rounded-xl border border-white/15 px-3 py-2 text-sm outline-none focus:border-white/40"
             >
               <option value="">Без формата</option>
               <option v-for="preset in presets" :key="preset.id" :value="preset.id">{{ preset.label }}</option>
@@ -614,7 +614,7 @@ function saveTenant() {
             <select
               v-model="settings.themeId"
               aria-label="Тема оформления"
-              class="rounded-xl border border-white/15 bg-slate-900/80 px-3 py-2 text-sm outline-none focus:border-white/40"
+              class="rounded-xl border border-white/15 px-3 py-2 text-sm outline-none focus:border-white/40"
             >
               <option v-for="theme in themes" :key="theme.id" :value="theme.id">{{ theme.name }}</option>
             </select>
@@ -704,7 +704,7 @@ function saveTenant() {
           <select
             v-model="giftParticipant"
             aria-label="Участник, отметки о подарке"
-            class="rounded-xl border border-white/15 bg-slate-900/80 px-3 py-2 text-sm outline-none"
+            class="rounded-xl border border-white/15 px-3 py-2 text-sm outline-none"
           >
             <option value="" disabled>Выберите участника</option>
             <option v-for="person in data.participants" :key="person.id" :value="person.id">{{ person.name }}</option>
@@ -819,7 +819,7 @@ function saveTenant() {
           <select
             v-model="questionType"
             aria-label="Тип вопроса"
-            class="rounded-xl border border-white/15 bg-slate-900/80 px-3 py-2 text-sm outline-none focus:border-white/40"
+            class="rounded-xl border border-white/15 px-3 py-2 text-sm outline-none focus:border-white/40"
           >
             <option value="text">Текст</option>
             <option value="number">Число</option>
@@ -892,7 +892,7 @@ function saveTenant() {
           <select
             v-model="pastGameId"
             aria-label="Прошлая игра для импорта пар"
-            class="min-w-48 flex-1 rounded-xl border border-white/15 bg-slate-900/80 px-3 py-2 text-sm outline-none"
+            class="min-w-48 flex-1 rounded-xl border border-white/15 px-3 py-2 text-sm outline-none"
           >
             <option value="" disabled>Выберите прошлую игру</option>
             <option v-for="game in pastGames" :key="game.id" :value="game.id">
@@ -933,7 +933,7 @@ function saveTenant() {
           <select
             v-model="exclusionFrom"
             aria-label="Кто не дарит"
-            class="rounded-xl border border-white/15 bg-slate-900/80 px-3 py-2 text-sm outline-none focus:border-white/40"
+            class="rounded-xl border border-white/15 px-3 py-2 text-sm outline-none focus:border-white/40"
           >
             <option value="" disabled>Кто не дарит</option>
             <option v-for="person in data.participants" :key="person.id" :value="person.id">{{ person.name }}</option>
@@ -941,7 +941,7 @@ function saveTenant() {
           <select
             v-model="exclusionTo"
             aria-label="Кому не дарит"
-            class="rounded-xl border border-white/15 bg-slate-900/80 px-3 py-2 text-sm outline-none focus:border-white/40"
+            class="rounded-xl border border-white/15 px-3 py-2 text-sm outline-none focus:border-white/40"
           >
             <option value="" disabled>Кому не дарит</option>
             <option v-for="person in data.participants" :key="person.id" :value="person.id">{{ person.name }}</option>
@@ -977,7 +977,7 @@ function saveTenant() {
           <select
             v-model="manualFrom"
             aria-label="Кто дарит в ручной паре"
-            class="rounded-xl border border-white/15 bg-slate-900/80 px-3 py-2 text-sm outline-none focus:border-white/40"
+            class="rounded-xl border border-white/15 px-3 py-2 text-sm outline-none focus:border-white/40"
           >
             <option value="" disabled>Кто дарит</option>
             <option v-for="person in data.participants" :key="person.id" :value="person.id">{{ person.name }}</option>
@@ -985,7 +985,7 @@ function saveTenant() {
           <select
             v-model="manualTo"
             aria-label="Кому дарит в ручной паре"
-            class="rounded-xl border border-white/15 bg-slate-900/80 px-3 py-2 text-sm outline-none focus:border-white/40"
+            class="rounded-xl border border-white/15 px-3 py-2 text-sm outline-none focus:border-white/40"
           >
             <option value="" disabled>Кому дарит</option>
             <option v-for="person in data.participants" :key="person.id" :value="person.id">{{ person.name }}</option>
@@ -1077,10 +1077,7 @@ function saveTenant() {
         <div class="rounded-2xl border border-white/10 bg-white/5 p-5">
           <h2 class="font-bold">История</h2>
           <div class="mt-3 grid gap-2 sm:grid-cols-3">
-            <select
-              v-model="historyKind"
-              class="rounded-xl border border-white/15 bg-slate-900/80 px-3 py-2 text-sm outline-none"
-            >
+            <select v-model="historyKind" class="rounded-xl border border-white/15 px-3 py-2 text-sm outline-none">
               <option value="all">Все события</option>
               <option value="join">Участники</option>
               <option value="settings">Настройки</option>
@@ -1089,15 +1086,12 @@ function saveTenant() {
             </select>
             <select
               v-model="historyParticipant"
-              class="rounded-xl border border-white/15 bg-slate-900/80 px-3 py-2 text-sm outline-none"
+              class="rounded-xl border border-white/15 px-3 py-2 text-sm outline-none"
             >
               <option value="">Все участники</option>
               <option v-for="person in data.participants" :key="person.id" :value="person.id">{{ person.name }}</option>
             </select>
-            <select
-              v-model="historyPeriod"
-              class="rounded-xl border border-white/15 bg-slate-900/80 px-3 py-2 text-sm outline-none"
-            >
+            <select v-model="historyPeriod" class="rounded-xl border border-white/15 px-3 py-2 text-sm outline-none">
               <option value="all">Всё время</option>
               <option value="1">За сутки</option>
               <option value="7">За 7 дней</option>
@@ -1136,7 +1130,7 @@ function saveTenant() {
               v-model="reminderRecipients"
               aria-label="Получатели напоминания"
               multiple
-              class="min-w-48 flex-1 rounded-xl border border-white/15 bg-slate-900/80 px-3 py-2 text-sm outline-none"
+              class="min-w-48 flex-1 rounded-xl border border-white/15 px-3 py-2 text-sm outline-none"
             >
               <option v-for="person in data.participants" :key="person.id" :value="person.id">{{ person.name }}</option>
             </select>

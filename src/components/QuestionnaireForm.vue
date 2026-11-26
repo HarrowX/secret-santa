@@ -141,7 +141,7 @@ function save() {
         v-model="values[question.id]"
         :aria-label="question.title"
         :aria-invalid="Boolean(errors[question.id])"
-        class="rounded-xl border border-white/15 bg-slate-900/80 px-4 py-2 text-sm outline-none focus:border-white/40 disabled:opacity-60"
+        class="rounded-xl border border-white/15 px-4 py-2 text-sm outline-none focus:border-white/40 disabled:opacity-60"
         :class="errors[question.id] ? 'border-rose-400' : ''"
         :disabled="!editable || busy"
       >
@@ -155,7 +155,7 @@ function save() {
         v-model="values[question.id]"
         :aria-label="question.title"
         :aria-invalid="Boolean(errors[question.id])"
-        class="rounded-xl border border-white/15 bg-slate-900/80 px-4 py-2 text-sm outline-none focus:border-white/40 disabled:opacity-60"
+        class="rounded-xl border border-white/15 px-4 py-2 text-sm outline-none focus:border-white/40 disabled:opacity-60"
         :class="errors[question.id] ? 'border-rose-400' : ''"
         :disabled="!editable || busy"
       >
