@@ -1,4 +1,6 @@
 <script setup>
+import ThemeDecor from './ThemeDecor.vue'
+
 defineProps({
   themes: Array,
   themeId: String,
@@ -55,17 +57,19 @@ const idleClass = 'text-inherit opacity-70 hover:opacity-100'
       >
         <div class="grid grid-cols-2 gap-1.5">
           <div
-            class="relative h-20 overflow-hidden rounded-xl border border-white/15"
+            class="relative isolate h-20 overflow-hidden rounded-xl border border-white/15"
             :style="{ background: item.night }"
           >
+            <ThemeDecor :theme-id="item.id" :accent="item.accent" compact />
             <span class="absolute bottom-1.5 left-2 text-[10px] font-semibold uppercase tracking-widest text-white/70"
               >Ночь</span
             >
           </div>
           <div
-            class="relative h-20 overflow-hidden rounded-xl border border-black/10"
+            class="relative isolate h-20 overflow-hidden rounded-xl border border-black/10"
             :style="{ background: item.day }"
           >
+            <ThemeDecor :theme-id="item.id" :accent="item.accent" compact />
             <span
               class="absolute bottom-1.5 left-2 text-[10px] font-semibold uppercase tracking-widest text-slate-900/60"
               >День</span

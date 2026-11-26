@@ -9,6 +9,7 @@ import { usePreferencesStore } from '../stores/preferences'
 import ParticipantCard from '../components/ParticipantCard.vue'
 import QuestionnaireForm from '../components/QuestionnaireForm.vue'
 import NotificationsPanel from '../components/NotificationsPanel.vue'
+import ThemeDecor from '../components/ThemeDecor.vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -378,7 +379,8 @@ function saveTenant() {
 </script>
 
 <template>
-  <section class="mx-auto max-w-5xl px-5 py-12">
+  <section class="relative isolate mx-auto max-w-5xl overflow-hidden px-5 py-12">
+    <ThemeDecor :theme-id="data?.game.theme_id ?? preferences.themeId" :accent="preferences.theme.accent" />
     <button
       type="button"
       class="rounded-full border border-white/20 px-4 py-2 text-sm font-semibold transition hover:bg-white/10"

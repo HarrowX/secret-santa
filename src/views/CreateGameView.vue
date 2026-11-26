@@ -5,6 +5,7 @@ import { usePreferencesStore } from '../stores/preferences'
 import { themes } from '../data/themes'
 import { api } from '../lib/api'
 import CreateGameForm from '../components/CreateGameForm.vue'
+import ThemeDecor from '../components/ThemeDecor.vue'
 
 const router = useRouter()
 const preferences = usePreferencesStore()
@@ -35,10 +36,14 @@ function openGame(game) {
     </button>
   </section>
 
-  <CreateGameForm
-    :accent="preferences.theme.accent"
-    :theme-id="preferences.themeId"
-    :themes="availableThemes"
-    @created="openGame"
-  />
+  <div class="relative isolate">
+    <ThemeDecor :theme-id="preferences.themeId" :accent="preferences.theme.accent" />
+    <CreateGameForm
+      class="relative"
+      :accent="preferences.theme.accent"
+      :theme-id="preferences.themeId"
+      :themes="availableThemes"
+      @created="openGame"
+    />
+  </div>
 </template>

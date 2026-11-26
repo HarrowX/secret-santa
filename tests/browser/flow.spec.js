@@ -2,9 +2,12 @@ import { test, expect } from '@playwright/test'
 
 test('organizer and anonymous participants complete the game in the browser', async ({ browser }) => {
   const organizerContext = await browser.newContext()
+  await organizerContext.addInitScript(() => localStorage.setItem('santa-mode', 'day'))
   const organizer = await organizerContext.newPage()
 
   await organizer.goto('/new')
+  await expect(organizer.getByLabel('Формат')).toHaveCSS('color-scheme', 'light')
+  await expect(organizer.locator('.theme-decor--winter').first()).toBeVisible()
   await organizer.getByLabel('Название').fill('Браузерная игра')
   await organizer.getByRole('main').getByRole('button', { name: 'Создать игру' }).click()
   await expect(organizer).toHaveURL(/\/game\//)

@@ -11,7 +11,7 @@ import { domain } from './config'
 const route = useRoute()
 const router = useRouter()
 const preferences = usePreferencesStore()
-const { theme, isDay, background } = storeToRefs(preferences)
+const { theme, isDay, mode, background } = storeToRefs(preferences)
 
 const cookieConsent = ref(localStorage.getItem('cookie-consent') === 'accepted')
 const tenantError = ref('')
@@ -77,6 +77,7 @@ function acceptCookies() {
   <div
     class="min-h-screen transition-all duration-500"
     :class="isDay ? 'text-slate-900' : 'text-slate-100'"
+    :data-mode="mode"
     :style="{ background, '--accent': theme.accent }"
   >
     <SiteHeader :page="page" :accent="theme.accent" :is-day="isDay" @navigate="navigate" />

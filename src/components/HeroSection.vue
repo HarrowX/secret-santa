@@ -1,4 +1,6 @@
 <script setup>
+import ThemeDecor from './ThemeDecor.vue'
+
 defineProps({
   theme: Object,
   accent: String,
@@ -11,8 +13,9 @@ const highlights = ['Приглашения по ссылке', 'Анкеты и
 
 <template>
   <section
-    class="relative mx-auto grid max-w-6xl gap-12 px-5 py-14 lg:grid-cols-[1.05fr_.95fr] lg:items-center lg:py-20"
+    class="relative isolate mx-auto grid max-w-6xl gap-12 overflow-hidden px-5 py-14 lg:grid-cols-[1.05fr_.95fr] lg:items-center lg:py-20"
   >
+    <ThemeDecor :theme-id="theme.id" :accent="accent" />
     <div
       class="pointer-events-none absolute inset-0 opacity-[0.12]"
       style="background-image: radial-gradient(currentColor 1px, transparent 1px); background-size: 28px 28px"

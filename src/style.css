@@ -39,7 +39,7 @@ select {
   appearance: none;
   color-scheme: dark;
   color: inherit;
-  background-color: rgb(15 23 42 / 0.8);
+  background-color: rgb(255 255 255 / 0.05);
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23cbd5e1' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
   background-repeat: no-repeat;
   background-position: right 0.65rem center;
@@ -53,7 +53,21 @@ select optgroup {
   color: #e5e7eb;
 }
 
+[data-mode='day'] select {
+  color-scheme: light;
+  background-color: rgb(255 255 255 / 0.65);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23334155' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+  border-color: rgb(15 23 42 / 0.16);
+}
+
+[data-mode='day'] select option,
+[data-mode='day'] select optgroup {
+  background-color: #ffffff;
+  color: #0f172a;
+}
+
 select:focus-visible {
+  border-color: var(--accent, var(--color-ring));
   outline: 2px solid var(--accent, var(--color-ring));
   outline-offset: 3px;
 }
@@ -74,6 +88,90 @@ select:disabled {
 
 ::selection {
   background: rgb(255 255 255 / 0.2);
+}
+
+.theme-decor {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  overflow: hidden;
+  pointer-events: none;
+  color: var(--decor-color, var(--accent, var(--color-ring)));
+}
+
+.theme-decor::before,
+.theme-decor::after {
+  content: '';
+  position: absolute;
+  width: 38%;
+  aspect-ratio: 1;
+  border-radius: 999px;
+  background: currentColor;
+  filter: blur(70px);
+  opacity: 0.12;
+}
+
+.theme-decor::before {
+  top: -24%;
+  right: -10%;
+}
+
+.theme-decor::after {
+  bottom: -32%;
+  left: -14%;
+  opacity: 0.08;
+}
+
+.theme-decor__scene {
+  position: absolute;
+  top: -6%;
+  right: -4%;
+  width: min(70%, 520px);
+  height: auto;
+  opacity: 0.22;
+  filter: drop-shadow(0 0 18px currentColor);
+  animation: theme-decor-float 14s ease-in-out infinite alternate;
+}
+
+.theme-decor--compact .theme-decor__scene {
+  top: -28%;
+  right: -26%;
+  width: 122%;
+  opacity: 0.32;
+}
+
+.theme-decor--compact::before,
+.theme-decor--compact::after {
+  display: none;
+}
+
+.theme-decor--halloween .theme-decor__scene,
+.theme-decor--pixel .theme-decor__scene {
+  top: -10%;
+  opacity: 0.28;
+}
+
+.theme-decor--space .theme-decor__scene,
+.theme-decor--cyberpunk .theme-decor__scene {
+  opacity: 0.3;
+}
+
+[data-mode='day'] .theme-decor {
+  mix-blend-mode: multiply;
+}
+
+[data-mode='day'] .theme-decor__scene {
+  opacity: 0.16;
+}
+
+@keyframes theme-decor-float {
+  from {
+    transform: translate3d(0, 0, 0) rotate(-2deg);
+  }
+
+  to {
+    transform: translate3d(-2%, 3%, 0) rotate(2deg);
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {

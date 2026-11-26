@@ -6,6 +6,7 @@ import { usePreferencesStore } from '../stores/preferences'
 import QuestionnaireForm from '../components/QuestionnaireForm.vue'
 import NotificationsPanel from '../components/NotificationsPanel.vue'
 import ChatPanel from '../components/ChatPanel.vue'
+import ThemeDecor from '../components/ThemeDecor.vue'
 
 const route = useRoute()
 const preferences = usePreferencesStore()
@@ -239,7 +240,8 @@ async function saveAnswers(payload) {
 </script>
 
 <template>
-  <section class="mx-auto max-w-3xl px-5 py-16">
+  <section class="relative isolate mx-auto max-w-3xl overflow-hidden px-5 py-16">
+    <ThemeDecor :theme-id="invite?.game.theme_id ?? preferences.themeId" :accent="preferences.theme.accent" />
     <p class="text-xs font-semibold uppercase tracking-[0.3em] opacity-60">Приглашение</p>
 
     <p v-if="loading" class="mt-6 rounded-2xl border border-white/10 bg-white/5 p-6 text-sm opacity-70">
