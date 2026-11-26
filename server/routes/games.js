@@ -247,6 +247,7 @@ const chatRateLimit = rateLimit({
   },
 })
 const createGameRateLimit = rateLimit({ name: 'game-create', windowMs: 60_000, max: 15 })
+const selfJoinRateLimit = rateLimit({ name: 'game-join', windowMs: 60_000, max: 15 })
 const organizerActionRateLimit = rateLimit({ name: 'organizer-action', windowMs: 60_000, max: 20 })
 const notificationRateLimit = rateLimit({
   name: 'notifications',
@@ -416,6 +417,37 @@ gamesRouter.post('/:id/participants/bulk', validateBody(schemas.participantBulk)
   res.status(201).json({
     added,
     participants: db.prepare('SELECT * FROM participants WHERE game_id = ? ORDER BY id').all(id),
+  })
+})
+
+gamesRouter.post('/:id/join', selfJoinRateLimit, validateBody(schemas.participant), (req, res) => {
+  const id = loadGame(req)
+  const name = req.body.name
+  const normalizedName = name.toLocaleLowerCase('ru')
+  const duplicate = db
+    .prepare('SELECT name FROM participants WHERE game_id = ?')
+    .all(id)
+    .some((person) => person.name.toLocaleLowerCase('ru') === normalizedName)
+  if (duplicate) fail(409, 'Участник с таким именем уже есть')
+
+  const token = inviteToken()
+  let result
+  try {
+    result = db
+      .prepare('INSERT INTO participants (game_id, name, invite_token, identity_token) VALUES (?, ?, ?, ?)')
+      .run(id, name, token, randomUUID())
+  } catch (error) {
+    if (String(error.message).includes('UNIQUE')) fail(409, 'Участник с таким именем уже есть')
+    throw error
+  }
+
+  const participant = db.prepare('SELECT * FROM participants WHERE id = ?').get(result.lastInsertRowid)
+  addEvent(id, 'join', `${name} присоединился к игре`, req.user?.id ?? name)
+  trackMetric('participant_invited', { gameId: id, userId: req.user?.id ?? null })
+  res.status(201).json({
+    participant,
+    inviteToken: token,
+    url: publicLink(req, `/join/${token}`),
   })
 })
 

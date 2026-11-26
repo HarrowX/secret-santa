@@ -59,6 +59,9 @@ const questionRequired = ref(false)
 const questionCount = computed(() => data.value?.questions?.length ?? 0)
 const gameToken = computed(() => String(route.params.token ?? ''))
 const gameLabel = computed(() => (gameToken.value ? gameToken.value.slice(0, 8) : '—'))
+const selfName = ref('')
+const selfInviteToken = ref('')
+const selfJoinError = ref('')
 const filteredEvents = computed(() => {
   const events = data.value?.events ?? []
   return events.filter((item) => {
@@ -103,6 +106,9 @@ async function load(id) {
   reminders.value = []
   pastGames.value = []
   tenantUrl.value = ''
+  selfName.value = ''
+  selfJoinError.value = ''
+  selfInviteToken.value = localStorage.getItem(inviteStorageKey(id)) ?? ''
   try {
     data.value = await api.games.get(id, String(id))
     preferences.setTheme(data.value.game.theme_id)
@@ -128,6 +134,31 @@ watch(() => route.params.token, load, { immediate: true })
 
 function participantName(id) {
   return data.value?.participants.find((person) => person.id === id)?.name ?? 'Участник'
+}
+
+function inviteStorageKey(id) {
+  return `santa-invite:${String(id)}`
+}
+
+function openMyCard() {
+  router.push(`/join/${selfInviteToken.value}`)
+}
+
+async function selfJoin() {
+  const name = selfName.value.trim()
+  if (!name) return
+  busy.value = true
+  selfJoinError.value = ''
+  try {
+    const joined = await api.games.join(route.params.token, { name })
+    localStorage.setItem(inviteStorageKey(route.params.token), joined.inviteToken)
+    selfInviteToken.value = joined.inviteToken
+    router.push(`/join/${joined.inviteToken}`)
+  } catch (requestError) {
+    selfJoinError.value = requestError.message
+  } finally {
+    busy.value = false
+  }
 }
 
 function receiverFor(id) {
@@ -356,13 +387,42 @@ function saveTenant() {
       <p class="mt-2 whitespace-pre-wrap text-sm opacity-75">{{ data.game.rules }}</p>
     </div>
 
-    <div
-      v-if="data && !data.canManage"
-      class="mt-4 rounded-2xl border border-white/15 bg-white/5 p-5 text-sm opacity-80"
-      role="status"
-    >
-      Это страница просмотра игры. Здесь видны название, правила, бюджет, дата, вопросы и прогресс. Чтобы заполнить
-      карточку, узнать пару и написать Санте, откройте персональную ссылку-приглашение — её отправил организатор.
+    <div v-if="data && !data.canManage" class="mt-4 rounded-2xl border border-white/15 bg-white/5 p-5 text-sm">
+      <p class="font-semibold">Присоединиться к игре</p>
+      <p class="mt-1 opacity-60">
+        Укажите имя, под которым вас увидят участники, затем заполните анкету. Организатор сможет удалить участника с
+        неверным или обидным именем.
+      </p>
+      <div v-if="selfInviteToken" class="mt-4 flex flex-wrap gap-2">
+        <button
+          type="button"
+          class="rounded-xl px-4 py-2 text-sm font-bold"
+          :style="{ background: preferences.theme.accent, color: '#0b1120' }"
+          @click="openMyCard"
+        >
+          Открыть мою карточку
+        </button>
+      </div>
+      <form v-else class="mt-4 flex flex-wrap gap-2" @submit.prevent="selfJoin">
+        <input
+          v-model="selfName"
+          type="text"
+          maxlength="80"
+          required
+          placeholder="Как вас зовут"
+          aria-label="Ваше имя"
+          class="min-w-48 flex-1 rounded-xl border border-white/15 bg-white/5 px-4 py-2 text-sm outline-none placeholder:text-current/40 focus:border-white/40"
+        />
+        <button
+          type="submit"
+          class="rounded-xl px-4 py-2 text-sm font-bold transition hover:opacity-80 disabled:opacity-50"
+          :style="{ background: preferences.theme.accent, color: '#0b1120' }"
+          :disabled="busy || !selfName.trim()"
+        >
+          Присоединиться
+        </button>
+      </form>
+      <p v-if="selfJoinError" role="alert" class="mt-2 text-rose-300">{{ selfJoinError }}</p>
     </div>
 
     <p v-if="loading" class="mt-8 rounded-2xl border border-white/10 bg-white/5 p-6 text-sm opacity-70">
@@ -466,6 +526,7 @@ function saveTenant() {
           <button
             type="button"
             class="truncate rounded-xl border border-white/15 bg-white/5 px-4 py-2 text-left transition hover:bg-white/10"
+            :aria-label="`Общая ссылка на игру: ${invite.commonUrl}`"
             @click="copyLink(invite.commonUrl)"
           >
             <span class="opacity-50">Общая ссылка на игру: </span>{{ invite.commonUrl }}
@@ -483,9 +544,7 @@ function saveTenant() {
             </button>
             <span class="text-xs opacity-50">{{ person.filled ? 'подтвердил' : 'ожидаем' }}</span>
           </div>
-          <p v-if="!invite.participants.length" class="opacity-50">
-            Общая ссылка не является персональным приглашением. Добавьте участников, чтобы получить ссылки-приглашения
-          </p>
+          <p class="opacity-50">Общую ссылку можно отправить всем: каждый участник сам укажет имя и заполнит анкету.</p>
         </div>
       </div>
 

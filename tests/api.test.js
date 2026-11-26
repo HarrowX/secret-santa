@@ -280,6 +280,52 @@ describe('API', () => {
     assert.equal(empty.status, 400)
   })
 
+  it('позволяет участникам самим присоединяться по общей ссылке и удаляет их по решению организатора', async () => {
+    const game = await createGame('Самоприсоединение')
+    const forbidden = await request(
+      'POST',
+      `/games/${game.token}/join`,
+      { name: 'Без ссылки' },
+      { 'x-test-no-cookies': true },
+    )
+    assert.equal(forbidden.status, 403)
+
+    const joined = await request(
+      'POST',
+      `/games/${game.token}/join`,
+      { name: 'Сам participant' },
+      { 'x-game-token': game.token, 'x-test-no-cookies': true },
+    )
+    assert.equal(joined.status, 201)
+    assert.equal(joined.body.participant.name, 'Сам participant')
+    assert.ok(joined.body.inviteToken)
+    assert.ok(joined.body.url.endsWith(`/join/${joined.body.inviteToken}`))
+
+    const opened = await request('GET', `/invites/${joined.body.inviteToken}`, undefined, {
+      'x-test-no-cookies': true,
+    })
+    assert.equal(opened.status, 200)
+    assert.equal(opened.body.participant.id, joined.body.participant.id)
+
+    const duplicate = await request(
+      'POST',
+      `/games/${game.token}/join`,
+      { name: 'сам PARTICIPANT' },
+      { 'x-game-token': game.token, 'x-test-no-cookies': true },
+    )
+    assert.equal(duplicate.status, 409)
+
+    const invite = await request('GET', `/games/${game.token}/invite`)
+    assert.equal(invite.status, 200)
+    assert.ok(invite.body.commonUrl.endsWith(`/game/${game.token}`))
+    assert.ok(invite.body.participants.some((person) => person.id === joined.body.participant.id))
+
+    const removed = await request('DELETE', `/games/${game.token}/participants/${joined.body.participant.id}`)
+    assert.equal(removed.status, 200)
+    const afterRemoval = await request('GET', `/games/${game.token}`)
+    assert.ok(!afterRemoval.body.participants.some((person) => person.id === joined.body.participant.id))
+  })
+
   it('добавляет участников после жеребьёвки и распределяет только новых', async () => {
     const game = await createGame('Новые участники')
     const [first, second] = await addParticipants(game.token, ['Аня', 'Борис'])

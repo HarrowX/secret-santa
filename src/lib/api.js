@@ -88,6 +88,12 @@ export const api = {
         method: 'POST',
         body: JSON.stringify(body),
       }),
+    join: (id, body) =>
+      request(`/games/${encodeURIComponent(id)}/join`, {
+        method: 'POST',
+        body: JSON.stringify(body),
+        headers: accessHeaders(null, String(id)),
+      }),
     updateParticipant: (id, participantId, body) =>
       request(`/games/${encodeURIComponent(id)}/participants/${participantId}`, {
         method: 'PATCH',
