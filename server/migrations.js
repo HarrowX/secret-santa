@@ -15,14 +15,8 @@ export function resolveBackupDir() {
   return path.resolve(root, process.env.BACKUP_DIR || path.join('data', 'backups'))
 }
 
-export function createDatabase() {
-  const dbPath = resolveDbPath()
-  fs.mkdirSync(path.dirname(dbPath), { recursive: true })
-  const database = new Database(dbPath)
-  database.pragma('journal_mode = WAL')
-  database.pragma('foreign_keys = ON')
-  database.pragma('busy_timeout = 5000')
-  return database
+function hasTable(database, table) {
+  return Boolean(database.prepare("SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = ?").get(table))
 }
 
 function hasColumn(database, table, column) {
@@ -33,9 +27,51 @@ function hasColumn(database, table, column) {
 }
 
 function ensureColumn(database, table, column, definition) {
-  if (!hasColumn(database, table, column)) {
+  if (!hasTable(database, table) || hasColumn(database, table, column)) return
+  try {
     database.exec(`ALTER TABLE ${table} ADD COLUMN ${column} ${definition}`)
+  } catch (error) {
+    if (!String(error.message).includes('duplicate column name')) throw error
   }
+}
+
+export function ensureLegacyColumns(database) {
+  for (const [table, column, definition] of [
+    ['users', 'password_hash', 'TEXT'],
+    ['participants', 'identity_token', 'TEXT'],
+    ['participants', 'invite_token', 'TEXT'],
+    ['participants', 'notes', 'TEXT'],
+    ['participants', 'preferred', 'TEXT'],
+    ['participants', 'gift_sent_at', 'TEXT'],
+    ['participants', 'gift_received_at', 'TEXT'],
+    ['games', 'format', 'TEXT'],
+    ['questions', 'options', 'TEXT'],
+    ['messages', 'recipient_email', 'TEXT'],
+    ['messages', 'status', "TEXT NOT NULL DEFAULT 'sent'"],
+    ['messages', 'error', 'TEXT'],
+    ['messages', 'dedupe_key', 'TEXT'],
+    ['chat_messages', 'image_url', 'TEXT'],
+    ['themes', 'glow', 'TEXT'],
+  ]) {
+    ensureColumn(database, table, column, definition)
+  }
+
+  if (hasTable(database, 'participants')) {
+    database.exec('UPDATE participants SET invite_token = lower(hex(randomblob(12))) WHERE invite_token IS NULL')
+    database.exec('CREATE UNIQUE INDEX IF NOT EXISTS idx_participants_invite_token ON participants(invite_token)')
+    database.exec('CREATE INDEX IF NOT EXISTS idx_participants_identity ON participants(identity_token)')
+  }
+}
+
+export function createDatabase() {
+  const dbPath = resolveDbPath()
+  fs.mkdirSync(path.dirname(dbPath), { recursive: true })
+  const database = new Database(dbPath)
+  database.pragma('journal_mode = WAL')
+  database.pragma('foreign_keys = ON')
+  database.pragma('busy_timeout = 5000')
+  ensureLegacyColumns(database)
+  return database
 }
 
 export const migrations = [

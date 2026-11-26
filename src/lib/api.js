@@ -44,10 +44,20 @@ async function request(path, options = {}) {
     throw new ApiError(0, 'Не удалось связаться с сервером')
   }
 
-  const payload = await response.json().catch(() => null)
-  if (!response.ok) {
-    throw new ApiError(response.status, payload?.error?.message || payload?.message || 'Ошибка запроса')
+  const raw = await response.text().catch(() => '')
+  let payload = null
+  try {
+    if (raw) payload = JSON.parse(raw)
+  } catch {
+    payload = null
   }
+
+  if (!response.ok) {
+    const text = raw.trim().startsWith('<') ? '' : raw.trim().slice(0, 300)
+    const message = payload?.error?.message || payload?.message || text
+    throw new ApiError(response.status, message || `Ошибка запроса (${response.status})`)
+  }
+  if (raw && payload === null) throw new ApiError(response.status, 'Сервер вернул неожиданный ответ')
   return payload
 }
 

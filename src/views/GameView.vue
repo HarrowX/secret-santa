@@ -58,9 +58,7 @@ const questionType = ref('text')
 const questionRequired = ref(false)
 const questionCount = computed(() => data.value?.questions?.length ?? 0)
 const gameToken = computed(() => String(route.params.token ?? ''))
-const gameLabel = computed(() =>
-  gameToken.value && gameToken.value !== 'undefined' ? gameToken.value.slice(0, 8) : 'демо',
-)
+const gameLabel = computed(() => (gameToken.value ? gameToken.value.slice(0, 8) : '—'))
 const filteredEvents = computed(() => {
   const events = data.value?.events ?? []
   return events.filter((item) => {
@@ -341,9 +339,9 @@ function saveTenant() {
     <button
       type="button"
       class="rounded-full border border-white/20 px-4 py-2 text-sm font-semibold transition hover:bg-white/10"
-      @click="router.push('/demo')"
+      @click="router.push('/my')"
     >
-      ← К демо
+      ← К моим играм
     </button>
 
     <div class="mt-8">

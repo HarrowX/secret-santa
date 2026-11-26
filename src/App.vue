@@ -24,16 +24,14 @@ const personalRoutes = new Set([
   'randomizer',
   'my',
   'support',
-  'demo',
+  'create',
 ])
+const gameRoutes = new Set(['game', 'join', 'participant', 'organizer-invite'])
 
-const page = computed(() => {
-  if (['demo', 'game', 'join', 'participant'].includes(route.name)) return 'demo'
-  return route.name ?? 'landing'
-})
+const page = computed(() => route.name ?? 'landing')
 
 function navigate(target) {
-  if (target === 'demo') router.push('/demo')
+  if (target === 'create') router.push('/new')
   else if (target === 'my') router.push('/my')
   else if (target === 'randomizer') router.push('/randomizer')
   else if (target === 'features') router.push({ path: '/', hash: '#features' })
@@ -50,7 +48,8 @@ function isUnknownSubdomain() {
 
 onMounted(async () => {
   try {
-    const { tenant } = await api.tenants.current()
+    const current = await api.tenants.current()
+    const tenant = current?.tenant ?? null
     if (route.fullPath !== initialPath) return
     if (tenant?.game?.token) {
       if (!personalRoutes.has(route.name)) router.push(`/game/${tenant.game.token}`)
@@ -60,9 +59,10 @@ onMounted(async () => {
   } catch (requestError) {
     if (route.fullPath !== initialPath) return
     if (requestError instanceof ApiError && requestError.status === 404) {
-      router.push('/')
+      if (route.name !== 'landing') router.push('/')
       return
     }
+    if (!gameRoutes.has(route.name)) return
     tenantError.value = 'Не удалось проверить адрес игры. Данные на странице могут быть неактуальны.'
   }
 })

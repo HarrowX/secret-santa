@@ -7,7 +7,7 @@ defineProps({
   accent: String,
 })
 
-const emit = defineEmits(['open-demo'])
+const emit = defineEmits(['open-create'])
 
 const stages = ref([])
 const metricsError = ref('')
@@ -87,9 +87,9 @@ const features = [
       <button
         type="button"
         class="rounded-full border border-white/25 px-5 py-2.5 text-sm font-semibold text-inherit transition hover:bg-white/10"
-        @click="emit('open-demo')"
+        @click="emit('open-create')"
       >
-        Открыть демо
+        Создать игру
       </button>
     </div>
 

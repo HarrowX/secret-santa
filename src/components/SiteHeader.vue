@@ -13,7 +13,7 @@ const menuOpen = ref(false)
 
 const links = [
   { label: 'На главную', target: 'landing' },
-  { label: 'Создать игру', target: 'demo' },
+  { label: 'Создать игру', target: 'create' },
   { label: 'Мои игры', target: 'my' },
   { label: 'Быстрая жеребьёвка', target: 'randomizer' },
   { label: 'Возможности', target: 'features' },
@@ -83,9 +83,9 @@ onBeforeUnmount(() => document.removeEventListener('keydown', onKeydown))
           class="rounded-full border px-4 py-2 text-sm font-semibold transition hover:opacity-80"
           :class="isDay ? 'border-slate-900/20' : 'border-white/25'"
           :style="{ color: accent }"
-          @click="go('demo')"
+          @click="go('create')"
         >
-          Открыть демо
+          Создать игру
         </button>
         <button
           type="button"

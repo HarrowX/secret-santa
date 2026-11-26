@@ -244,7 +244,10 @@ load()
               /game/{{ game.token }}
             </span>
           </button>
-          <p v-if="!games.length" class="text-sm opacity-50">Пока нет игр. Создайте первую на демо-странице.</p>
+          <p v-if="!games.length" class="text-sm opacity-50">
+            Пока нет игр.
+            <RouterLink to="/new" class="underline">Создайте первую игру</RouterLink>.
+          </p>
         </div>
       </div>
 

@@ -3,7 +3,7 @@ defineProps({
   accent: String,
 })
 
-const emit = defineEmits(['open-demo'])
+const emit = defineEmits(['open-create'])
 </script>
 
 <template>
@@ -27,16 +27,9 @@ const emit = defineEmits(['open-demo'])
           type="button"
           class="rounded-full px-6 py-3 font-semibold text-slate-950 shadow-xl transition hover:brightness-110"
           :style="{ background: accent }"
-          @click="emit('open-demo')"
+          @click="emit('open-create')"
         >
           Создать игру бесплатно
-        </button>
-        <button
-          type="button"
-          class="rounded-full border border-white/25 px-6 py-3 font-semibold text-inherit transition hover:bg-white/10"
-          @click="emit('open-demo')"
-        >
-          Посмотреть демо
         </button>
       </div>
       <p class="relative mt-5 text-xs opacity-50">Все возможности доступны сразу.</p>

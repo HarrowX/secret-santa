@@ -4,7 +4,7 @@ test('organizer and anonymous participants complete the game in the browser', as
   const organizerContext = await browser.newContext()
   const organizer = await organizerContext.newPage()
 
-  await organizer.goto('/demo')
+  await organizer.goto('/new')
   await organizer.getByLabel('Название').fill('Браузерная игра')
   await organizer.getByRole('main').getByRole('button', { name: 'Создать игру' }).click()
   await expect(organizer).toHaveURL(/\/game\//)

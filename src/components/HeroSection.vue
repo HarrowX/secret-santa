@@ -4,7 +4,9 @@ defineProps({
   accent: String,
 })
 
-const emit = defineEmits(['open-demo'])
+const emit = defineEmits(['open-create'])
+
+const highlights = ['Приглашения по ссылке', 'Анкеты и пожелания', 'Жеребьёвка и история']
 </script>
 
 <template>
@@ -37,7 +39,7 @@ const emit = defineEmits(['open-demo'])
           type="button"
           class="rounded-full px-6 py-3 font-semibold text-slate-950 shadow-xl transition hover:brightness-110"
           :style="{ background: accent }"
-          @click="emit('open-demo')"
+          @click="emit('open-create')"
         >
           Создать игру
         </button>
@@ -63,43 +65,23 @@ const emit = defineEmits(['open-demo'])
         <div class="flex items-start justify-between gap-4">
           <div>
             <p class="text-xs uppercase tracking-widest opacity-60">Ваша игра</p>
-            <h2 class="mt-1 text-xl font-bold">Новогодняя вечеринка</h2>
+            <h2 class="mt-1 text-xl font-bold">Начните с настроек</h2>
           </div>
           <span class="rounded-full border border-white/20 px-3 py-1 text-xs" :style="{ color: accent }"
-            >Ждёт жеребьёвку</span
+            >Без регистрации</span
           >
         </div>
 
-        <div class="mt-6 rounded-2xl border border-white/10 bg-slate-950/20 p-4">
-          <div class="flex items-center justify-between text-sm">
-            <span class="font-semibold">Заполнили анкету</span>
-            <span class="opacity-70">8 из 12</span>
-          </div>
-          <div class="mt-3 h-2 overflow-hidden rounded-full bg-white/10">
-            <div class="h-full rounded-full" :style="{ width: '67%', background: accent }"></div>
-          </div>
-          <div class="mt-4 flex -space-x-2">
-            <span
-              v-for="n in 5"
-              :key="n"
-              class="grid h-8 w-8 place-items-center rounded-full border border-white/20 bg-white/15 text-xs font-bold"
+        <div class="mt-6 grid gap-3">
+          <div
+            v-for="item in highlights"
+            :key="item"
+            class="flex items-center gap-3 rounded-2xl border border-white/10 bg-slate-950/20 p-4 text-sm"
+          >
+            <span class="grid h-7 w-7 place-items-center rounded-full" :style="{ background: accent, color: '#0b1120' }"
+              >✓</span
             >
-              {{ ['О', 'М', 'А', 'Б', 'В'][n - 1] }}
-            </span>
-            <span class="grid h-8 w-8 place-items-center rounded-full border border-white/20 bg-white/10 text-xs"
-              >+7</span
-            >
-          </div>
-        </div>
-
-        <div class="mt-4 grid grid-cols-2 gap-3 text-sm">
-          <div class="rounded-2xl border border-white/10 bg-white/5 p-4">
-            <p class="opacity-60">Бюджет</p>
-            <p class="mt-1 font-semibold">до 1 500 ₽</p>
-          </div>
-          <div class="rounded-2xl border border-white/10 bg-white/5 p-4">
-            <p class="opacity-60">Обмен</p>
-            <p class="mt-1 font-semibold">25 декабря</p>
+            <span>{{ item }}</span>
           </div>
         </div>
 
@@ -107,9 +89,9 @@ const emit = defineEmits(['open-demo'])
           type="button"
           class="mt-5 w-full rounded-full py-3 font-semibold text-slate-950"
           :style="{ background: accent }"
-          @click="emit('open-demo')"
+          @click="emit('open-create')"
         >
-          Открыть кабинет организатора
+          Настроить игру
         </button>
       </div>
     </div>

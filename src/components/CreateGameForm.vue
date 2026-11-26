@@ -14,7 +14,7 @@ const props = defineProps({
 
 const emit = defineEmits(['created'])
 
-const title = ref('Новогодняя игра')
+const title = ref('')
 const budget = ref('')
 const exchangeDate = ref('')
 const rules = ref('')
@@ -67,8 +67,7 @@ async function submit() {
     <div class="rounded-2xl border border-white/10 bg-white/5 p-5 backdrop-blur">
       <div class="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <p class="text-xs font-semibold uppercase tracking-[0.3em] opacity-60">Реальная игра</p>
-          <h2 class="mt-1 text-xl font-bold">Настройте игру и начните</h2>
+          <h2 class="text-xl font-bold">Настройте игру и начните</h2>
           <p class="mt-1 text-xs opacity-60">Регистрация не нужна — игра появится сразу</p>
         </div>
         <button
@@ -98,7 +97,7 @@ async function submit() {
             v-model="budget"
             type="text"
             maxlength="80"
-            placeholder="Например, 1 500 ₽"
+            placeholder="Необязательно"
             class="rounded-xl border border-white/15 bg-white/5 px-4 py-2.5 text-sm outline-none placeholder:text-current/40 focus:border-white/40"
           />
         </label>

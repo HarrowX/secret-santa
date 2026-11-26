@@ -23,15 +23,15 @@ onMounted(async () => {
   }
 })
 
-function openDemo() {
-  router.push('/demo')
+function openCreate() {
+  router.push('/new')
 }
 </script>
 
 <template>
-  <HeroSection :theme="preferences.theme" :accent="preferences.theme.accent" @open-demo="openDemo" />
+  <HeroSection :theme="preferences.theme" :accent="preferences.theme.accent" @open-create="openCreate" />
   <ThemeShowcase v-model:theme-id="preferences.themeId" v-model:mode="preferences.mode" :themes="availableThemes" />
   <StepsSection :accent="preferences.theme.accent" />
-  <FeatureSection :accent="preferences.theme.accent" @open-demo="openDemo" />
-  <CtaSection :accent="preferences.theme.accent" @open-demo="openDemo" />
+  <FeatureSection :accent="preferences.theme.accent" @open-create="openCreate" />
+  <CtaSection :accent="preferences.theme.accent" @open-create="openCreate" />
 </template>
