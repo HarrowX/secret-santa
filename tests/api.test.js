@@ -293,11 +293,11 @@ describe('API', () => {
     const joined = await request(
       'POST',
       `/games/${game.token}/join`,
-      { name: 'Сам participant' },
+      { name: 'Аня' },
       { 'x-game-token': game.token, 'x-test-no-cookies': true },
     )
     assert.equal(joined.status, 201)
-    assert.equal(joined.body.participant.name, 'Сам participant')
+    assert.equal(joined.body.participant.name, 'Аня')
     assert.ok(joined.body.inviteToken)
     assert.ok(joined.body.url.endsWith(`/join/${joined.body.inviteToken}`))
 
@@ -310,7 +310,7 @@ describe('API', () => {
     const duplicate = await request(
       'POST',
       `/games/${game.token}/join`,
-      { name: 'сам PARTICIPANT' },
+      { name: 'аня' },
       { 'x-game-token': game.token, 'x-test-no-cookies': true },
     )
     assert.equal(duplicate.status, 409)

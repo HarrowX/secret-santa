@@ -71,10 +71,10 @@ test('participants join by the common link and the organizer can remove a bad na
   await organizer.getByRole('main').getByRole('button', { name: 'Создать игру' }).click()
   await expect(organizer).toHaveURL(/\/game\//)
 
-  await organizer.getByLabel('Название вопроса').fill('Фывф')
+  await organizer.getByLabel('Название вопроса').fill('Любите ли вы читать?')
   await organizer.getByLabel('Тип вопроса').selectOption('boolean')
   await organizer.getByRole('button', { name: 'Добавить вопрос' }).click()
-  await expect(organizer.getByText('Фывф · Да/Нет')).toBeVisible()
+  await expect(organizer.getByText('Любите ли вы читать? · Да/Нет')).toBeVisible()
 
   const commonButton = organizer.getByRole('button', { name: /Общая ссылка на игру:/ })
   await expect(commonButton).toBeVisible()
@@ -90,9 +90,9 @@ test('participants join by the common link and the organizer can remove a bad na
   await joiner.getByRole('button', { name: 'Присоединиться' }).click()
   await expect(joiner).toHaveURL(/\/join\//)
   await expect(joiner.getByRole('heading', { name: 'Анкета' })).toBeVisible()
-  await joiner.getByLabel('Фывф').selectOption('да')
+  await joiner.getByLabel('Любите ли вы читать?').selectOption('да')
   await joiner.getByRole('button', { name: 'Сохранить ответы' }).click()
-  await expect(joiner.getByRole('combobox', { name: 'Фывф' })).toHaveValue('да')
+  await expect(joiner.getByRole('combobox', { name: 'Любите ли вы читать?' })).toHaveValue('да')
 
   await joiner.getByLabel('Желания').fill('Книга')
   await joiner.getByRole('button', { name: 'Подтвердить участие' }).click()
