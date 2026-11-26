@@ -1,5 +1,5 @@
 <script setup>
-import { computed, ref, watch } from 'vue'
+import { computed, nextTick, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { api, ensureSession } from '../lib/api'
 import { usePreferencesStore } from '../stores/preferences'
@@ -188,6 +188,8 @@ async function accept() {
       filled: true,
     }
     await loadParticipantData(invite.value, route.params.token)
+    await nextTick()
+    document.getElementById('questionnaire')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
   } catch (requestError) {
     cardError.value = requestError.message
   } finally {
@@ -357,23 +359,26 @@ async function saveAnswers(payload) {
         </p>
       </div>
 
-      <template v-if="invite.participant.filled">
-        <div class="rounded-2xl border border-white/10 bg-white/5 p-5">
-          <h2 class="font-bold">Анкета</h2>
-          <p class="mt-1 text-sm opacity-60">Ответы видны Санте после раскрытия пары</p>
-          <p v-if="questionnaireError" role="alert" class="mt-2 text-sm text-rose-300">{{ questionnaireError }}</p>
-          <div class="mt-3">
-            <QuestionnaireForm
-              :questions="questions"
-              :answers="answers"
-              :busy="questionnaireBusy"
-              :accent="preferences.theme.accent"
-              :editable="true"
-              @save="saveAnswers"
-            />
-          </div>
+      <div id="questionnaire" class="rounded-2xl border border-white/10 bg-white/5 p-5">
+        <h2 class="font-bold">Анкета</h2>
+        <p class="mt-1 text-sm opacity-60">
+          Отвечайте на вопросы сразу после присоединения; вернуться к ним можно в любой момент. Ответы видны Санте после
+          раскрытия пары.
+        </p>
+        <p v-if="questionnaireError" role="alert" class="mt-2 text-sm text-rose-300">{{ questionnaireError }}</p>
+        <div class="mt-3">
+          <QuestionnaireForm
+            :questions="questions"
+            :answers="answers"
+            :busy="questionnaireBusy"
+            :accent="preferences.theme.accent"
+            :editable="true"
+            @save="saveAnswers"
+          />
         </div>
+      </div>
 
+      <template v-if="invite.participant.filled">
         <NotificationsPanel
           :game-id="gameId"
           :invite-token="String(route.params.token)"

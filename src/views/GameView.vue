@@ -136,6 +136,18 @@ function participantName(id) {
   return data.value?.participants.find((person) => person.id === id)?.name ?? 'Участник'
 }
 
+const questionTypeLabels = {
+  text: 'Текст',
+  number: 'Число',
+  boolean: 'Да/Нет',
+  single: 'Один выбор',
+  multi: 'Несколько',
+}
+
+function questionTypeLabel(type) {
+  return questionTypeLabels[type] ?? type ?? 'Текст'
+}
+
 function inviteStorageKey(id) {
   return `santa-invite:${String(id)}`
 }
@@ -388,10 +400,14 @@ function saveTenant() {
     </div>
 
     <div v-if="data && !data.canManage" class="mt-4 rounded-2xl border border-white/15 bg-white/5 p-5 text-sm">
-      <p class="font-semibold">Присоединиться к игре</p>
-      <p class="mt-1 opacity-60">
-        Укажите имя, под которым вас увидят участники, затем заполните анкету. Организатор сможет удалить участника с
-        неверным или обидным именем.
+      <p class="font-semibold">{{ selfInviteToken ? 'Вы уже в игре' : 'Присоединиться к игре' }}</p>
+      <p v-if="selfInviteToken" class="mt-1 opacity-60">
+        Откройте карточку, чтобы подтвердить участие и ответить на вопросы анкеты. Организатор сможет удалить участника
+        с неверным или обидным именем.
+      </p>
+      <p v-else class="mt-1 opacity-60">
+        Укажите имя, под которым вас увидят участники, затем подтвердите участие и ответьте на вопросы анкеты.
+        Организатор сможет удалить участника с неверным или обидным именем.
       </p>
       <div v-if="selfInviteToken" class="mt-4 flex flex-wrap gap-2">
         <button
@@ -826,7 +842,7 @@ function saveTenant() {
         </form>
         <ul class="mt-3 grid gap-1 text-sm opacity-70">
           <li v-for="question in data.questions" :key="question.id" class="flex items-center justify-between gap-3">
-            <span>{{ question.title }} · {{ question.type }}</span>
+            <span>{{ question.title }} · {{ questionTypeLabel(question.type) }}</span>
             <button
               v-if="data.canManage"
               type="button"
