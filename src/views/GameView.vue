@@ -766,7 +766,7 @@ function saveTenant() {
             class="self-end rounded-full border border-white/20 px-5 py-2 text-sm font-semibold transition hover:bg-white/10 disabled:opacity-50"
             :disabled="busy || !tenantSlug.trim()"
           >
-            Сохранить адрес
+            {{ `Сохранить адрес игры: ${tenantSlug.trim()}` }}
           </button>
           <p v-if="errors.tenant" role="alert" class="text-sm text-rose-300">{{ errors.tenant }}</p>
         </form>
