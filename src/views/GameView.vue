@@ -494,7 +494,7 @@ function saveTenant() {
           :style="{ background: preferences.theme.accent, color: '#0b1120' }"
           :disabled="busy || !selfName.trim()"
         >
-          Присоединиться
+          {{ selfName.trim() ? `Присоединиться к игре: ${selfName.trim()}` : 'Присоединиться к игре: введите имя' }}
         </button>
       </form>
       <p v-if="selfJoinError" role="alert" class="mt-2 text-rose-300">{{ selfJoinError }}</p>
