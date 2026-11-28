@@ -413,9 +413,8 @@ test('support form sends two requests in one session', async ({ page }) => {
   const email = page.getByLabel('Email для ответа')
   const subject = page.getByLabel('Тема')
   const body = page.getByLabel('Сообщение')
-  const confirmation = page.getByText('Обращение отправлено. Спасибо!')
+  const confirmation = page.getByText('Обращение отправлено. Если вы указали email, мы ответим на него.')
 
-  await email.fill('user@example.test')
   await subject.fill('Первый вопрос')
   await body.fill('Первое обращение')
   const firstResponse = page.waitForResponse(

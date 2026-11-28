@@ -15,7 +15,9 @@ async function submit() {
   busy.value = true
   error.value = ''
   try {
-    await api.support.send({ email: email.value, subject: subject.value, body: body.value })
+    const payload = { email: email.value, subject: subject.value, body: body.value }
+    if (!payload.email.trim()) delete payload.email
+    await api.support.send(payload)
     sent.value = true
     email.value = ''
     subject.value = ''
@@ -43,7 +45,7 @@ function startNew() {
       <p class="mt-2 text-sm opacity-70">Опишите ситуацию — мы вернёмся с ответом на указанную почту.</p>
 
       <div v-if="sent" role="status" class="mt-6 rounded-xl border border-emerald-400/30 bg-emerald-400/10 p-4 text-sm">
-        <p>Обращение отправлено. Спасибо!</p>
+        <p>Обращение отправлено. Если вы указали email, мы ответим на него.</p>
         <button type="button" class="mt-3 text-sm underline opacity-70 transition hover:opacity-100" @click="startNew">
           Написать ещё
         </button>
