@@ -936,8 +936,12 @@ test('game copy links show local clipboard status', async ({ browser }) => {
 
   await expect(page.getByText('Имя участника', { exact: true })).toBeVisible()
   await expect(page.getByLabel('Имя участника')).toHaveAttribute('placeholder', 'Аня')
+  await expect(page.getByRole('button', { name: 'Добавить участника: введите имя', exact: true })).toBeVisible()
+  await expect(page.getByRole('button', { name: 'Добавить', exact: true })).toHaveCount(0)
   await page.getByLabel('Имя участника').fill('Аня')
-  await page.getByRole('button', { name: 'Добавить', exact: true }).click()
+  await expect(page.getByRole('button', { name: 'Добавить участника: Аня', exact: true })).toBeVisible()
+  await expect(page.getByRole('button', { name: 'Добавить', exact: true })).toHaveCount(0)
+  await page.getByRole('button', { name: 'Добавить участника: Аня', exact: true }).click()
 
   const gameHeading = page.getByRole('heading', { name: title, level: 1 })
   await expect(gameHeading).toBeVisible()
@@ -945,6 +949,7 @@ test('game copy links show local clipboard status', async ({ browser }) => {
   const inviteButton = page.getByRole('button', { name: 'Скопировать ссылку-приглашение для Аня' })
   const inviteRow = inviteButton.locator('xpath=..')
   await expect(inviteButton).toBeVisible()
+  await expect(inviteRow).toContainText('Аня')
   await inviteButton.click()
   await expect(gameHeading).toBeVisible()
   await expect(inviteRow.getByText('Не удалось скопировать ссылку')).toBeVisible()
