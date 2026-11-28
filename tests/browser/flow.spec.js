@@ -537,9 +537,12 @@ test('organizer creates a choice question through the game form', async ({ brows
   await organizer.getByRole('main').getByRole('button', { name: 'Создать игру' }).click()
   await expect(organizer).toHaveURL(/\/game\//)
 
+  await expect(organizer.getByLabel('Название вопроса')).toHaveAttribute('placeholder', 'Любимый цвет')
+  await expect(organizer.getByLabel('Подсказка')).toHaveAttribute('placeholder', 'Например, синий')
   await organizer.getByLabel('Название вопроса').fill('Любимый цвет')
   await organizer.getByLabel('Подсказка').fill('Например, синий')
   await organizer.getByLabel('Тип вопроса').selectOption('single')
+  await expect(organizer.getByLabel('Варианты через запятую')).toHaveAttribute('placeholder', 'Синий, Зелёный, Красный')
   await organizer.getByLabel('Варианты через запятую').fill('Синий, Зелёный, Красный')
   await organizer.getByRole('button', { name: 'Добавить вопрос' }).click()
   await expect(organizer.getByText('Любимый цвет · Один выбор')).toBeVisible()

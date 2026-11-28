@@ -836,7 +836,7 @@ function saveTenant() {
             v-model="questionTitle"
             type="text"
             maxlength="120"
-            placeholder="Название вопроса"
+            placeholder="Любимый цвет"
             aria-label="Название вопроса"
             class="rounded-xl border border-white/15 bg-white/5 px-3 py-2 text-sm outline-none focus:border-white/40"
           />
@@ -844,7 +844,7 @@ function saveTenant() {
             v-model="questionHint"
             type="text"
             maxlength="200"
-            placeholder="Подсказка"
+            placeholder="Например, синий"
             aria-label="Подсказка"
             class="rounded-xl border border-white/15 bg-white/5 px-3 py-2 text-sm outline-none focus:border-white/40"
           />
@@ -853,7 +853,7 @@ function saveTenant() {
             v-model="questionOptions"
             type="text"
             maxlength="200"
-            placeholder="Варианты через запятую"
+            placeholder="Синий, Зелёный, Красный"
             aria-label="Варианты через запятую"
             class="rounded-xl border border-white/15 bg-white/5 px-3 py-2 text-sm outline-none focus:border-white/40"
           />
