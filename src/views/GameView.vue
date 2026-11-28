@@ -473,7 +473,7 @@ function saveTenant() {
           :style="{ background: preferences.theme.accent, color: '#0b1120' }"
           @click="openMyCard"
         >
-          Открыть мою карточку
+          {{ `Открыть мою карточку: ${data?.game?.title || 'игра'}` }}
         </button>
       </div>
       <form v-else class="mt-4 flex flex-wrap gap-2" @submit.prevent="selfJoin">

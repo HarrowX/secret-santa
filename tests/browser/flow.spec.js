@@ -473,6 +473,14 @@ test('past-game autofill button inserts the saved code into the questionnaire', 
   await participant.getByLabel('Ваше имя').fill('Аня')
   await participant.getByRole('button', { name: 'Присоединиться к игре: Аня', exact: true }).click()
   await expect(participant).toHaveURL(/\/join\//)
+  await participant.goto(firstCommonPath)
+  await expect(
+    participant.getByRole('button', { name: 'Открыть мою карточку: Первая игра', exact: true }),
+  ).toBeVisible()
+  await expect(participant.getByRole('button', { name: 'Открыть мою карточку', exact: true })).toHaveCount(0)
+  await participant.getByRole('button', { name: 'Открыть мою карточку: Первая игра', exact: true }).click()
+  await expect(participant).toHaveURL(/\/join\//)
+  await expect(participant.getByRole('heading', { name: 'Анкета' })).toBeVisible()
   await participant.getByRole('button', { name: 'Подтвердить участие' }).click()
   await expect(participant.getByText('Вы в игре')).toBeVisible()
 
