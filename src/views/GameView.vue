@@ -950,16 +950,19 @@ function saveTenant() {
         </p>
         <p class="mt-2 text-sm">Импортировано пар: {{ data.pastPairsCount }}</p>
         <form class="mt-3 flex flex-wrap gap-2" @submit.prevent="importPastPairs">
-          <select
-            v-model="pastGameId"
-            aria-label="Прошлая игра для импорта пар"
-            class="min-w-48 flex-1 rounded-xl border border-white/15 px-3 py-2 text-sm outline-none"
-          >
-            <option value="" disabled>Выберите прошлую игру</option>
-            <option v-for="game in pastGames" :key="game.id" :value="game.id">
-              {{ game.title }} · {{ game.exchange_date || 'без даты' }}
-            </option>
-          </select>
+          <label class="grid min-w-48 flex-1 gap-1 text-sm">
+            <span class="text-xs font-semibold uppercase tracking-widest opacity-60">Прошлая игра для импорта пар</span>
+            <select
+              v-model="pastGameId"
+              aria-label="Прошлая игра для импорта пар"
+              class="rounded-xl border border-white/15 px-3 py-2 text-sm outline-none"
+            >
+              <option value="" disabled>Выберите прошлую игру</option>
+              <option v-for="game in pastGames" :key="game.id" :value="game.id">
+                {{ game.title }} · {{ game.exchange_date || 'без даты' }}
+              </option>
+            </select>
+          </label>
           <button
             type="submit"
             class="rounded-xl border border-white/20 px-4 py-2 text-sm font-semibold transition hover:bg-white/10 disabled:opacity-50"
