@@ -1035,6 +1035,33 @@ test('game copy links show local clipboard status', async ({ browser }) => {
   const gameHeading = page.getByRole('heading', { name: title, level: 1 })
   await expect(gameHeading).toBeVisible()
 
+  const commonButton = page.getByRole('button', {
+    name: `Скопировать общую ссылку на игру: ${title}`,
+    exact: true,
+  })
+  const commonRow = commonButton.locator('xpath=..')
+  const commonUrl = String(await commonButton.locator('xpath=following-sibling::span[1]').textContent()).trim()
+  const commonFailureStatus = `Не удалось скопировать общую ссылку на игру: ${title}`
+  const commonSuccessStatus = `Общая ссылка на игру скопирована: ${title}`
+  await expect(commonButton).toBeVisible()
+  await commonButton.click()
+  await expect(gameHeading).toBeVisible()
+  await expect(commonRow.getByText(commonFailureStatus, { exact: true })).toBeVisible()
+  await expect(commonRow.getByText('Не удалось скопировать ссылку', { exact: true })).toHaveCount(0)
+
+  await page.evaluate(() => {
+    window.__clipboardFail = false
+  })
+  await commonButton.click()
+  await expect(commonRow.getByText(commonFailureStatus, { exact: true })).toHaveCount(0)
+  await expect(commonRow.getByText('Скопировано', { exact: true })).toHaveCount(0)
+  await expect(commonRow.getByText(commonSuccessStatus, { exact: true })).toBeVisible()
+  expect(await page.evaluate(() => navigator.clipboard.readText())).toBe(commonUrl)
+
+  await page.evaluate(() => {
+    window.__clipboardFail = true
+  })
+
   const inviteButton = page.getByRole('button', {
     name: `Скопировать ссылку-приглашение для Аня — ${title}`,
     exact: true,

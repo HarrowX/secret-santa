@@ -230,6 +230,11 @@ function organizerInviteCopyStatus(failed = false) {
     : `Приглашение помощника скопировано: ${title}`
 }
 
+function commonInviteCopyStatus(failed = false) {
+  const title = data.value?.game?.title || 'игра'
+  return failed ? `Не удалось скопировать общую ссылку на игру: ${title}` : `Общая ссылка на игру скопирована: ${title}`
+}
+
 function personalInviteCopyStatus(person, failed = false) {
   const title = data.value?.game?.title || 'игра'
   return failed
@@ -625,7 +630,7 @@ function saveTenant() {
             <button
               type="button"
               class="min-w-0 flex-1 truncate rounded-xl border border-white/15 bg-white/5 px-4 py-2 text-left transition hover:bg-white/10"
-              @click="copyLink(invite.commonUrl, 'common')"
+              @click="copyLink(invite.commonUrl, 'common', commonInviteCopyStatus(), commonInviteCopyStatus(true))"
             >
               {{ `Скопировать общую ссылку на игру: ${data?.game?.title || 'игра'}` }}
             </button>
