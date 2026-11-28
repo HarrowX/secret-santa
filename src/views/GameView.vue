@@ -832,42 +832,53 @@ function saveTenant() {
           class="mt-4 grid gap-2 sm:grid-cols-[2fr_2fr_2fr_1fr_auto_auto]"
           @submit.prevent="addQuestion"
         >
-          <input
-            v-model="questionTitle"
-            type="text"
-            maxlength="120"
-            placeholder="Любимый цвет"
-            aria-label="Название вопроса"
-            class="rounded-xl border border-white/15 bg-white/5 px-3 py-2 text-sm outline-none focus:border-white/40"
-          />
-          <input
-            v-model="questionHint"
-            type="text"
-            maxlength="200"
-            placeholder="Например, синий"
-            aria-label="Подсказка"
-            class="rounded-xl border border-white/15 bg-white/5 px-3 py-2 text-sm outline-none focus:border-white/40"
-          />
-          <input
-            v-if="['single', 'multi'].includes(questionType)"
-            v-model="questionOptions"
-            type="text"
-            maxlength="200"
-            placeholder="Синий, Зелёный, Красный"
-            aria-label="Варианты через запятую"
-            class="rounded-xl border border-white/15 bg-white/5 px-3 py-2 text-sm outline-none focus:border-white/40"
-          />
-          <select
-            v-model="questionType"
-            aria-label="Тип вопроса"
-            class="rounded-xl border border-white/15 px-3 py-2 text-sm outline-none focus:border-white/40"
-          >
-            <option value="text">Текст</option>
-            <option value="number">Число</option>
-            <option value="boolean">Да/Нет</option>
-            <option value="single">Один выбор</option>
-            <option value="multi">Несколько</option>
-          </select>
+          <label class="grid gap-1 text-sm">
+            <span class="text-xs font-semibold uppercase tracking-widest opacity-60">Название вопроса</span>
+            <input
+              v-model="questionTitle"
+              type="text"
+              maxlength="120"
+              placeholder="Любимый цвет"
+              aria-label="Название вопроса"
+              class="rounded-xl border border-white/15 bg-white/5 px-3 py-2 text-sm outline-none focus:border-white/40"
+            />
+          </label>
+          <label class="grid gap-1 text-sm">
+            <span class="text-xs font-semibold uppercase tracking-widest opacity-60">Подсказка</span>
+            <input
+              v-model="questionHint"
+              type="text"
+              maxlength="200"
+              placeholder="Например, синий"
+              aria-label="Подсказка"
+              class="rounded-xl border border-white/15 bg-white/5 px-3 py-2 text-sm outline-none focus:border-white/40"
+            />
+          </label>
+          <label v-if="['single', 'multi'].includes(questionType)" class="grid gap-1 text-sm">
+            <span class="text-xs font-semibold uppercase tracking-widest opacity-60">Варианты через запятую</span>
+            <input
+              v-model="questionOptions"
+              type="text"
+              maxlength="200"
+              placeholder="Синий, Зелёный, Красный"
+              aria-label="Варианты через запятую"
+              class="rounded-xl border border-white/15 bg-white/5 px-3 py-2 text-sm outline-none focus:border-white/40"
+            />
+          </label>
+          <label class="grid gap-1 text-sm">
+            <span class="text-xs font-semibold uppercase tracking-widest opacity-60">Тип вопроса</span>
+            <select
+              v-model="questionType"
+              aria-label="Тип вопроса"
+              class="rounded-xl border border-white/15 px-3 py-2 text-sm outline-none focus:border-white/40"
+            >
+              <option value="text">Текст</option>
+              <option value="number">Число</option>
+              <option value="boolean">Да/Нет</option>
+              <option value="single">Один выбор</option>
+              <option value="multi">Несколько</option>
+            </select>
+          </label>
           <label class="flex items-center gap-2 text-xs opacity-70">
             <input v-model="questionRequired" type="checkbox" class="h-4 w-4" />
             Обязательно
