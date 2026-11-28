@@ -1007,9 +1007,14 @@ test('landing declines the theme count in Russian', async ({ browser }) => {
   for (const name of apiThemeNames) expect(featureCardText).toContain(name)
   for (const name of themes.map((item) => item.name)) expect(featureCardText).not.toContain(name)
   for (const oldName of ['Альпы', 'Египет', 'пиксели', 'сакура']) expect(featureCardText).not.toContain(oldName)
-  const themeSection = page.locator('section').filter({ hasText: 'Атмосфера вашей игры' })
+  const themeSection = page
+    .locator('section')
+    .filter({ hasText: 'Оформление игры' })
+    .filter({ hasText: 'Выберите оформление' })
   await expect(themeSection.getByText('Оформление игры', { exact: true })).toBeVisible()
   await expect(page.getByText('Выберите свой мир', { exact: false })).toHaveCount(0)
+  await expect(themeSection.getByRole('heading', { name: 'Выберите оформление', exact: true })).toBeVisible()
+  await expect(page.getByText('Атмосфера вашей игры', { exact: false })).toHaveCount(0)
   const themeButtons = themeSection
     .getByRole('button')
     .filter({ hasText: /Классика|Природа|История|Ретро|Весна|Космос|Неон|Лето/ })
@@ -1023,6 +1028,8 @@ test('landing declines the theme count in Russian', async ({ browser }) => {
   ]) {
     await page.route('**/api/themes', (route) => route.fulfill({ json: themes.slice(0, count) }))
     await page.goto('/')
+    await expect(themeSection.getByRole('heading', { name: 'Выберите оформление', exact: true })).toBeVisible()
+    await expect(page.getByText('Атмосфера вашей игры', { exact: false })).toHaveCount(0)
     await expect(page.getByText(caption, { exact: true })).toBeVisible()
     await expect(themeSection.getByText(/бесплатно/)).toHaveCount(0)
     await expect(themeButtons).toHaveCount(count)
@@ -1031,8 +1038,13 @@ test('landing declines the theme count in Russian', async ({ browser }) => {
 
   await page.route('**/api/themes', (route) => route.fulfill({ json: [] }))
   await page.goto('/')
-  const emptyThemeSection = page.locator('section').filter({ hasText: 'Атмосфера вашей игры' })
+  const emptyThemeSection = page
+    .locator('section')
+    .filter({ hasText: 'Оформление игры' })
+    .filter({ hasText: 'Выберите оформление' })
   const emptyFeatureCard = page.locator('article').filter({ hasText: 'Все темы оформления' })
+  await expect(emptyThemeSection.getByRole('heading', { name: 'Выберите оформление', exact: true })).toBeVisible()
+  await expect(page.getByText('Атмосфера вашей игры', { exact: false })).toHaveCount(0)
   await expect(emptyThemeSection.getByText('Оформления пока не добавлены')).toBeVisible()
   await expect(emptyFeatureCard.getByText('Оформления пока не добавлены')).toBeVisible()
   await expect(emptyThemeSection.getByText(/бесплатно/)).toHaveCount(0)
@@ -1057,8 +1069,13 @@ test('landing declines the theme count in Russian', async ({ browser }) => {
   ]) {
     await page.route('**/api/themes', failThemes.route)
     await page.goto('/')
-    const failedThemeSection = page.locator('section').filter({ hasText: 'Атмосфера вашей игры' })
+    const failedThemeSection = page
+      .locator('section')
+      .filter({ hasText: 'Оформление игры' })
+      .filter({ hasText: 'Выберите оформление' })
     const failedFeatureCard = page.locator('article').filter({ hasText: 'Все темы оформления' })
+    await expect(failedThemeSection.getByRole('heading', { name: 'Выберите оформление', exact: true })).toBeVisible()
+    await expect(page.getByText('Атмосфера вашей игры', { exact: false })).toHaveCount(0)
     await expect(failedThemeSection.getByText(unavailableMessage)).toBeVisible()
     await expect(failedFeatureCard.getByText(unavailableMessage)).toBeVisible()
     await expect(failedThemeSection.getByText(/бесплатно/)).toHaveCount(0)
