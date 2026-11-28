@@ -1018,6 +1018,10 @@ test('landing declines the theme count in Russian', async ({ browser }) => {
   await expect(page.getByText('Изменения после сохранения', { exact: false })).toHaveCount(0)
   const historyCard = page.locator('article').filter({ hasText: 'История и напоминания' })
   await expect(historyCard.getByText('Фильтры и массовые напоминания', { exact: true })).toBeVisible()
+  await expect(
+    historyCard.getByText('Все события с фильтрами и массовые напоминания выбранным участникам.', { exact: true }),
+  ).toBeVisible()
+  await expect(page.getByText('массовые сообщения', { exact: false })).toHaveCount(0)
   await expect(page.getByText('Ничего не упустить', { exact: false })).toHaveCount(0)
   const featureCard = page.locator('article').filter({ hasText: 'Все темы оформления' })
   await expect(featureCard.getByText('Режимы дня и ночи', { exact: true })).toBeVisible()
