@@ -39,6 +39,15 @@ test('organizer and anonymous participants complete the game in the browser', as
   const aniaContext = await browser.newContext()
   const ania = await aniaContext.newPage()
   await ania.goto(aniaUrl)
+  await expect(ania.getByLabel('Email по желанию')).toHaveAttribute('placeholder', 'name@example.com')
+  await expect(ania.getByLabel('Желания')).toHaveAttribute('placeholder', 'Книга "Мастер и Маргарита"')
+  await expect(ania.getByLabel('Адрес доставки')).toHaveAttribute('placeholder', 'Москва, ул. Лесная, 5')
+  await expect(ania.getByLabel('С кем хотите играть')).toHaveAttribute('placeholder', 'Аня, Борис, Вика')
+  await expect(ania.getByLabel('Заметки организатору')).toHaveAttribute('placeholder', 'Не звонить после 21:00')
+  await expect(ania.getByLabel('Код участия из прошлой игры')).toHaveAttribute(
+    'placeholder',
+    '2f1e3d4c-5b6a-7f80-9c1d-2e3f4a5b6c7d',
+  )
   await ania.getByLabel('Желания').fill('Книга для Ани')
   await ania.getByRole('button', { name: 'Подтвердить участие' }).click()
   await expect(ania.getByText('Пара ещё не раскрыта')).toBeVisible()

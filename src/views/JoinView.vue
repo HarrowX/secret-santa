@@ -270,7 +270,7 @@ async function saveAnswers(payload) {
               v-model="email"
               type="email"
               maxlength="160"
-              placeholder="Не обязательно"
+              placeholder="name@example.com"
               aria-label="Email по желанию"
               class="rounded-xl border border-white/15 bg-white/5 px-4 py-2.5 text-sm outline-none placeholder:text-current/40 focus:border-white/40"
             />
@@ -281,7 +281,7 @@ async function saveAnswers(payload) {
               v-model="wishlist"
               rows="2"
               maxlength="2000"
-              placeholder="Что подарить"
+              :placeholder="'Книга &quot;Мастер и Маргарита&quot;'"
               aria-label="Желания"
               class="rounded-xl border border-white/15 bg-white/5 px-4 py-2.5 text-sm outline-none placeholder:text-current/40 focus:border-white/40"
             ></textarea>
@@ -292,7 +292,7 @@ async function saveAnswers(payload) {
               v-model="address"
               type="text"
               maxlength="2000"
-              placeholder="По желанию"
+              placeholder="Москва, ул. Лесная, 5"
               aria-label="Адрес доставки"
               class="rounded-xl border border-white/15 bg-white/5 px-4 py-2.5 text-sm outline-none placeholder:text-current/40 focus:border-white/40"
             />
@@ -303,7 +303,7 @@ async function saveAnswers(payload) {
               v-model="preferred"
               type="text"
               maxlength="2000"
-              placeholder="Имена через запятую"
+              placeholder="Аня, Борис, Вика"
               aria-label="С кем хотите играть"
               class="rounded-xl border border-white/15 bg-white/5 px-4 py-2.5 text-sm outline-none placeholder:text-current/40 focus:border-white/40"
             />
@@ -314,7 +314,7 @@ async function saveAnswers(payload) {
               v-model="notes"
               rows="2"
               maxlength="2000"
-              placeholder="Важные детали"
+              placeholder="Не звонить после 21:00"
               aria-label="Заметки организатору"
               class="rounded-xl border border-white/15 bg-white/5 px-4 py-2.5 text-sm outline-none placeholder:text-current/40 focus:border-white/40"
             ></textarea>
@@ -328,7 +328,7 @@ async function saveAnswers(payload) {
                 v-model="pastIdentityToken"
                 type="text"
                 maxlength="120"
-                placeholder="Чтобы исключить прошлую пару"
+                placeholder="2f1e3d4c-5b6a-7f80-9c1d-2e3f4a5b6c7d"
                 aria-label="Код участия из прошлой игры"
                 class="rounded-xl border border-white/15 bg-white/5 px-4 py-2.5 text-sm outline-none placeholder:text-current/40 focus:border-white/40"
               />
