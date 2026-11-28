@@ -204,6 +204,12 @@ function copyStatusClass(message) {
   return message === 'Скопировано' ? 'text-emerald-300' : 'text-rose-300'
 }
 
+function reminderStatusLabel(status) {
+  if (status === 'sent') return 'Отправлено'
+  if (status === 'queued') return 'В очереди'
+  return 'Статус неизвестен'
+}
+
 function addParticipant() {
   const name = newParticipant.value.trim()
   if (!name) return
@@ -1216,7 +1222,7 @@ function saveTenant() {
         </form>
         <ul class="mt-3 grid gap-1 text-sm opacity-70">
           <li v-for="item in reminders" :key="item.id">
-            {{ item.created_at }} · {{ item.participant_name }} · {{ item.status }}
+            {{ item.created_at }} · {{ item.participant_name }} · {{ reminderStatusLabel(item.status) }}
             <span v-if="item.error" class="text-amber-300">— {{ item.error }}</span>
           </li>
           <li v-if="!reminders.length" class="opacity-50">

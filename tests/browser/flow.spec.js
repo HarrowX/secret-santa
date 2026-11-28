@@ -150,6 +150,7 @@ test('organizer and anonymous participants complete the game in the browser', as
   await expect(ania.getByLabel('С кем хотите играть')).not.toHaveAttribute('aria-label')
   await expect(ania.getByLabel('Заметки организатору')).not.toHaveAttribute('aria-label')
   await expect(ania.getByLabel('Код участия из прошлой игры (необязательно)')).not.toHaveAttribute('aria-label')
+  await ania.getByLabel('Email по желанию').fill('ania@example.test')
   await ania.getByLabel('Желания').fill('Книга для Ани')
   await ania.getByRole('button', { name: 'Подтвердить участие' }).click()
   await expect(ania.getByText('Пара ещё не раскрыта')).toBeVisible()
@@ -259,6 +260,17 @@ test('organizer and anonymous participants complete the game in the browser', as
     'href',
     'https://example.com/gift.jpg',
   )
+
+  const remindersSection = organizer
+    .getByRole('heading', { name: 'Массовые напоминания', exact: true })
+    .locator('xpath=..')
+  await remindersSection.getByLabel('Текст напоминания').fill('Напоминание для Ани и Бориса')
+  await remindersSection.getByLabel('Получатели напоминания').selectOption([{ label: 'Аня' }, { label: 'Борис' }])
+  await remindersSection.getByRole('button', { name: 'Отправить', exact: true }).click()
+  const reminderList = remindersSection.locator('ul')
+  await expect(reminderList.getByText('Отправлено', { exact: false })).toBeVisible()
+  await expect(reminderList.getByText('В очереди', { exact: false })).toBeVisible()
+  await expect(reminderList.getByText(/sent|queued/)).toHaveCount(0)
 
   await organizer.getByLabel('Список имён через запятую').fill('Вика, Дима')
   await organizer.getByRole('button', { name: 'Добавить список' }).click()
