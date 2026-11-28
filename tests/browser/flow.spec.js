@@ -360,3 +360,49 @@ test('clipboard failure stays local to each copy button', async ({ browser }) =>
 
   await context.close()
 })
+
+test('game copy links show local clipboard status', async ({ browser }) => {
+  const context = await browser.newContext()
+  await context.addInitScript(() => {
+    window.__clipboardFail = true
+    Object.defineProperty(navigator, 'clipboard', {
+      configurable: true,
+      value: {
+        writeText: async () => {
+          if (window.__clipboardFail) {
+            throw new Error('отказ')
+          }
+        },
+      },
+    })
+  })
+  const page = await context.newPage()
+  const title = 'Игра с локальным статусом копирования'
+
+  await page.goto('/new')
+  await page.getByLabel('Название').fill(title)
+  await page.getByRole('main').getByRole('button', { name: 'Создать игру' }).click()
+  await expect(page).toHaveURL(/\/game\//)
+
+  await page.getByLabel('Имя участника').fill('Аня')
+  await page.getByRole('button', { name: 'Добавить', exact: true }).click()
+
+  const gameHeading = page.getByRole('heading', { name: title, level: 1 })
+  await expect(gameHeading).toBeVisible()
+
+  const inviteButton = page.getByRole('button', { name: 'Ссылка-приглашение для Аня' })
+  const inviteRow = inviteButton.locator('xpath=..')
+  await expect(inviteButton).toBeVisible()
+  await inviteButton.click()
+  await expect(gameHeading).toBeVisible()
+  await expect(inviteRow.getByText('Не удалось скопировать ссылку')).toBeVisible()
+
+  await page.evaluate(() => {
+    window.__clipboardFail = false
+  })
+  await inviteButton.click()
+  await expect(inviteRow.getByText('Не удалось скопировать ссылку')).toHaveCount(0)
+  await expect(inviteRow.getByText('Скопировано')).toBeVisible()
+
+  await context.close()
+})

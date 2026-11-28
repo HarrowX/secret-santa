@@ -30,6 +30,7 @@ const historyPeriod = ref('all')
 const lastOrganizerInvite = ref('')
 const error = ref('')
 const errors = ref({})
+const copyStatus = ref({})
 const loading = ref(true)
 const busy = ref(false)
 const newParticipant = ref('')
@@ -196,6 +197,10 @@ function setError(key, message) {
   errors.value = { ...errors.value, [key]: message }
 }
 
+function copyStatusClass(message) {
+  return message === 'Скопировано' ? 'text-emerald-300' : 'text-rose-300'
+}
+
 function addParticipant() {
   const name = newParticipant.value.trim()
   if (!name) return
@@ -252,8 +257,9 @@ function removeOrganizer(organizer) {
 async function copyLink(value, key = 'copy') {
   try {
     await navigator.clipboard.writeText(value)
+    copyStatus.value[key] = 'Скопировано'
   } catch {
-    setError(key, 'Не удалось скопировать ссылку')
+    copyStatus.value[key] = 'Не удалось скопировать ссылку'
   }
 }
 
@@ -547,14 +553,25 @@ function saveTenant() {
       <div v-if="invite" class="rounded-2xl border border-white/10 bg-white/5 p-5">
         <h2 class="font-bold">Приглашения</h2>
         <div class="mt-3 grid gap-3 text-sm">
-          <button
-            type="button"
-            class="truncate rounded-xl border border-white/15 bg-white/5 px-4 py-2 text-left transition hover:bg-white/10"
-            :aria-label="`Общая ссылка на игру: ${invite.commonUrl}`"
-            @click="copyLink(invite.commonUrl)"
-          >
-            <span class="opacity-50">Общая ссылка на игру: </span>{{ invite.commonUrl }}
-          </button>
+          <div class="flex flex-wrap items-center gap-2">
+            <button
+              type="button"
+              class="min-w-0 flex-1 truncate rounded-xl border border-white/15 bg-white/5 px-4 py-2 text-left transition hover:bg-white/10"
+              :aria-label="`Общая ссылка на игру: ${invite.commonUrl}`"
+              @click="copyLink(invite.commonUrl, 'common')"
+            >
+              <span class="opacity-50">Общая ссылка на игру: </span>{{ invite.commonUrl }}
+            </button>
+            <p
+              v-if="copyStatus.common"
+              role="status"
+              aria-live="polite"
+              class="w-full text-xs"
+              :class="copyStatusClass(copyStatus.common)"
+            >
+              {{ copyStatus.common }}
+            </p>
+          </div>
           <p v-if="invite.participants.length" class="opacity-50">Персональные ссылки-приглашения:</p>
           <div v-for="person in invite.participants" :key="person.id" class="flex flex-wrap items-center gap-2">
             <span class="min-w-24 font-semibold">{{ person.name }}</span>
@@ -562,10 +579,19 @@ function saveTenant() {
               type="button"
               class="min-w-0 flex-1 truncate rounded-xl border border-white/15 bg-white/5 px-4 py-2 text-left transition hover:bg-white/10"
               :aria-label="`Ссылка-приглашение для ${person.name}`"
-              @click="copyLink(person.url)"
+              @click="copyLink(person.url, `person:${person.id}`)"
             >
               {{ person.url }}
             </button>
+            <p
+              v-if="copyStatus[`person:${person.id}`]"
+              role="status"
+              aria-live="polite"
+              class="w-full text-xs"
+              :class="copyStatusClass(copyStatus[`person:${person.id}`])"
+            >
+              {{ copyStatus[`person:${person.id}`] }}
+            </p>
             <span class="text-xs opacity-50">{{ person.filled ? 'подтвердил' : 'ожидаем' }}</span>
           </div>
           <p class="opacity-50">Общую ссылку можно отправить всем: каждый участник сам укажет имя и заполнит анкету.</p>
@@ -759,6 +785,15 @@ function saveTenant() {
         >
           Скопировать приглашение помощника
         </button>
+        <p
+          v-if="copyStatus.organizer"
+          role="status"
+          aria-live="polite"
+          class="mt-1 text-xs"
+          :class="copyStatusClass(copyStatus.organizer)"
+        >
+          {{ copyStatus.organizer }}
+        </p>
         <ul class="mt-3 grid gap-2 text-sm">
           <li
             v-for="organizer in organizers"
