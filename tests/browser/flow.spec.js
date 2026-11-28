@@ -569,6 +569,7 @@ test('randomizer draws pairs and reports clipboard status', async ({ browser }) 
   const page = await context.newPage()
 
   await page.goto('/')
+  await expect(page.getByRole('button', { name: 'тайный санта.' })).toBeVisible()
   const quickDrawLink = page.getByRole('main').getByRole('link', { name: 'Быстрая жеребьёвка' })
   await expect(quickDrawLink).toBeVisible()
   await quickDrawLink.click()

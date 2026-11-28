@@ -41,7 +41,6 @@ onBeforeUnmount(() => document.removeEventListener('keydown', onKeydown))
       <button
         type="button"
         class="flex items-center gap-2 text-lg font-black tracking-tight text-inherit"
-        aria-label="На главную"
         @click="go('landing')"
       >
         <span class="grid h-9 w-9 place-items-center rounded-xl border border-white/15 bg-white/10">
@@ -59,7 +58,7 @@ onBeforeUnmount(() => document.removeEventListener('keydown', onKeydown))
             <path d="M19 18l.8 2.2L22 21l-2.2.8L19 24l-.8-2.2L16 21l2.2-.8L19 18z" />
           </svg>
         </span>
-        тайный санта<span :style="{ color: accent }">.</span>
+        <span>тайный санта<span :style="{ color: accent }">.</span></span>
       </button>
 
       <nav class="hidden items-center gap-6 text-sm md:flex" aria-label="Основная навигация">
