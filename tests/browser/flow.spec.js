@@ -772,7 +772,11 @@ test('organizer creates a choice question through the game form', async ({ brows
   await expect(joiner.getByText('Например, синий', { exact: true })).toHaveCount(1)
   await expect(joiner.getByText('Синий, Зелёный, Красный')).toHaveCount(0)
   await expect(joiner.getByText('Выберите подходящий вариант')).toHaveCount(2)
-  await expect(joiner.getByRole('group', { name: 'Любимые цвета' })).toBeVisible()
+  const multiGroup = joiner.getByRole('group', { name: 'Любимые цвета' })
+  await expect(multiGroup).toBeVisible()
+  await expect(multiGroup).not.toHaveAttribute('aria-label')
+  await expect(multiGroup.locator('legend')).toHaveText('Любимые цвета')
+  await expect(multiGroup.locator('legend')).toBeVisible()
   for (const option of ['Синий', 'Зелёный', 'Красный']) {
     const checkbox = joiner.getByRole('checkbox', { name: option })
     await expect(checkbox).not.toHaveAttribute('aria-label')

@@ -100,7 +100,9 @@ function save() {
 <template>
   <form v-if="questions.length" class="grid gap-3" @submit.prevent="save">
     <div v-for="question in questions" :key="question.id" class="grid gap-1 text-sm">
-      <label :for="`question-${question.id}`" class="font-semibold">{{ questionLabel(question) }}</label>
+      <label v-if="question.type !== 'multi'" :for="`question-${question.id}`" class="font-semibold">{{
+        questionLabel(question)
+      }}</label>
       <span v-if="question.hint" class="text-xs opacity-50">{{ question.hint }}</span>
       <span v-if="['single', 'multi'].includes(question.type)" class="text-xs opacity-50">
         Выберите подходящий вариант
@@ -144,10 +146,9 @@ function save() {
       <fieldset
         v-else-if="question.type === 'multi'"
         role="group"
-        :aria-label="questionLabel(question)"
         class="flex flex-wrap gap-2 rounded-xl border border-white/10 p-2"
       >
-        <legend class="sr-only">{{ questionLabel(question) }}</legend>
+        <legend class="font-semibold">{{ questionLabel(question) }}</legend>
         <label
           v-for="option in options(question)"
           :key="option"
