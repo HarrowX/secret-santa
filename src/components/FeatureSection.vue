@@ -1,11 +1,11 @@
 <script setup>
-import { onMounted, ref } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { domain } from '../config'
-import { themes } from '../data/themes.js'
 import { api } from '../lib/api'
 import { MAX_ORGANIZERS_WORD_AFTER_DO, MAX_QUESTIONS } from '../../limits.js'
 
-defineProps({
+const props = defineProps({
+  themes: Array,
   accent: String,
 })
 
@@ -30,7 +30,7 @@ onMounted(async () => {
   }
 })
 
-const features = [
+const features = computed(() => [
   {
     title: 'Своё пространство',
     text: 'Персональный адрес игры и оформление, которое чувствуется как ваше.',
@@ -38,7 +38,7 @@ const features = [
   },
   {
     title: 'Все темы оформления',
-    text: `${themes.map((item) => item.name).join(', ')} — выбирайте под настроение.`,
+    text: `${(props.themes ?? []).map((item) => item.name).join(', ')} — выбирайте под настроение.`,
     hint: 'Ночь и день',
   },
   {
@@ -61,7 +61,7 @@ const features = [
     text: 'Все события с фильтрами и массовые сообщения выбранным участникам.',
     hint: 'Ничего не упустить',
   },
-]
+])
 </script>
 
 <template>

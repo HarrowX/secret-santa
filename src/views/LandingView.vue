@@ -32,6 +32,6 @@ function openCreate() {
   <HeroSection :theme="preferences.theme" :accent="preferences.theme.accent" @open-create="openCreate" />
   <ThemeShowcase v-model:theme-id="preferences.themeId" v-model:mode="preferences.mode" :themes="availableThemes" />
   <StepsSection :accent="preferences.theme.accent" />
-  <FeatureSection :accent="preferences.theme.accent" @open-create="openCreate" />
+  <FeatureSection :themes="availableThemes" :accent="preferences.theme.accent" @open-create="openCreate" />
   <CtaSection :accent="preferences.theme.accent" @open-create="openCreate" />
 </template>

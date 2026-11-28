@@ -905,6 +905,12 @@ test('organizer creates a choice question through the game form', async ({ brows
 test('landing declines the theme count in Russian', async ({ browser }) => {
   const context = await browser.newContext()
   const page = await context.newPage()
+  const apiThemeNames = ['Лунная библиотека', 'Медовый вечер', 'Янтарный лес']
+  const apiThemes = themes.slice(0, apiThemeNames.length).map((theme, index) => ({
+    ...theme,
+    name: apiThemeNames[index],
+  }))
+  await page.route('**/api/themes', (route) => route.fulfill({ json: apiThemes }))
   await page.goto('/')
   await expect(page.getByText('Участники по одному или списком')).toBeVisible()
   await expect(page.getByText('Безлимит участников', { exact: false })).toHaveCount(0)
@@ -916,15 +922,17 @@ test('landing declines the theme count in Russian', async ({ browser }) => {
   await expect(page.getByText('До трёх человек управляют одной игрой и спокойно передают её дальше.')).toBeVisible()
   await expect(page.getByText('До три человек', { exact: false })).toHaveCount(0)
   const featureCard = page.locator('article').filter({ hasText: 'Все темы оформления' })
-  const themeNames = themes.map((item) => item.name)
-  await expect(featureCard.locator('p').last()).toHaveText(`${themeNames.join(', ')} — выбирайте под настроение.`)
+  await expect(featureCard.locator('p').last()).toHaveText(`${apiThemeNames.join(', ')} — выбирайте под настроение.`)
   const featureCardText = await featureCard.textContent()
-  for (const name of themeNames) expect(featureCardText).toContain(name)
+  for (const name of apiThemeNames) expect(featureCardText).toContain(name)
+  for (const name of themes.map((item) => item.name)) expect(featureCardText).not.toContain(name)
   for (const oldName of ['Альпы', 'Египет', 'пиксели', 'сакура']) expect(featureCardText).not.toContain(oldName)
   const themeSection = page.locator('section').filter({ hasText: 'Атмосфера вашей игры' })
   const themeButtons = themeSection
     .getByRole('button')
     .filter({ hasText: /Классика|Природа|История|Ретро|Весна|Космос|Неон|Лето/ })
+  await expect(themeSection).toContainText(apiThemeNames[0])
+  await page.unroute('**/api/themes')
 
   for (const [count, caption] of [
     [1, '1 оформление · каждая тема доступна бесплатно'],
