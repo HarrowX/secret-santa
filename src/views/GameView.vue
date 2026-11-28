@@ -210,6 +210,13 @@ function reminderStatus(status) {
   return 'Статус неизвестен'
 }
 
+function formatDateTime(raw) {
+  if (!raw) return ''
+  const date = new Date(String(raw).replace(' ', 'T'))
+  if (Number.isNaN(date.getTime())) return String(raw)
+  return date.toLocaleString('ru-RU', { dateStyle: 'short', timeStyle: 'short' })
+}
+
 function addParticipant() {
   const name = newParticipant.value.trim()
   if (!name) return
@@ -1168,7 +1175,7 @@ function saveTenant() {
           </div>
           <ol class="mt-3 grid gap-2 text-sm opacity-70">
             <li v-for="item in filteredEvents" :key="item.id">
-              {{ item.created_at }} · {{ item.text }}
+              {{ formatDateTime(item.created_at) }} · {{ item.text }}
               <span v-if="item.actor" class="opacity-60">— {{ item.actor }}</span>
             </li>
             <li v-if="!filteredEvents.length" class="opacity-50">Событий по фильтру нет</li>
@@ -1224,7 +1231,7 @@ function saveTenant() {
         </form>
         <ul class="mt-3 grid gap-1 text-sm opacity-70">
           <li v-for="item in reminders" :key="item.id" class="flex flex-wrap gap-x-3">
-            <span><span class="font-semibold">Когда:</span> {{ item.created_at }}</span>
+            <span><span class="font-semibold">Когда:</span> {{ formatDateTime(item.created_at) }}</span>
             <span><span class="font-semibold">Кому:</span> {{ item.participant_name }}</span>
             <span><span class="font-semibold">Статус:</span> {{ reminderStatus(item.status) }}</span>
             <span v-if="item.error" class="text-amber-300">— {{ item.error }}</span>

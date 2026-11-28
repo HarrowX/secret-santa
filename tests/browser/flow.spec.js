@@ -219,6 +219,11 @@ test('organizer and anonymous participants complete the game in the browser', as
   await expect(boris.getByRole('button', { name: 'От Санты' })).toBeVisible()
   await expect(boris.getByRole('button', { name: 'От Санты' })).toHaveAttribute('aria-pressed', 'true')
 
+  const historyList = organizer.getByRole('heading', { name: 'История', exact: true }).locator('xpath=..').locator('ol')
+  await expect(historyList.locator('li').first()).toBeVisible()
+  await expect(historyList.getByText(/\d{1,2}\.\d{1,2}\./).first()).toBeVisible()
+  await expect(historyList.getByText(/\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}/)).toHaveCount(0)
+
   await expect(
     ania
       .locator('label')
@@ -280,6 +285,8 @@ test('organizer and anonymous participants complete the game in the browser', as
     await expect(row.getByText('Кому:', { exact: true })).toBeVisible()
     await expect(row.getByText('Статус:', { exact: true })).toBeVisible()
   }
+  await expect(reminderRows.getByText(/\d{1,2}\.\d{1,2}\./).first()).toBeVisible()
+  await expect(reminderRows.getByText(/\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}/)).toHaveCount(0)
   await expect(reminderList.getByText('Отправлено', { exact: false })).toBeVisible()
   await expect(reminderList.getByText('В очереди', { exact: false })).toBeVisible()
   await expect(reminderList.getByText(/sent|queued/)).toHaveCount(0)
