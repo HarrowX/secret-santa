@@ -911,7 +911,19 @@ test('landing declines the theme count in Russian', async ({ browser }) => {
     name: apiThemeNames[index],
   }))
   await page.route('**/api/themes', (route) => route.fulfill({ json: apiThemes }))
+  await page.route('**/api/metrics', (route) =>
+    route.fulfill({
+      json: {
+        stages: [{ key: 'organizer_return', title: 'Организатор вернулся', count: 2, conversion: 67 }],
+        updatedAt: '2026-01-01T00:00:00.000Z',
+      },
+    }),
+  )
   await page.goto('/')
+  const metricsSection = page.locator('section').filter({ hasText: 'Воронка игр на этом сайте' })
+  const returningStage = metricsSection.locator('div').filter({ hasText: 'Организатор вернулся' }).last()
+  await expect(returningStage.getByText('Организатор вернулся')).toBeVisible()
+  await expect(returningStage.locator('p').last()).toHaveText(/^\d+% от созданных игр$/)
   const ownSpaceCard = page.locator('article').filter({ hasText: 'Своё пространство' })
   await expect(ownSpaceCard.getByText('Личная ссылка')).toBeVisible()
   expect(await ownSpaceCard.textContent()).not.toContain(new URL(page.url()).hostname)

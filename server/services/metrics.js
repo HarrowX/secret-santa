@@ -23,22 +23,13 @@ export function metricsSummary() {
     )
     .all()
   const gamesByKind = Object.fromEntries(rows.map((row) => [row.kind, row.games]))
-  const returning = db
-    .prepare(
-      `
-      SELECT COUNT(DISTINCT user_id) AS total
-      FROM metrics
-      WHERE kind = 'organizer_return' AND user_id IS NOT NULL
-    `,
-    )
-    .get().total
   const created = gamesByKind.game_created ?? 0
   const stages = [
     { key: 'game_created', title: 'Создана игра', count: created },
     { key: 'participant_invited', title: 'Приглашены участники', count: gamesByKind.participant_invited ?? 0 },
     { key: 'draw_completed', title: 'Проведена жеребьёвка', count: gamesByKind.draw_completed ?? 0 },
     { key: 'gift_sent', title: 'Отправлен подарок', count: gamesByKind.gift_sent ?? 0 },
-    { key: 'organizer_return', title: 'Организатор вернулся', count: returning },
+    { key: 'organizer_return', title: 'Организатор вернулся', count: gamesByKind.organizer_return ?? 0 },
   ].map((stage) => ({ ...stage, conversion: percent(stage.count, created) }))
   return { stages, updatedAt: new Date().toISOString() }
 }

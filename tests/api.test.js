@@ -1249,20 +1249,21 @@ describe('API', () => {
       undefined,
       headers,
     )
+    await createGame('Третья игра', headers)
 
     const response = await request('GET', '/metrics')
     assert.equal(response.status, 200)
     const counts = Object.fromEntries(response.body.stages.map((stage) => [stage.key, stage.count]))
     assert.deepEqual(counts, {
-      game_created: 2,
+      game_created: 3,
       participant_invited: 1,
       draw_completed: 1,
       gift_sent: 1,
-      organizer_return: 1,
+      organizer_return: 2,
     })
     assert.deepEqual(
       response.body.stages.map((stage) => stage.conversion),
-      [100, 50, 50, 50, 50],
+      [100, 33, 33, 33, 67],
     )
     assert.ok(!JSON.stringify(response.body).includes(owner.body.user.token))
   })
