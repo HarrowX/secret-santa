@@ -57,6 +57,7 @@ Production-валидатор запрещает `localhost` в `APP_URL`; дл�
 | `MONITORING_TOKEN`                                          | Токен для `GET /api/monitoring` (сравнение constant-time, в логах не появляется). |
 | `MONITORING_WEBHOOK_URL`                                    | Необязательный webhook для алертов о недоступных доменах.                         |
 | `ALLOW_LOCAL_APP_URL`                                       | `true` разрешает localhost в `APP_URL` при `NODE_ENV=production`.                 |
+| `AUTH_RATE_LIMIT_MAX`                                       | Лимит запросов `/api/auth` в минуту, по умолчанию 20; в browser E2E временно 200. |
 
 Запуск валидации: `npm run env:validate` (по умолчанию читает `.env`, путь можно передать аргументом).
 
