@@ -9,6 +9,7 @@ import { usePreferencesStore } from '../stores/preferences'
 import ParticipantCard from '../components/ParticipantCard.vue'
 import QuestionnaireForm from '../components/QuestionnaireForm.vue'
 import NotificationsPanel from '../components/NotificationsPanel.vue'
+import { MAX_ORGANIZERS, MAX_ORGANIZERS_WORD, MAX_QUESTIONS } from '../../limits.js'
 import ThemeDecor from '../components/ThemeDecor.vue'
 
 const route = useRoute()
@@ -274,7 +275,7 @@ async function copyLink(value, key = 'copy') {
 
 function addQuestion() {
   const title = questionTitle.value.trim()
-  if (!title || questionCount.value >= 10) return
+  if (!title || questionCount.value >= MAX_QUESTIONS) return
   const hint = questionHint.value.trim()
   const body = {
     title,
@@ -778,12 +779,12 @@ function saveTenant() {
         <div class="flex flex-wrap items-center justify-between gap-3">
           <div>
             <h2 class="font-bold">Команда организаторов</h2>
-            <p class="mt-1 text-sm opacity-60">Максимум три организатора, включая создателя</p>
+            <p class="mt-1 text-sm opacity-60">Максимум {{ MAX_ORGANIZERS_WORD }} организатора, включая создателя</p>
           </div>
           <button
             type="button"
             class="rounded-full border border-white/20 px-4 py-2 text-sm font-semibold transition hover:bg-white/10 disabled:opacity-50"
-            :disabled="busy || organizers.length >= 3"
+            :disabled="busy || organizers.length >= MAX_ORGANIZERS"
             @click="inviteOrganizer"
           >
             Пригласить помощника
@@ -885,7 +886,7 @@ function saveTenant() {
           <button
             type="submit"
             class="rounded-xl border border-white/20 px-4 py-2 text-sm font-semibold transition hover:bg-white/10 disabled:opacity-50"
-            :disabled="busy || !questionTitle.trim() || questionCount >= 10"
+            :disabled="busy || !questionTitle.trim() || questionCount >= MAX_QUESTIONS"
           >
             Добавить вопрос
           </button>

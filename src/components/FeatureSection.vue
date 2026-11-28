@@ -2,6 +2,7 @@
 import { onMounted, ref } from 'vue'
 import { domain } from '../config'
 import { api } from '../lib/api'
+import { MAX_ORGANIZERS_WORD, MAX_QUESTIONS } from '../../limits.js'
 
 defineProps({
   accent: String,
@@ -41,7 +42,7 @@ const features = [
   },
   {
     title: 'Анкета с характером',
-    text: 'До 10 своих вопросов: текст, число, да/нет и выбор вариантов.',
+    text: `До ${MAX_QUESTIONS} своих вопросов: текст, число, да/нет и выбор вариантов.`,
     hint: 'Ответы видны Санте',
   },
   {
@@ -51,7 +52,7 @@ const features = [
   },
   {
     title: 'Команда организаторов',
-    text: 'До трёх человек управляют одной игрой и спокойно передают её дальше.',
+    text: `До ${MAX_ORGANIZERS_WORD} человек управляют одной игрой и спокойно передают её дальше.`,
     hint: 'Общая подготовка',
   },
   {

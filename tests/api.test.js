@@ -3,6 +3,7 @@ import fs from 'node:fs'
 import os from 'node:os'
 import path from 'node:path'
 import { after, afterEach, before, beforeEach, describe, it } from 'node:test'
+import { MAX_ORGANIZERS, MAX_ORGANIZERS_WORD, MAX_QUESTIONS } from '../limits.js'
 
 const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'secret-santa-api-'))
 let db
@@ -728,7 +729,7 @@ describe('API', () => {
     assert.equal(all.body[0].question_title, 'Возраст')
     assert.equal(all.body[0].participant_name, 'Аня')
 
-    for (let index = 2; index < 10; index += 1) {
+    for (let index = 2; index < MAX_QUESTIONS; index += 1) {
       const extra = await request(
         'POST',
         `/games/${game.token}/questions`,
@@ -742,7 +743,7 @@ describe('API', () => {
     }
     const limit = await request('POST', `/games/${game.token}/questions`, { title: 'Одиннадцатый' }, headers)
     assert.equal(limit.status, 400)
-    assert.match(limit.body.error.message, /10 вопросов/)
+    assert.equal(limit.body.error.message, `Можно добавить не больше ${MAX_QUESTIONS} вопросов`)
   })
 
   it('понимает старые вопросы с выбором, где варианты лежат в подсказке', async () => {
@@ -830,12 +831,13 @@ describe('API', () => {
     assert.equal(accepted.body.token, game.token)
 
     const organizers = await request('GET', `/games/${game.token}/organizers`, undefined, cookieHeader(owner))
-    assert.equal(organizers.body.length, 2)
+    assert.equal(organizers.body.length, MAX_ORGANIZERS - 1)
 
     const third = await request('POST', `/games/${game.token}/organizers/invite`, undefined, cookieHeader(owner))
     assert.equal(third.status, 201)
     const fourth = await request('POST', `/games/${game.token}/organizers/invite`, undefined, cookieHeader(owner))
     assert.equal(fourth.status, 409)
+    assert.equal(fourth.body.error.message, `Максимум ${MAX_ORGANIZERS_WORD} организатора`)
 
     const firstRemoval = await request(
       'DELETE',

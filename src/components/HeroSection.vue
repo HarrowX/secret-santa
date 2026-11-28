@@ -1,5 +1,6 @@
 <script setup>
 import ThemeDecor from './ThemeDecor.vue'
+import { MAX_ORGANIZERS, MAX_QUESTIONS } from '../../limits.js'
 
 defineProps({
   theme: Object,
@@ -56,8 +57,8 @@ const highlights = ['Приглашения по ссылке', 'Анкеты и
 
       <div class="mt-8 flex flex-wrap gap-x-6 gap-y-2 text-sm opacity-70">
         <span>Безлимит участников</span>
-        <span>До 10 вопросов в анкете</span>
-        <span>До 3 организаторов</span>
+        <span>До {{ MAX_QUESTIONS }} вопросов в анкете</span>
+        <span>До {{ MAX_ORGANIZERS }} организаторов</span>
       </div>
     </div>
 

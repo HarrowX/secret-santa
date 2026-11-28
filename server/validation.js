@@ -1,5 +1,6 @@
 import { z } from 'zod'
 import { HttpError } from './http-error.js'
+import { MAX_QUESTIONS } from '../limits.js'
 
 const text = z.string().trim().min(1)
 const optionalLongText = z.string().trim().max(2000).nullable().optional()
@@ -63,7 +64,9 @@ export const schemas = {
     .strict(),
   answersSave: z
     .object({
-      answers: z.array(z.object({ questionId: identifier, value: z.string().trim().max(2000) }).strict()).max(10),
+      answers: z
+        .array(z.object({ questionId: identifier, value: z.string().trim().max(2000) }).strict())
+        .max(MAX_QUESTIONS),
     })
     .strict(),
   exclusion: z.object({ fromId: identifier, toId: identifier }).strict(),

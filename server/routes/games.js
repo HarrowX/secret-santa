@@ -16,6 +16,7 @@ import { gamesRepository } from '../repositories/games.js'
 import { drawPairs } from '../services/draw.js'
 import { trackMetric } from '../services/metrics.js'
 import { schemas, validateBody } from '../validation.js'
+import { MAX_ORGANIZERS, MAX_ORGANIZERS_WORD, MAX_QUESTIONS } from '../../limits.js'
 
 export const gamesRouter = Router()
 
@@ -894,7 +895,7 @@ gamesRouter.post('/:id/questions', validateBody(schemas.questionCreate), (req, r
   const id = loadManagedGame(req)
   const { title, hint, type, required, position } = req.body
   const count = db.prepare('SELECT COUNT(*) AS count FROM questions WHERE game_id = ?').get(id).count
-  if (count >= 10) fail(400, 'Можно добавить не больше 10 вопросов')
+  if (count >= MAX_QUESTIONS) fail(400, `Можно добавить не больше ${MAX_QUESTIONS} вопросов`)
 
   const options = normalizeOptions(type, req.body.options)
   const result = db
@@ -1252,7 +1253,7 @@ gamesRouter.post('/:id/organizers', organizerActionRateLimit, validateBody(schem
   if (!user) fail(404, 'Пользователь не найден')
 
   const count = db.prepare('SELECT COUNT(*) AS total FROM organizers WHERE game_id = ?').get(id).total
-  if (count >= 3) fail(409, 'Максимум три организатора')
+  if (count >= MAX_ORGANIZERS) fail(409, `Максимум ${MAX_ORGANIZERS_WORD} организатора`)
 
   try {
     db.prepare('INSERT INTO organizers (game_id, user_id, role) VALUES (?, ?, ?)').run(id, user.id, 'organizer')
@@ -1267,7 +1268,7 @@ gamesRouter.post('/:id/organizers', organizerActionRateLimit, validateBody(schem
 gamesRouter.post('/:id/organizers/invite', organizerActionRateLimit, (req, res) => {
   const id = loadManagedGame(req)
   const count = db.prepare('SELECT COUNT(*) AS total FROM organizers WHERE game_id = ?').get(id).total
-  if (count >= 3) fail(409, 'Максимум три организатора')
+  if (count >= MAX_ORGANIZERS) fail(409, `Максимум ${MAX_ORGANIZERS_WORD} организатора`)
 
   const token = inviteToken()
   const result = db

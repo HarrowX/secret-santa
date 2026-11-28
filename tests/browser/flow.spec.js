@@ -1,5 +1,6 @@
 import { test, expect } from '@playwright/test'
 import { themes } from '../../src/data/themes.js'
+import { MAX_ORGANIZERS, MAX_QUESTIONS } from '../../limits.js'
 
 async function expectDateFieldTheme(page, colorScheme, backgroundColor, borderColor, calendarColor) {
   const dateField = page.getByLabel('Дата обмена')
@@ -903,6 +904,12 @@ test('organizer creates a choice question through the game form', async ({ brows
 test('landing declines the theme count in Russian', async ({ browser }) => {
   const context = await browser.newContext()
   const page = await context.newPage()
+  await page.goto('/')
+  await expect(page.getByText(`До ${MAX_QUESTIONS} вопросов в анкете`)).toBeVisible()
+  await expect(page.getByText(`До ${MAX_ORGANIZERS} организаторов`)).toBeVisible()
+  await expect(
+    page.getByText(`До ${MAX_QUESTIONS} своих вопросов: текст, число, да/нет и выбор вариантов.`),
+  ).toBeVisible()
   const themeSection = page.locator('section').filter({ hasText: 'Атмосфера вашей игры' })
   const themeButtons = themeSection
     .getByRole('button')
