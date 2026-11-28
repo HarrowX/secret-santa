@@ -16,6 +16,7 @@ const user = ref(null)
 const email = ref('')
 const password = ref('')
 const error = ref('')
+const copyStatus = ref({})
 const authError = ref('')
 const loading = ref(true)
 const authBusy = ref(false)
@@ -130,20 +131,25 @@ async function logout() {
   await load()
 }
 
-async function copyLink(value) {
+function statusClass(message) {
+  return message === 'Скопировано' ? 'text-emerald-300' : 'text-rose-300'
+}
+
+async function copyToClipboard(value, key, failureMessage) {
   try {
     await navigator.clipboard.writeText(value)
+    copyStatus.value[key] = 'Скопировано'
   } catch {
-    error.value = 'Не удалось скопировать ссылку'
+    copyStatus.value[key] = failureMessage
   }
 }
 
-async function copyCode(value) {
-  try {
-    await navigator.clipboard.writeText(value)
-  } catch {
-    error.value = 'Не удалось скопировать код'
-  }
+function copyLink(value, key) {
+  return copyToClipboard(value, `link:${key}`, 'Не удалось скопировать ссылку')
+}
+
+function copyCode(value) {
+  return copyToClipboard(value, `code:${value}`, 'Не удалось скопировать код')
 }
 
 function gameUrl(game) {
@@ -242,20 +248,27 @@ load()
         <h3 class="font-bold">Коды восстановления</h3>
         <p class="mt-1 text-sm opacity-60">Сохраните код: он вернёт доступ к играм в другом браузере.</p>
         <div class="mt-3 grid gap-2 sm:grid-cols-2">
-          <div
-            v-for="code in recoveryCodes"
-            :key="code"
-            class="flex items-center justify-between gap-2 rounded-lg border border-white/10 bg-white/5 px-3 py-2"
-          >
-            <code class="text-sm font-semibold tracking-widest">{{ code }}</code>
-            <button
-              type="button"
-              class="text-xs underline opacity-70 transition hover:opacity-100"
-              :aria-label="`Скопировать код восстановления ${code}`"
-              @click="copyCode(code)"
+          <div v-for="code in recoveryCodes" :key="code" class="rounded-lg border border-white/10 bg-white/5 px-3 py-2">
+            <div class="flex items-center justify-between gap-2">
+              <code class="text-sm font-semibold tracking-widest">{{ code }}</code>
+              <button
+                type="button"
+                class="text-xs underline opacity-70 transition hover:opacity-100"
+                :aria-label="`Скопировать код восстановления ${code}`"
+                @click="copyCode(code)"
+              >
+                Скопировать
+              </button>
+            </div>
+            <p
+              v-if="copyStatus[`code:${code}`]"
+              role="status"
+              aria-live="polite"
+              class="mt-1 text-xs"
+              :class="statusClass(copyStatus[`code:${code}`])"
             >
-              Скопировать
-            </button>
+              {{ copyStatus[`code:${code}`] }}
+            </p>
           </div>
         </div>
       </section>
@@ -322,10 +335,19 @@ load()
               type="button"
               class="mt-2 text-xs underline opacity-70 transition hover:opacity-100"
               :aria-label="`Скопировать ссылку на игру ${game.title}`"
-              @click="copyLink(gameUrl(game))"
+              @click="copyLink(gameUrl(game), game.id)"
             >
               Скопировать ссылку на игру {{ game.title }}
             </button>
+            <p
+              v-if="copyStatus[`link:${game.id}`]"
+              role="status"
+              aria-live="polite"
+              class="mt-1 text-xs"
+              :class="statusClass(copyStatus[`link:${game.id}`])"
+            >
+              {{ copyStatus[`link:${game.id}`] }}
+            </p>
           </div>
           <p v-if="!games.length" class="text-sm opacity-50">
             Пока нет игр.

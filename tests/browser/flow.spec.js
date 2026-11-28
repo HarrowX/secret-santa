@@ -304,3 +304,56 @@ test('login clears recovery codes and logout starts a fresh anonymous session', 
 
   await context.close()
 })
+
+test('clipboard failure stays local to each copy button', async ({ browser }) => {
+  const context = await browser.newContext()
+  await context.addInitScript(() => {
+    window.__clipboardFail = true
+    Object.defineProperty(navigator, 'clipboard', {
+      configurable: true,
+      value: {
+        writeText: async () => {
+          if (window.__clipboardFail) {
+            throw new Error('отказ')
+          }
+        },
+      },
+    })
+  })
+  const page = await context.newPage()
+  const title = 'Игра с недоступным буфером'
+
+  await page.goto('/new')
+  await page.getByLabel('Название').fill(title)
+  await page.getByRole('main').getByRole('button', { name: 'Создать игру' }).click()
+  await expect(page).toHaveURL(/\/game\//)
+
+  await page.goto('/my')
+  const gamesHeading = page.getByRole('heading', { name: 'Игры', exact: true })
+  await expect(gamesHeading).toBeVisible()
+
+  const gameButton = page.getByRole('button', { name: `Открыть игру ${title}` })
+  const gameCard = gameButton.locator('xpath=..')
+  const copyLinkButton = gameCard.getByRole('button', { name: /Скопировать ссылку на игру/ })
+  await copyLinkButton.click()
+  await expect(gamesHeading).toBeVisible()
+  await expect(gameButton).toBeVisible()
+  await expect(gameCard.getByText('Не удалось скопировать ссылку')).toBeVisible()
+
+  const codesRegion = page.getByRole('region', { name: 'Коды восстановления' })
+  const copyCodeButton = codesRegion.getByRole('button', { name: /Скопировать код восстановления/ }).first()
+  const codeRow = copyCodeButton.locator('xpath=../..')
+  await copyCodeButton.click()
+  await expect(gamesHeading).toBeVisible()
+  await expect(codeRow.getByText('Не удалось скопировать код')).toBeVisible()
+
+  await page.evaluate(() => {
+    window.__clipboardFail = false
+  })
+  await copyLinkButton.click()
+  await expect(gameCard.getByText('Не удалось скопировать ссылку')).toHaveCount(0)
+  await expect(gameCard.getByText('Скопировано')).toBeVisible()
+  await expect(codeRow.getByText('Не удалось скопировать код')).toBeVisible()
+
+  await context.close()
+})
