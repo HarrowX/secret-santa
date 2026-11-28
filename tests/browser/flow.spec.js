@@ -592,6 +592,8 @@ test('assistant invite is accepted in another browser context and survives page 
   const organizer = await organizerContext.newPage()
 
   await organizer.goto('/new')
+  const origin = await organizer.evaluate(() => window.location.origin)
+  await organizerContext.grantPermissions(['clipboard-read', 'clipboard-write'], { origin })
   await organizer.getByLabel('Название').fill('Игра с помощником')
   await organizer.getByRole('main').getByRole('button', { name: 'Создать игру' }).click()
   await expect(organizer).toHaveURL(/\/game\//)
@@ -608,7 +610,17 @@ test('assistant invite is accepted in another browser context and survives page 
   await organizer.getByRole('button', { name: 'Пригласить помощника' }).click()
   const inviteResponse = await inviteResponsePromise
   expect(inviteResponse.status()).toBe(201)
-  const invitePath = new URL((await inviteResponse.json()).url).pathname
+  const inviteUrl = (await inviteResponse.json()).url
+  const invitePath = new URL(inviteUrl).pathname
+  const assistantInviteCopy = organizer.getByRole('button', {
+    name: 'Скопировать приглашение помощника: Игра с помощником',
+    exact: true,
+  })
+  await expect(assistantInviteCopy).toBeVisible()
+  await expect(organizer.getByRole('button', { name: 'Скопировать приглашение помощника', exact: true })).toHaveCount(0)
+  await assistantInviteCopy.click()
+  await expect(assistantInviteCopy.locator('xpath=..').getByRole('status')).toHaveText('Скопировано')
+  expect(await organizer.evaluate(() => navigator.clipboard.readText())).toBe(inviteUrl)
 
   const readOrganizers = () =>
     organizer.evaluate(async () => {

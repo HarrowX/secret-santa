@@ -836,7 +836,7 @@ function saveTenant() {
           class="mt-3 rounded-full border border-white/20 px-4 py-2 text-sm font-semibold transition hover:bg-white/10"
           @click="copyLink(lastOrganizerInvite, 'organizer')"
         >
-          Скопировать приглашение помощника
+          {{ `Скопировать приглашение помощника: ${data?.game?.title || 'игра'}` }}
         </button>
         <p
           v-if="copyStatus.organizer"
