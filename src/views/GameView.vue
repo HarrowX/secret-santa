@@ -827,7 +827,7 @@ function saveTenant() {
             :disabled="busy || organizers.length >= MAX_ORGANIZERS"
             @click="inviteOrganizer"
           >
-            Пригласить помощника
+            {{ `Пригласить помощника в игру: ${data?.game?.title || 'игра'}` }}
           </button>
         </div>
         <button

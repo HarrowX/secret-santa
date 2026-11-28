@@ -604,10 +604,16 @@ test('assistant invite is accepted in another browser context and survives page 
   await organizer.getByRole('button', { name: 'Добавить список' }).click()
   await expect(organizer.getByRole('button', { name: 'Скопировать ссылку-приглашение для Вера' })).toBeVisible()
 
+  const inviteAssistant = organizer.getByRole('button', {
+    name: 'Пригласить помощника в игру: Игра с помощником',
+    exact: true,
+  })
+  await expect(inviteAssistant).toBeVisible()
+  await expect(organizer.getByRole('button', { name: 'Пригласить помощника', exact: true })).toHaveCount(0)
   const inviteResponsePromise = organizer.waitForResponse(
     (response) => response.url().includes('/organizers/invite') && response.request().method() === 'POST',
   )
-  await organizer.getByRole('button', { name: 'Пригласить помощника' }).click()
+  await inviteAssistant.click()
   const inviteResponse = await inviteResponsePromise
   expect(inviteResponse.status()).toBe(201)
   const inviteUrl = (await inviteResponse.json()).url
@@ -699,7 +705,7 @@ test('assistant invite is accepted in another browser context and survives page 
   const secondInviteResponsePromise = organizer.waitForResponse(
     (response) => response.url().includes('/organizers/invite') && response.request().method() === 'POST',
   )
-  await organizer.getByRole('button', { name: 'Пригласить помощника' }).click()
+  await organizer.getByRole('button', { name: 'Пригласить помощника в игру: Игра с помощником', exact: true }).click()
   expect((await secondInviteResponsePromise).status()).toBe(201)
   await organizer.reload()
   const cancelOrganizers = await readOrganizers()
