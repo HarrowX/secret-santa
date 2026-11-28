@@ -625,7 +625,9 @@ test('assistant invite is accepted in another browser context and survives page 
   await expect(assistantInviteCopy).toBeVisible()
   await expect(organizer.getByRole('button', { name: 'Скопировать приглашение помощника', exact: true })).toHaveCount(0)
   await assistantInviteCopy.click()
-  await expect(assistantInviteCopy.locator('xpath=..').getByRole('status')).toHaveText('Скопировано')
+  const assistantInviteStatus = assistantInviteCopy.locator('xpath=..').getByRole('status')
+  await expect(assistantInviteStatus).toHaveText('Приглашение помощника скопировано: Игра с помощником')
+  await expect(assistantInviteStatus).not.toHaveText(/^Скопировано$/)
   expect(await organizer.evaluate(() => navigator.clipboard.readText())).toBe(inviteUrl)
 
   const readOrganizers = () =>

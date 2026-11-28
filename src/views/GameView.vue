@@ -220,7 +220,14 @@ function setError(key, message) {
 }
 
 function copyStatusClass(message) {
-  return message === 'Скопировано' ? 'text-emerald-300' : 'text-rose-300'
+  return message.startsWith('Не удалось') ? 'text-rose-300' : 'text-emerald-300'
+}
+
+function organizerInviteCopyStatus(failed = false) {
+  const title = data.value?.game?.title || 'игра'
+  return failed
+    ? `Не удалось скопировать приглашение помощника: ${title}`
+    : `Приглашение помощника скопировано: ${title}`
 }
 
 function reminderStatus(status) {
@@ -289,12 +296,12 @@ function removeOrganizer(organizer) {
   return runAction('organizer', () => api.games.removeOrganizer(route.params.token, organizer.id))
 }
 
-async function copyLink(value, key = 'copy') {
+async function copyLink(value, key = 'copy', success = 'Скопировано', failure = 'Не удалось скопировать ссылку') {
   try {
     await navigator.clipboard.writeText(value)
-    copyStatus.value[key] = 'Скопировано'
+    copyStatus.value[key] = success
   } catch {
-    copyStatus.value[key] = 'Не удалось скопировать ссылку'
+    copyStatus.value[key] = failure
   }
 }
 
@@ -834,7 +841,9 @@ function saveTenant() {
           v-if="lastOrganizerInvite"
           type="button"
           class="mt-3 rounded-full border border-white/20 px-4 py-2 text-sm font-semibold transition hover:bg-white/10"
-          @click="copyLink(lastOrganizerInvite, 'organizer')"
+          @click="
+            copyLink(lastOrganizerInvite, 'organizer', organizerInviteCopyStatus(), organizerInviteCopyStatus(true))
+          "
         >
           {{ `Скопировать приглашение помощника: ${data?.game?.title || 'игра'}` }}
         </button>
