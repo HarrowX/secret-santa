@@ -406,3 +406,39 @@ test('game copy links show local clipboard status', async ({ browser }) => {
 
   await context.close()
 })
+
+test('support form sends two requests in one session', async ({ page }) => {
+  await page.goto('/support')
+
+  const email = page.getByLabel('Email для ответа')
+  const subject = page.getByLabel('Тема')
+  const body = page.getByLabel('Сообщение')
+  const confirmation = page.getByText('Обращение отправлено. Спасибо!')
+
+  await email.fill('user@example.test')
+  await subject.fill('Первый вопрос')
+  await body.fill('Первое обращение')
+  const firstResponse = page.waitForResponse(
+    (response) => response.url().includes('/api/support') && response.request().method() === 'POST',
+  )
+  await page.getByRole('button', { name: 'Отправить обращение' }).click()
+  expect((await firstResponse).status()).toBe(201)
+  await expect(confirmation).toBeVisible()
+  await expect(page.getByRole('button', { name: 'Написать ещё' })).toBeVisible()
+
+  await page.getByRole('button', { name: 'Написать ещё' }).click()
+  await expect(email).toHaveValue('')
+  await expect(subject).toHaveValue('')
+  await expect(body).toHaveValue('')
+  await expect(confirmation).toHaveCount(0)
+
+  await email.fill('user@example.test')
+  await subject.fill('Второй вопрос')
+  await body.fill('Второе обращение')
+  const secondResponse = page.waitForResponse(
+    (response) => response.url().includes('/api/support') && response.request().method() === 'POST',
+  )
+  await page.getByRole('button', { name: 'Отправить обращение' }).click()
+  expect((await secondResponse).status()).toBe(201)
+  await expect(confirmation).toBeVisible()
+})

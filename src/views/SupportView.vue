@@ -26,6 +26,14 @@ async function submit() {
     busy.value = false
   }
 }
+
+function startNew() {
+  email.value = ''
+  subject.value = ''
+  body.value = ''
+  error.value = ''
+  sent.value = false
+}
 </script>
 
 <template>
@@ -34,9 +42,12 @@ async function submit() {
       <h1 class="text-3xl font-bold tracking-tight">Поддержка</h1>
       <p class="mt-2 text-sm opacity-70">Опишите ситуацию — мы вернёмся с ответом на указанную почту.</p>
 
-      <p v-if="sent" role="status" class="mt-6 rounded-xl border border-emerald-400/30 bg-emerald-400/10 p-4 text-sm">
-        Обращение отправлено. Спасибо!
-      </p>
+      <div v-if="sent" role="status" class="mt-6 rounded-xl border border-emerald-400/30 bg-emerald-400/10 p-4 text-sm">
+        <p>Обращение отправлено. Спасибо!</p>
+        <button type="button" class="mt-3 text-sm underline opacity-70 transition hover:opacity-100" @click="startNew">
+          Написать ещё
+        </button>
+      </div>
 
       <form v-else class="mt-6 grid gap-3" @submit.prevent="submit">
         <label class="grid gap-1 text-sm">
