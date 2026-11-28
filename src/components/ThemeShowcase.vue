@@ -4,6 +4,7 @@ import { plural } from '../lib/plural.js'
 
 defineProps({
   themes: Array,
+  themesMessage: String,
   themeId: String,
   mode: String,
 })
@@ -20,9 +21,10 @@ const idleClass = 'text-inherit opacity-70 hover:opacity-100'
       <div>
         <p class="text-xs font-semibold uppercase tracking-[0.3em] opacity-60">Выберите свой мир</p>
         <h2 class="mt-2 text-2xl font-bold tracking-tight">Атмосфера вашей игры</h2>
-        <p class="mt-2 text-sm opacity-60">
+        <p v-if="themes.length" class="mt-2 text-sm opacity-60">
           {{ plural(themes.length, ['оформление', 'оформления', 'оформлений']) }} · каждая тема доступна бесплатно
         </p>
+        <p v-else class="mt-2 text-sm opacity-60">{{ themesMessage }}</p>
       </div>
 
       <div class="inline-flex rounded-full border border-white/20 bg-white/10 p-1 text-sm">
@@ -47,7 +49,7 @@ const idleClass = 'text-inherit opacity-70 hover:opacity-100'
       </div>
     </div>
 
-    <div class="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+    <div v-if="themes.length" class="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
       <button
         v-for="item in themes"
         :key="item.id"

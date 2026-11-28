@@ -961,6 +961,23 @@ test('landing declines the theme count in Russian', async ({ browser }) => {
     await page.unroute('**/api/themes')
   }
 
+  await page.route('**/api/themes', (route) => route.fulfill({ json: [] }))
+  await page.goto('/')
+  const emptyThemeSection = page.locator('section').filter({ hasText: 'Атмосфера вашей игры' })
+  const emptyFeatureCard = page.locator('article').filter({ hasText: 'Все темы оформления' })
+  await expect(emptyThemeSection.getByText('Оформления пока не добавлены')).toBeVisible()
+  await expect(emptyFeatureCard.getByText('Оформления пока не добавлены')).toBeVisible()
+  await expect(page.getByText('0 оформлений · каждая тема доступна бесплатно')).toHaveCount(0)
+  await expect(page.getByText(/— выбирайте под настроение/)).toHaveCount(0)
+  const emptyThemeSectionText = await emptyThemeSection.textContent()
+  const emptyFeatureCardText = await emptyFeatureCard.textContent()
+  for (const name of themes.map((item) => item.name)) {
+    expect(emptyThemeSectionText).not.toContain(name)
+    expect(emptyFeatureCardText).not.toContain(name)
+  }
+  expect(emptyFeatureCardText).not.toContain('— выбирайте под настроение.')
+  await page.unroute('**/api/themes')
+
   await context.close()
 })
 
