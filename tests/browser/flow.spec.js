@@ -432,6 +432,8 @@ test('anonymous access is restored from a recovery code in a clean context', asy
 
   await expect(restored.getByRole('button', { name: `Открыть игру ${title}` })).toBeVisible()
   const restoredCodes = restored.getByRole('region', { name: 'Код восстановления' })
+  await expect(restoredCodes).not.toHaveAttribute('aria-label')
+  await expect(restoredCodes.getByRole('heading', { name: 'Код восстановления' })).toBeVisible()
   await expect(restoredCodes.getByRole('button', { name: 'Скопировать код восстановления' })).toHaveCount(1)
   const restoredCodeValues = await restoredCodes.locator('code').allInnerTexts()
   expect(restoredCodeValues.map((value) => value.trim())).not.toContain(recoveryCode)
