@@ -40,10 +40,10 @@ test('organizer and anonymous participants complete the game in the browser', as
   await expect(refreshNotifications).toHaveText('Обновить уведомления')
   await expect(refreshNotifications).not.toHaveAttribute('aria-label')
   await expect(organizer.getByText('Текст напоминания', { exact: true })).toBeVisible()
-  await expect(organizer.getByLabel('Текст напоминания')).toHaveAttribute(
-    'placeholder',
-    'Напоминаю: обмен подарками 25 декабря',
-  )
+  const reminderText = organizer.getByLabel('Текст напоминания')
+  await expect(reminderText).toBeVisible()
+  await expect(reminderText).not.toHaveAttribute('aria-label')
+  await expect(reminderText).toHaveAttribute('placeholder', 'Напоминаю: обмен подарками 25 декабря')
   await expect(organizer.getByLabel('Адрес игры на поддомене')).toHaveAttribute('placeholder', 'korporativ-2026')
   await organizer.getByLabel('Адрес игры на поддомене').fill('browser-tenant-link')
   await organizer.getByRole('button', { name: 'Сохранить адрес' }).click()
@@ -56,6 +56,9 @@ test('organizer and anonymous participants complete the game in the browser', as
   const tenantUrl = String(await tenantLink.getAttribute('href'))
   await expect(tenantLink.locator('xpath=..').locator('span')).toHaveText(tenantUrl)
   await expect(organizer.getByText('Получатели напоминания', { exact: true })).toBeVisible()
+  const reminderRecipients = organizer.getByLabel('Получатели напоминания')
+  await expect(reminderRecipients).toBeVisible()
+  await expect(reminderRecipients).not.toHaveAttribute('aria-label')
   await expect(
     organizer
       .locator('label')
