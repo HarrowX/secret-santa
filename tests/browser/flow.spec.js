@@ -163,13 +163,12 @@ test('organizer and anonymous participants complete the game in the browser', as
   await boris.getByRole('button', { name: 'Подтвердить участие' }).click()
   await expect(boris.getByText('Вы в игре')).toBeVisible()
   await expect(
-    organizer.getByText('Исключения и ручные пары сохраняются при повторной жеребьёвке и при очистке пар', {
-      exact: true,
-    }),
+    organizer.getByText(
+      'Исключения сохраняются при повторной жеребьёвке и очистке пар; ручные пары сохраняются только при повторной жеребьёвке',
+      { exact: true },
+    ),
   ).toBeVisible()
-  await expect(
-    organizer.getByText('Исключения и ручные пары сохраняются при повторной жеребьёвке', { exact: true }),
-  ).toHaveCount(0)
+  await expect(organizer.getByText(/ручные пары сохраняются при.*очистке пар/i)).toHaveCount(0)
   await expect(organizer.getByText('Ограничения сохраняются', { exact: false })).toHaveCount(0)
 
   for (const [name, text] of [
