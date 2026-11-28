@@ -203,25 +203,31 @@ load()
         </button>
       </div>
       <form v-if="!user?.email" class="mt-4 grid gap-2 sm:grid-cols-[2fr_1fr_auto_auto]" @submit.prevent="register">
-        <input
-          v-model="email"
-          type="email"
-          required
-          maxlength="160"
-          placeholder="name@example.com"
-          aria-label="Email"
-          class="rounded-xl border border-white/15 bg-white/5 px-4 py-2 text-sm outline-none focus:border-white/40"
-        />
-        <input
-          v-model="password"
-          type="password"
-          required
-          minlength="6"
-          maxlength="200"
-          placeholder="example123"
-          aria-label="Пароль"
-          class="rounded-xl border border-white/15 bg-white/5 px-4 py-2 text-sm outline-none focus:border-white/40"
-        />
+        <label class="grid gap-1 text-sm">
+          <span class="text-xs font-semibold uppercase tracking-widest opacity-60">Email</span>
+          <input
+            v-model="email"
+            type="email"
+            required
+            maxlength="160"
+            placeholder="name@example.com"
+            aria-label="Email"
+            class="rounded-xl border border-white/15 bg-white/5 px-4 py-2 text-sm outline-none focus:border-white/40"
+          />
+        </label>
+        <label class="grid gap-1 text-sm">
+          <span class="text-xs font-semibold uppercase tracking-widest opacity-60">Пароль</span>
+          <input
+            v-model="password"
+            type="password"
+            required
+            minlength="6"
+            maxlength="200"
+            placeholder="example123"
+            aria-label="Пароль"
+            class="rounded-xl border border-white/15 bg-white/5 px-4 py-2 text-sm outline-none focus:border-white/40"
+          />
+        </label>
         <button
           type="submit"
           class="rounded-xl px-4 py-2 text-sm font-bold transition hover:opacity-80 disabled:opacity-50"
@@ -278,15 +284,18 @@ load()
       <h2 class="font-bold">Восстановить доступ</h2>
       <p class="mt-1 text-sm opacity-60">Введите сохранённый код, чтобы вернуться к своим играм.</p>
       <div class="mt-3 grid gap-2 sm:grid-cols-[1fr_auto]">
-        <input
-          v-model="recoveryCode"
-          type="text"
-          required
-          maxlength="40"
-          placeholder="A1B2C3D4E5F60718293A4B5C6D7E8F90"
-          aria-label="Код восстановления"
-          class="rounded-xl border border-white/15 bg-white/5 px-4 py-2 text-sm outline-none focus:border-white/40"
-        />
+        <label class="grid gap-1 text-sm">
+          <span class="text-xs font-semibold uppercase tracking-widest opacity-60">Код восстановления</span>
+          <input
+            v-model="recoveryCode"
+            type="text"
+            required
+            maxlength="40"
+            placeholder="A1B2C3D4E5F60718293A4B5C6D7E8F90"
+            aria-label="Код восстановления"
+            class="rounded-xl border border-white/15 bg-white/5 px-4 py-2 text-sm outline-none focus:border-white/40"
+          />
+        </label>
         <button
           type="submit"
           class="rounded-xl px-4 py-2 text-sm font-bold transition hover:opacity-80 disabled:opacity-50"
