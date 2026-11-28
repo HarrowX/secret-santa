@@ -91,9 +91,9 @@ defineExpose({ refresh })
 </script>
 
 <template>
-  <section class="rounded-2xl border border-white/10 bg-white/5 p-5" :aria-label="title">
+  <section class="rounded-2xl border border-white/10 bg-white/5 p-5" aria-labelledby="notifications-title">
     <div class="flex flex-wrap items-center justify-between gap-2">
-      <h2 class="font-bold">{{ title }}</h2>
+      <h2 id="notifications-title" class="font-bold">{{ title }}</h2>
       <button
         type="button"
         class="rounded-full border border-white/20 px-3 py-1 text-xs transition hover:bg-white/10 disabled:opacity-50"

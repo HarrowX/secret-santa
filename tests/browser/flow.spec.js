@@ -36,6 +36,8 @@ test('organizer and anonymous participants complete the game in the browser', as
   await expect(organizer.getByLabel('Правила')).not.toHaveAttribute('aria-label')
   await expect(organizer.getByLabel('Адрес игры на поддомене')).not.toHaveAttribute('aria-label')
   const notifications = organizer.getByRole('region', { name: 'Уведомления об изменениях' })
+  await expect(notifications).not.toHaveAttribute('aria-label')
+  await expect(notifications.getByRole('heading', { name: 'Уведомления об изменениях' })).toBeVisible()
   const refreshNotifications = notifications.getByRole('button', { name: 'Обновить уведомления' })
   await expect(refreshNotifications).toHaveText('Обновить уведомления')
   await expect(refreshNotifications).not.toHaveAttribute('aria-label')
