@@ -323,7 +323,7 @@ async function saveAnswers(payload) {
                 v-model="pastIdentityToken"
                 type="text"
                 maxlength="120"
-                placeholder="A1B2-C3D4-E5F6-7182"
+                placeholder="Например, A1B2-C3D4"
                 class="rounded-xl border border-white/15 bg-white/5 px-4 py-2.5 text-sm outline-none placeholder:text-current/40 focus:border-white/40"
               />
             </label>

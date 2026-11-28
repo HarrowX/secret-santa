@@ -159,6 +159,10 @@ test('organizer and anonymous participants complete the game in the browser', as
   await expect(ania.getByLabel('Заметки организатору')).toHaveAttribute('placeholder', 'Не звонить после 21:00')
   await expect(ania.getByLabel('Код участия из прошлой игры (необязательно)')).toHaveAttribute(
     'placeholder',
+    'Например, A1B2-C3D4',
+  )
+  await expect(ania.getByLabel('Код участия из прошлой игры (необязательно)')).not.toHaveAttribute(
+    'placeholder',
     'A1B2-C3D4-E5F6-7182',
   )
   await expect(ania.getByLabel('Email по желанию')).not.toHaveAttribute('aria-label')
