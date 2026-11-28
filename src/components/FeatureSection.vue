@@ -58,7 +58,7 @@ const features = computed(() => [
     text: (props.themes ?? []).length
       ? `${props.themes.map((item) => item.name).join(', ')} — выбирайте под настроение.`
       : props.themesError || props.themesMessage,
-    hint: 'Ночь и день',
+    hint: 'Режимы дня и ночи',
   },
   {
     title: 'Свои вопросы в анкете',

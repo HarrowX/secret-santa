@@ -1011,6 +1011,8 @@ test('landing declines the theme count in Russian', async ({ browser }) => {
   await expect(historyCard.getByText('Фильтры и массовые напоминания', { exact: true })).toBeVisible()
   await expect(page.getByText('Ничего не упустить', { exact: false })).toHaveCount(0)
   const featureCard = page.locator('article').filter({ hasText: 'Все темы оформления' })
+  await expect(featureCard.getByText('Режимы дня и ночи', { exact: true })).toBeVisible()
+  await expect(page.getByText('Ночь и день', { exact: false })).toHaveCount(0)
   await expect(featureCard.locator('p').last()).toHaveText(`${apiThemeNames.join(', ')} — выбирайте под настроение.`)
   const featureCardText = await featureCard.textContent()
   for (const name of apiThemeNames) expect(featureCardText).toContain(name)
