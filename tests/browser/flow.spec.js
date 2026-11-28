@@ -70,6 +70,8 @@ test('organizer and anonymous participants complete the game in the browser', as
       .locator('span')
       .getByText('Участник для отметки подарка', { exact: true }),
   ).toBeVisible()
+  await expect(organizer.getByLabel('Участник для отметки подарка')).toBeVisible()
+  await expect(organizer.getByLabel('Участник для отметки подарка')).not.toHaveAttribute('aria-label')
 
   await expect(organizer.getByText('Имя участника', { exact: true })).toBeVisible()
   await expect(organizer.getByLabel('Имя участника')).toHaveAttribute('placeholder', 'Аня')

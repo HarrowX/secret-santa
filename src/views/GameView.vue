@@ -742,11 +742,7 @@ function saveTenant() {
         <form v-if="data.canManage" class="mt-4 flex flex-wrap gap-2" @submit.prevent="markGift('sent')">
           <label class="grid gap-1 text-sm">
             <span class="text-xs font-semibold uppercase tracking-widest opacity-60">Участник для отметки подарка</span>
-            <select
-              v-model="giftParticipant"
-              aria-label="Участник для отметки подарка"
-              class="rounded-xl border border-white/15 px-3 py-2 text-sm outline-none"
-            >
+            <select v-model="giftParticipant" class="rounded-xl border border-white/15 px-3 py-2 text-sm outline-none">
               <option value="" disabled>Выберите участника</option>
               <option v-for="person in data.participants" :key="person.id" :value="person.id">{{ person.name }}</option>
             </select>
