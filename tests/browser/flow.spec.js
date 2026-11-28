@@ -52,6 +52,10 @@ test('organizer and anonymous participants complete the game in the browser', as
   const refreshNotifications = notifications.getByRole('button', { name: 'Обновить уведомления' })
   await expect(refreshNotifications).toHaveText('Обновить уведомления')
   await expect(refreshNotifications).not.toHaveAttribute('aria-label')
+  await expect(
+    organizer.getByText('До 1000 символов, выбранные получатели и защита от повторов', { exact: true }),
+  ).toBeVisible()
+  await expect(organizer.getByText('статусы доставки', { exact: false })).toHaveCount(0)
   await expect(organizer.getByText('Текст напоминания', { exact: true })).toBeVisible()
   const reminderText = organizer.getByLabel('Текст напоминания')
   await expect(reminderText).toBeVisible()
