@@ -97,7 +97,7 @@ async function submit() {
             v-model="budget"
             type="text"
             maxlength="80"
-            placeholder="Необязательно"
+            placeholder="до 1000 ₽"
             class="rounded-xl border border-white/15 bg-white/5 px-4 py-2.5 text-sm outline-none placeholder:text-current/40 focus:border-white/40"
           />
         </label>
@@ -135,7 +135,7 @@ async function submit() {
             v-model="rules"
             rows="2"
             maxlength="2000"
-            placeholder="Что важно знать участникам"
+            placeholder="Без сладкого, до 25 декабря"
             class="rounded-xl border border-white/15 bg-white/5 px-4 py-2.5 text-sm outline-none placeholder:text-current/40 focus:border-white/40"
           ></textarea>
         </label>
