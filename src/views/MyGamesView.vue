@@ -260,10 +260,9 @@ load()
               <button
                 type="button"
                 class="text-xs underline opacity-70 transition hover:opacity-100"
-                :aria-label="`Скопировать код восстановления ${code}`"
                 @click="copyCode(code)"
               >
-                Скопировать
+                Скопировать код восстановления
               </button>
             </div>
             <p
