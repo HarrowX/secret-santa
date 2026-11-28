@@ -63,6 +63,9 @@ test('organizer and anonymous participants complete the game in the browser', as
       .locator('span')
       .getByText('Прошлая игра для импорта пар', { exact: true }),
   ).toBeVisible()
+  const pastGameSelect = organizer.getByLabel('Прошлая игра для импорта пар')
+  await expect(pastGameSelect).toBeVisible()
+  await expect(pastGameSelect).not.toHaveAttribute('aria-label')
   await expect(
     organizer
       .locator('label')
