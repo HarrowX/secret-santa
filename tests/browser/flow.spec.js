@@ -189,12 +189,15 @@ test('organizer and anonymous participants complete the game in the browser', as
   await expect(organizer.getByText('Аня → Борис')).toBeVisible()
   const exclusionsHeading = organizer.getByRole('heading', { name: 'Исключения и ручные пары', exact: true })
   await expect(
-    exclusionsHeading.locator('xpath=../..').getByRole('button', { name: 'Очистить пары', exact: true }),
+    exclusionsHeading
+      .locator('xpath=../..')
+      .getByRole('button', { name: 'Очистить пары, оставить исключения', exact: true }),
   ).toBeVisible()
   const pairsHeading = organizer.getByRole('heading', { name: 'Пары', exact: true })
   await expect(
-    pairsHeading.locator('xpath=..').getByRole('button', { name: 'Очистить пары', exact: true }),
+    pairsHeading.locator('xpath=..').getByRole('button', { name: 'Очистить пары, оставить исключения', exact: true }),
   ).toBeVisible()
+  await expect(organizer.getByRole('button', { name: 'Очистить пары', exact: true })).toHaveCount(0)
   await expect(organizer.getByRole('button', { name: 'Сбросить пары', exact: false })).toHaveCount(0)
 
   organizer.once('dialog', (dialog) => dialog.accept())
