@@ -513,13 +513,14 @@ test('organizer creates a choice question through the game form', async ({ brows
   const organizer = await organizerContext.newPage()
 
   await organizer.goto('/new')
-  await organizer.getByLabel('Название').fill('Игра с подсказкой вопроса')
+  await organizer.getByLabel('Название').fill('Игра с вариантами вопроса')
   await organizer.getByRole('main').getByRole('button', { name: 'Создать игру' }).click()
   await expect(organizer).toHaveURL(/\/game\//)
 
   await organizer.getByLabel('Название вопроса').fill('Любимый цвет')
-  await organizer.getByLabel('Подсказка или варианты через запятую').fill('Синий, Зелёный, Красный')
+  await organizer.getByLabel('Подсказка').fill('Например, синий')
   await organizer.getByLabel('Тип вопроса').selectOption('single')
+  await organizer.getByLabel('Варианты через запятую').fill('Синий, Зелёный, Красный')
   await organizer.getByRole('button', { name: 'Добавить вопрос' }).click()
   await expect(organizer.getByText('Любимый цвет · Один выбор')).toBeVisible()
 
@@ -534,7 +535,8 @@ test('organizer creates a choice question through the game form', async ({ brows
   await joiner.getByLabel('Ваше имя').fill('Маша')
   await joiner.getByRole('button', { name: 'Присоединиться' }).click()
   await expect(joiner).toHaveURL(/\/join\//)
-  await expect(joiner.getByText('Синий, Зелёный, Красный')).toBeVisible()
+  await expect(joiner.getByText('Например, синий', { exact: true })).toHaveCount(1)
+  await expect(joiner.getByText('Синий, Зелёный, Красный')).toHaveCount(0)
   await expect(joiner.getByText('Выберите подходящий вариант')).toBeVisible()
   await expect(joiner.getByRole('combobox', { name: 'Любимый цвет' }).locator('option')).toHaveText([
     'Не выбрано',

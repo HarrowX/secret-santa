@@ -56,6 +56,7 @@ const manualFrom = ref('')
 const manualTo = ref('')
 const questionTitle = ref('')
 const questionHint = ref('')
+const questionOptions = ref('')
 const questionType = ref('text')
 const questionRequired = ref(false)
 const questionCount = computed(() => data.value?.questions?.length ?? 0)
@@ -275,13 +276,14 @@ function addQuestion() {
     position: questionCount.value,
   }
   if (['single', 'multi'].includes(questionType.value)) {
-    body.options = hint
+    body.options = questionOptions.value
       .split(',')
       .map((option) => option.trim())
       .filter(Boolean)
   }
   questionTitle.value = ''
   questionHint.value = ''
+  questionOptions.value = ''
   questionType.value = 'text'
   questionRequired.value = false
   return runAction('question', () => api.games.addQuestion(route.params.token, body))
@@ -827,7 +829,7 @@ function saveTenant() {
         <p class="mt-1 text-sm opacity-60">Ответы видны Санте после раскрытия пары</p>
         <form
           v-if="data.canManage"
-          class="mt-4 grid gap-2 sm:grid-cols-[2fr_2fr_1fr_auto_auto]"
+          class="mt-4 grid gap-2 sm:grid-cols-[2fr_2fr_2fr_1fr_auto_auto]"
           @submit.prevent="addQuestion"
         >
           <input
@@ -842,8 +844,17 @@ function saveTenant() {
             v-model="questionHint"
             type="text"
             maxlength="200"
-            placeholder="Подсказка или варианты через запятую"
-            aria-label="Подсказка или варианты через запятую"
+            placeholder="Подсказка"
+            aria-label="Подсказка"
+            class="rounded-xl border border-white/15 bg-white/5 px-3 py-2 text-sm outline-none focus:border-white/40"
+          />
+          <input
+            v-if="['single', 'multi'].includes(questionType)"
+            v-model="questionOptions"
+            type="text"
+            maxlength="200"
+            placeholder="Варианты через запятую"
+            aria-label="Варианты через запятую"
             class="rounded-xl border border-white/15 bg-white/5 px-3 py-2 text-sm outline-none focus:border-white/40"
           />
           <select
@@ -868,7 +879,7 @@ function saveTenant() {
           >
             Добавить вопрос
           </button>
-          <p v-if="errors.question" role="alert" class="text-sm text-rose-300 sm:col-span-5">{{ errors.question }}</p>
+          <p v-if="errors.question" role="alert" class="text-sm text-rose-300 sm:col-span-6">{{ errors.question }}</p>
         </form>
         <ul class="mt-3 grid gap-1 text-sm opacity-70">
           <li v-for="question in data.questions" :key="question.id" class="flex items-center justify-between gap-3">

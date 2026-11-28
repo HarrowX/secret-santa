@@ -51,26 +51,7 @@ watch(
 )
 
 function options(question) {
-  if (Array.isArray(question.options)) return question.options.map(String)
-  const hint = question.hint
-  if (Array.isArray(hint)) return hint.map(String)
-  if (typeof hint !== 'string') return []
-  const trimmed = hint.trim()
-  if (trimmed.startsWith('[')) {
-    try {
-      const parsed = JSON.parse(trimmed)
-      if (Array.isArray(parsed)) return parsed.map(String)
-    } catch {
-      return trimmed
-        .split(',')
-        .map((item) => item.trim())
-        .filter(Boolean)
-    }
-  }
-  return trimmed
-    .split(',')
-    .map((item) => item.trim())
-    .filter(Boolean)
+  return Array.isArray(question.options) ? question.options.map(String) : []
 }
 
 function checked(questionId, option) {
