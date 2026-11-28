@@ -82,6 +82,14 @@ const filteredEvents = computed(() => {
   })
 })
 
+function answerCountLabel(count) {
+  const lastTwo = count % 100
+  const last = count % 10
+  if (last === 1 && lastTwo !== 11) return `${count} ответ`
+  if (last >= 2 && last <= 4 && (lastTwo < 12 || lastTwo > 14)) return `${count} ответа`
+  return `${count} ответов`
+}
+
 function syncSettings(game) {
   settings.value = {
     title: game.title ?? '',
@@ -906,7 +914,8 @@ function saveTenant() {
             class="rounded-xl border border-white/10 bg-white/5 p-3"
           >
             <summary class="cursor-pointer font-semibold">
-              {{ person.name }} — {{ answers.filter((item) => item.participant_id === person.id).length }} ответов
+              {{ person.name }} —
+              {{ answerCountLabel(answers.filter((item) => item.participant_id === person.id).length) }}
             </summary>
             <div class="mt-3">
               <QuestionnaireForm

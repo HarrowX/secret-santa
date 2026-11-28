@@ -866,8 +866,8 @@ test('organizer creates a choice question through the game form', async ({ brows
   await secondJoiner.getByRole('button', { name: 'Сохранить ответы' }).click()
 
   await organizer.reload()
-  await expect(organizer.getByText('Маша — 2 ответов')).toBeVisible()
-  await expect(organizer.getByText('Саша — 2 ответов')).toBeVisible()
+  await expect(organizer.getByText('Маша — 2 ответа')).toBeVisible()
+  await expect(organizer.getByText('Саша — 2 ответа')).toBeVisible()
   const questionnaireForms = organizer.locator('form[data-testid="questionnaire-form"]')
   await expect(questionnaireForms).toHaveCount(2)
   const questionnaireIds = await questionnaireForms.evaluateAll((forms) =>
@@ -876,9 +876,27 @@ test('organizer creates a choice question through the game form', async ({ brows
   expect(questionnaireIds.length).toBeGreaterThan(0)
   expect(new Set(questionnaireIds).size).toBe(questionnaireIds.length)
 
+  await organizer
+    .getByRole('listitem')
+    .filter({ hasText: 'Любимые цвета · Несколько' })
+    .getByRole('button', { name: 'Удалить' })
+    .click()
+  const thirdJoinerContext = await browser.newContext()
+  const thirdJoiner = await thirdJoinerContext.newPage()
+  await thirdJoiner.goto(commonPath)
+  await thirdJoiner.getByLabel('Ваше имя').fill('Оля')
+  await thirdJoiner.getByRole('button', { name: 'Присоединиться' }).click()
+  await expect(thirdJoiner).toHaveURL(/\/join\//)
+  await thirdJoiner.getByLabel('Любимый цвет (обязательно)').selectOption('Красный')
+  await thirdJoiner.getByRole('button', { name: 'Сохранить ответы' }).click()
+
+  await organizer.reload()
+  await expect(organizer.getByText('Оля — 1 ответ')).toBeVisible()
+
   await organizerContext.close()
   await joinerContext.close()
   await secondJoinerContext.close()
+  await thirdJoinerContext.close()
 })
 
 test('mobile menu button has a visible name and toggles navigation', async ({ browser }) => {
