@@ -223,7 +223,7 @@ load()
             required
             minlength="6"
             maxlength="200"
-            placeholder="example123"
+            placeholder="Например, СинийЗонт2026"
             aria-label="Пароль"
             class="rounded-xl border border-white/15 bg-white/5 px-4 py-2 text-sm outline-none focus:border-white/40"
           />

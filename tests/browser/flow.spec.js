@@ -421,7 +421,7 @@ test('login clears recovery codes and logout starts a fresh anonymous session', 
 
   await page.goto('/my')
   await expect(page.getByLabel('Email')).toHaveAttribute('placeholder', 'name@example.com')
-  await expect(page.getByLabel('Пароль')).toHaveAttribute('placeholder', 'example123')
+  await expect(page.getByLabel('Пароль')).toHaveAttribute('placeholder', 'Например, СинийЗонт2026')
   await expect(page.getByText('Email', { exact: true })).toBeVisible()
   await expect(page.getByText('Пароль', { exact: true })).toBeVisible()
   const codes = page.getByRole('region', { name: 'Код восстановления' })
