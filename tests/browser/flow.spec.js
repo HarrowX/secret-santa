@@ -809,6 +809,15 @@ test('organizer creates a choice question through the game form', async ({ brows
     'Красный',
   ])
 
+  const formLabelPairs = await joiner.locator('form label[for]').evaluateAll((labels) =>
+    labels.map((label) => {
+      const htmlFor = label.getAttribute('for')
+      return { htmlFor, targetId: htmlFor ? (document.getElementById(htmlFor)?.id ?? null) : null }
+    }),
+  )
+  expect(formLabelPairs.length).toBeGreaterThan(0)
+  for (const pair of formLabelPairs) expect(pair.targetId).toBe(pair.htmlFor)
+
   const questionnaireSelect = joiner.getByLabel('Любимый цвет')
   await expect(questionnaireSelect).toBeVisible()
   await expect(questionnaireSelect).not.toHaveAttribute('aria-label')
@@ -825,8 +834,33 @@ test('organizer creates a choice question through the game form', async ({ brows
   await expect(joiner.getByRole('checkbox', { name: 'Красный' })).toBeChecked()
   await expect(joiner.getByRole('checkbox', { name: 'Зелёный' })).not.toBeChecked()
 
+  const secondJoinerContext = await browser.newContext()
+  const secondJoiner = await secondJoinerContext.newPage()
+  await secondJoiner.goto(commonPath)
+  await secondJoiner.getByLabel('Ваше имя').fill('Саша')
+  await secondJoiner.getByRole('button', { name: 'Присоединиться' }).click()
+  await expect(secondJoiner).toHaveURL(/\/join\//)
+  await secondJoiner.getByLabel('Любимый цвет').selectOption('Синий')
+  await secondJoiner.getByRole('checkbox', { name: 'Зелёный' }).check()
+  await secondJoiner.getByRole('button', { name: 'Сохранить ответы' }).click()
+
+  await organizer.reload()
+  await expect(organizer.getByText('Маша — 2 ответов')).toBeVisible()
+  await expect(organizer.getByText('Саша — 2 ответов')).toBeVisible()
+  const questionnaireFormCount = await organizer
+    .locator('form')
+    .filter({ has: organizer.locator('[id^="v-"]') })
+    .count()
+  expect(questionnaireFormCount).toBe(2)
+  const questionnaireIds = await organizer.evaluate(() =>
+    [...document.querySelectorAll('[id^="v-"]')].map((element) => element.id),
+  )
+  expect(questionnaireIds.length).toBeGreaterThan(0)
+  expect(new Set(questionnaireIds).size).toBe(questionnaireIds.length)
+
   await organizerContext.close()
   await joinerContext.close()
+  await secondJoinerContext.close()
 })
 
 test('mobile menu button has a visible name and toggles navigation', async ({ browser }) => {

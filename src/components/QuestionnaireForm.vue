@@ -1,5 +1,5 @@
 <script setup>
-import { ref, watch } from 'vue'
+import { ref, useId, watch } from 'vue'
 
 const props = defineProps({
   questions: {
@@ -19,6 +19,8 @@ const props = defineProps({
 })
 
 const emit = defineEmits(['save'])
+
+const formId = useId()
 
 const values = ref({})
 const errors = ref({})
@@ -100,7 +102,7 @@ function save() {
 <template>
   <form v-if="questions.length" class="grid gap-3" @submit.prevent="save">
     <div v-for="question in questions" :key="question.id" class="grid gap-1 text-sm">
-      <label v-if="question.type !== 'multi'" :for="`question-${question.id}`" class="font-semibold">{{
+      <label v-if="question.type !== 'multi'" :for="`${formId}-question-${question.id}`" class="font-semibold">{{
         questionLabel(question)
       }}</label>
       <span v-if="question.hint" class="text-xs opacity-50">{{ question.hint }}</span>
@@ -110,7 +112,7 @@ function save() {
 
       <input
         v-if="question.type === 'number'"
-        :id="`question-${question.id}`"
+        :id="`${formId}-question-${question.id}`"
         v-model="values[question.id]"
         type="number"
         :aria-invalid="Boolean(errors[question.id])"
@@ -120,7 +122,7 @@ function save() {
       />
       <select
         v-else-if="question.type === 'boolean'"
-        :id="`question-${question.id}`"
+        :id="`${formId}-question-${question.id}`"
         v-model="values[question.id]"
         :aria-invalid="Boolean(errors[question.id])"
         class="rounded-xl border border-white/15 px-4 py-2 text-sm outline-none focus:border-white/40 disabled:opacity-60"
@@ -133,7 +135,7 @@ function save() {
       </select>
       <select
         v-else-if="question.type === 'single'"
-        :id="`question-${question.id}`"
+        :id="`${formId}-question-${question.id}`"
         v-model="values[question.id]"
         :aria-invalid="Boolean(errors[question.id])"
         class="rounded-xl border border-white/15 px-4 py-2 text-sm outline-none focus:border-white/40 disabled:opacity-60"
@@ -169,7 +171,7 @@ function save() {
       </fieldset>
       <input
         v-else
-        :id="`question-${question.id}`"
+        :id="`${formId}-question-${question.id}`"
         v-model="values[question.id]"
         type="text"
         maxlength="2000"
