@@ -115,6 +115,12 @@ test('organizer and anonymous participants complete the game in the browser', as
   await expect(
     ania
       .locator('label')
+      .filter({ has: ania.getByLabel('Собеседник') })
+      .getByText('Собеседник', { exact: true }),
+  ).toBeVisible()
+  await expect(
+    ania
+      .locator('label')
       .filter({ has: ania.getByLabel('Текст сообщения') })
       .locator('span')
       .getByText('Текст сообщения', { exact: true }),

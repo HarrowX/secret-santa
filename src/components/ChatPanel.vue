@@ -172,11 +172,11 @@ async function send() {
       </div>
 
       <label v-if="selectedContact" class="mt-2 block text-xs opacity-70">
-        Собеседник
+        <span>Собеседник</span>
         <select
           v-model="selectedToId"
           class="mt-1 w-full rounded-xl border border-white/15 px-3 py-2 text-sm text-current outline-none"
-          aria-label="Выберите собеседника"
+          aria-label="Собеседник"
         >
           <option
             v-for="contact in tabs.find((tab) => tab.key === activeTab)?.contacts"
