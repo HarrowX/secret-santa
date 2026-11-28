@@ -207,7 +207,7 @@ async function fillPastIdentity() {
       pastIdentityToken.value = found.invite_token ?? found.token ?? found.identity_token
       return
     }
-    pastTokenError.value = 'В прошлых играх не найден токен — вставьте его вручную'
+    pastTokenError.value = 'В прошлых играх не найден код участия — возьмите его из персональной ссылки'
   } catch (requestError) {
     pastTokenError.value = requestError.message
   }
@@ -322,14 +322,14 @@ async function saveAnswers(payload) {
           <div class="grid gap-2">
             <label class="grid gap-1 text-sm">
               <span class="text-xs font-semibold uppercase tracking-widest opacity-60">
-                Токен из прошлой игры (необязательно)
+                Код участия из прошлой игры (необязательно)
               </span>
               <input
                 v-model="pastIdentityToken"
                 type="text"
                 maxlength="120"
                 placeholder="Чтобы исключить прошлую пару"
-                aria-label="Токен из прошлой игры"
+                aria-label="Код участия из прошлой игры"
                 class="rounded-xl border border-white/15 bg-white/5 px-4 py-2.5 text-sm outline-none placeholder:text-current/40 focus:border-white/40"
               />
             </label>

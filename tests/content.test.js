@@ -25,4 +25,14 @@ describe('интерфейс', () => {
       }
     }
   })
+
+  it('не использует слово «токен» в пользовательских текстах', () => {
+    const pattern = /[Тт]окен/
+    const files = vueAndJsFiles(root)
+    assert.ok(files.length > 0)
+    for (const file of files) {
+      const content = fs.readFileSync(file, 'utf8')
+      assert.ok(!pattern.test(content), `${path.relative(root, file)}: ${pattern}`)
+    }
+  })
 })
