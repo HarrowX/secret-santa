@@ -908,14 +908,14 @@ test('landing declines the theme count in Russian', async ({ browser }) => {
     .getByRole('button')
     .filter({ hasText: /Классика|Природа|История|Ретро|Весна|Космос|Неон|Лето/ })
 
-  for (const [count, label] of [
-    [1, '1 оформление'],
-    [2, '2 оформления'],
-    [10, '10 оформлений'],
+  for (const [count, caption] of [
+    [1, '1 оформление · каждая тема доступна бесплатно'],
+    [2, '2 оформления · каждая тема доступна бесплатно'],
+    [10, '10 оформлений · каждая тема доступна бесплатно'],
   ]) {
     await page.route('**/api/themes', (route) => route.fulfill({ json: themes.slice(0, count) }))
     await page.goto('/')
-    await expect(page.getByText(`${label} · каждая доступна бесплатно`)).toBeVisible()
+    await expect(page.getByText(caption)).toBeVisible()
     await expect(themeButtons).toHaveCount(count)
     await page.unroute('**/api/themes')
   }

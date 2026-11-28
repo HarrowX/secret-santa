@@ -27,7 +27,7 @@ function themeCountLabel(count) {
       <div>
         <p class="text-xs font-semibold uppercase tracking-[0.3em] opacity-60">Выберите свой мир</p>
         <h2 class="mt-2 text-2xl font-bold tracking-tight">Атмосфера вашей игры</h2>
-        <p class="mt-2 text-sm opacity-60">{{ themeCountLabel(themes.length) }} · каждая доступна бесплатно</p>
+        <p class="mt-2 text-sm opacity-60">{{ themeCountLabel(themes.length) }} · каждая тема доступна бесплатно</p>
       </div>
 
       <div class="inline-flex rounded-full border border-white/20 bg-white/10 p-1 text-sm">
