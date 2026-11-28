@@ -153,11 +153,10 @@ function save() {
         <button
           type="button"
           class="rounded-full border border-white/20 px-4 py-2 text-xs opacity-70 transition hover:bg-white/10 disabled:opacity-50"
-          :aria-label="`Удалить участника ${person.name}`"
           :disabled="busy"
           @click="emit('remove', person.id)"
         >
-          Удалить участника
+          Удалить участника {{ person.name }}
         </button>
       </div>
     </form>

@@ -198,7 +198,10 @@ test('participants join by the common link and the organizer can remove a bad na
   await expect(badInvite).toBeVisible()
   await organizer.getByRole('button', { name: /Глупое имя участвует/ }).click()
   organizer.once('dialog', (dialog) => dialog.accept())
-  await organizer.getByRole('button', { name: 'Удалить участника Глупое имя' }).click()
+  const removeBadName = organizer.getByRole('button', { name: 'Удалить участника Глупое имя' })
+  await expect(removeBadName).not.toHaveAttribute('aria-label')
+  await expect(removeBadName).toHaveText('Удалить участника Глупое имя')
+  await removeBadName.click()
   await expect(badInvite).toHaveCount(0)
 
   await organizerContext.close()
