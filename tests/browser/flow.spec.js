@@ -485,3 +485,26 @@ test('randomizer draws pairs and reports clipboard status', async ({ browser }) 
 
   await context.close()
 })
+
+test('tenant warning stays on game route and clears in the cabinet', async ({ browser }) => {
+  const context = await browser.newContext()
+  const page = await context.newPage()
+
+  await page.goto('/new')
+  await page.getByLabel('Название').fill('Игра с предупреждением')
+  await page.getByRole('main').getByRole('button', { name: 'Создать игру' }).click()
+  await expect(page).toHaveURL(/\/game\//)
+
+  await page.route('**/api/tenants/current', (route) => route.abort())
+  await page.reload()
+
+  const warning = page.getByText('Не удалось проверить адрес игры. Данные на странице могут быть неактуальны.')
+  await expect(warning).toBeVisible()
+  await expect(page).toHaveURL(/\/game\//)
+
+  await page.getByRole('navigation', { name: 'Основная навигация' }).getByRole('button', { name: 'Мои игры' }).click()
+  await expect(page).toHaveURL(/\/my$/)
+  await expect(warning).toHaveCount(0)
+
+  await context.close()
+})

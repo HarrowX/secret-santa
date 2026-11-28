@@ -1,5 +1,5 @@
 <script setup>
-import { computed, onMounted, ref } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter, RouterView } from 'vue-router'
 import { storeToRefs } from 'pinia'
 import SiteHeader from './components/SiteHeader.vue'
@@ -27,6 +27,13 @@ const personalRoutes = new Set([
   'create',
 ])
 const gameRoutes = new Set(['game', 'join', 'participant', 'organizer-invite'])
+
+watch(
+  () => route.name,
+  (name) => {
+    if (name && !gameRoutes.has(name)) tenantError.value = ''
+  },
+)
 
 const page = computed(() => route.name ?? 'landing')
 
@@ -57,9 +64,9 @@ onMounted(async () => {
     }
     if (isUnknownSubdomain()) router.push('/')
   } catch (requestError) {
-    if (route.fullPath !== initialPath) return
+    await router.isReady()
     if (requestError instanceof ApiError && requestError.status === 404) {
-      if (route.name !== 'landing') router.push('/')
+      if (route.fullPath === initialPath && route.name !== 'landing') router.push('/')
       return
     }
     if (!gameRoutes.has(route.name)) return
