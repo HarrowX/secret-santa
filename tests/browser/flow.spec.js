@@ -121,6 +121,12 @@ test('organizer and anonymous participants complete the game in the browser', as
   await expect(organizer.getByLabel('Список имён через запятую')).not.toHaveAttribute('aria-label')
   await organizer.getByLabel('Список имён через запятую').fill('Аня, Борис')
   await organizer.getByRole('button', { name: 'Добавить список' }).click()
+  const giftForm = organizer.locator('form').filter({ has: organizer.getByLabel('Участник для отметки подарка') })
+  await giftForm.getByLabel('Участник для отметки подарка').selectOption({ label: 'Аня' })
+  await expect(giftForm.getByRole('button', { name: 'Подарок отправлен: Аня', exact: true })).toBeVisible()
+  await expect(giftForm.getByRole('button', { name: 'Подарок получен: Аня', exact: true })).toBeVisible()
+  await expect(giftForm.getByRole('button', { name: 'Подарок отправлен', exact: true })).toHaveCount(0)
+  await expect(giftForm.getByRole('button', { name: 'Подарок получен', exact: true })).toHaveCount(0)
 
   const aniaLink = organizer.getByRole('button', { name: 'Скопировать ссылку-приглашение для Аня' })
   const borisLink = organizer.getByRole('button', { name: 'Скопировать ссылку-приглашение для Борис' })
