@@ -1,10 +1,12 @@
 <script setup>
-import { ref } from 'vue'
+import { ref, useId } from 'vue'
 import { useRouter } from 'vue-router'
 import { api, clearRecoveryCodes, ensureSession, saveRecoveryCodes } from '../lib/api'
 import { usePreferencesStore } from '../stores/preferences'
 import ChatPanel from '../components/ChatPanel.vue'
 import QuestionnaireForm from '../components/QuestionnaireForm.vue'
+
+const recoveryCodesTitleId = useId()
 
 const router = useRouter()
 const preferences = usePreferencesStore()
@@ -246,10 +248,10 @@ load()
       <p v-if="authError" role="alert" class="mt-2 text-sm text-rose-300">{{ authError }}</p>
       <section
         v-if="!user?.email && !user?.has_password && recoveryCodes.length"
-        aria-labelledby="recovery-codes-title"
+        :aria-labelledby="recoveryCodesTitleId"
         class="mt-4 rounded-xl border border-white/15 bg-white/5 p-4"
       >
-        <h3 id="recovery-codes-title" class="font-bold">Код восстановления</h3>
+        <h3 :id="recoveryCodesTitleId" class="font-bold">Код восстановления</h3>
         <p class="mt-1 text-sm opacity-60">Сохраните код: он вернёт доступ к играм в другом браузере.</p>
         <div class="mt-3 grid gap-2 sm:grid-cols-2">
           <div v-for="code in recoveryCodes" :key="code" class="rounded-lg border border-white/10 bg-white/5 px-3 py-2">

@@ -1,6 +1,8 @@
 <script setup>
-import { onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import { onBeforeUnmount, onMounted, ref, useId, watch } from 'vue'
 import { api } from '../lib/api'
+
+const titleId = useId()
 
 const props = defineProps({
   gameId: {
@@ -91,9 +93,9 @@ defineExpose({ refresh })
 </script>
 
 <template>
-  <section class="rounded-2xl border border-white/10 bg-white/5 p-5" aria-labelledby="notifications-title">
+  <section class="rounded-2xl border border-white/10 bg-white/5 p-5" :aria-labelledby="titleId">
     <div class="flex flex-wrap items-center justify-between gap-2">
-      <h2 id="notifications-title" class="font-bold">{{ title }}</h2>
+      <h2 :id="titleId" class="font-bold">{{ title }}</h2>
       <button
         type="button"
         class="rounded-full border border-white/20 px-3 py-1 text-xs transition hover:bg-white/10 disabled:opacity-50"
