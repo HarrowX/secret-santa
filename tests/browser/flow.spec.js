@@ -66,7 +66,7 @@ test('organizer and anonymous participants complete the game in the browser', as
   await expect(ania.getByLabel('Адрес доставки')).toHaveAttribute('placeholder', 'Москва, ул. Лесная, 5')
   await expect(ania.getByLabel('С кем хотите играть')).toHaveAttribute('placeholder', 'Аня, Борис, Вика')
   await expect(ania.getByLabel('Заметки организатору')).toHaveAttribute('placeholder', 'Не звонить после 21:00')
-  await expect(ania.getByLabel('Код участия из прошлой игры')).toHaveAttribute(
+  await expect(ania.getByLabel('Код участия из прошлой игры (необязательно)')).toHaveAttribute(
     'placeholder',
     '2f1e3d4c-5b6a-7f80-9c1d-2e3f4a5b6c7d',
   )
