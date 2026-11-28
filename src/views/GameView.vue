@@ -266,12 +266,19 @@ async function copyLink(value, key = 'copy') {
 function addQuestion() {
   const title = questionTitle.value.trim()
   if (!title || questionCount.value >= 10) return
+  const hint = questionHint.value.trim()
   const body = {
     title,
-    hint: questionHint.value.trim(),
+    hint,
     type: questionType.value,
     required: questionRequired.value,
     position: questionCount.value,
+  }
+  if (['single', 'multi'].includes(questionType.value)) {
+    body.options = hint
+      .split(',')
+      .map((option) => option.trim())
+      .filter(Boolean)
   }
   questionTitle.value = ''
   questionHint.value = ''

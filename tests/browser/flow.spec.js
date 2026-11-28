@@ -509,7 +509,7 @@ test('tenant warning stays on game route and clears in the cabinet', async ({ br
   await context.close()
 })
 
-test('participant sees saved hint for a single-choice question', async ({ browser }) => {
+test('organizer creates a choice question through the game form', async ({ browser }) => {
   const organizerContext = await browser.newContext()
   const organizer = await organizerContext.newPage()
 
@@ -518,20 +518,11 @@ test('participant sees saved hint for a single-choice question', async ({ browse
   await organizer.getByRole('main').getByRole('button', { name: 'Создать игру' }).click()
   await expect(organizer).toHaveURL(/\/game\//)
 
-  const gameToken = new URL(organizer.url()).pathname.split('/').at(-1)
-  const csrf = (await organizer.context().cookies()).find((cookie) => cookie.name === 'santa_csrf')?.value
-  const createdQuestion = await organizer.request.post(`/api/games/${gameToken}/questions`, {
-    headers: { 'x-csrf-token': csrf ?? '' },
-    data: {
-      title: 'Любимый цвет',
-      hint: 'Синий, Зелёный, Красный',
-      type: 'single',
-      options: ['Синий', 'Зелёный', 'Красный'],
-      required: false,
-      position: 0,
-    },
-  })
-  expect(createdQuestion.ok()).toBe(true)
+  await organizer.getByLabel('Название вопроса').fill('Любимый цвет')
+  await organizer.getByLabel('Подсказка или варианты через запятую').fill('Синий, Зелёный, Красный')
+  await organizer.getByLabel('Тип вопроса').selectOption('single')
+  await organizer.getByRole('button', { name: 'Добавить вопрос' }).click()
+  await expect(organizer.getByText('Любимый цвет · Один выбор')).toBeVisible()
 
   const commonButton = organizer.getByRole('button', { name: /Общая ссылка на игру:/ })
   const commonLabel = String(await commonButton.getAttribute('aria-label'))
@@ -546,6 +537,12 @@ test('participant sees saved hint for a single-choice question', async ({ browse
   await expect(joiner).toHaveURL(/\/join\//)
   await expect(joiner.getByText('Синий, Зелёный, Красный')).toBeVisible()
   await expect(joiner.getByText('Выберите подходящий вариант')).toBeVisible()
+  await expect(joiner.getByRole('combobox', { name: 'Любимый цвет' }).locator('option')).toHaveText([
+    'Не выбрано',
+    'Синий',
+    'Зелёный',
+    'Красный',
+  ])
 
   await joiner.getByLabel('Любимый цвет').selectOption('Зелёный')
   await joiner.getByRole('button', { name: 'Сохранить ответы' }).click()
