@@ -238,7 +238,15 @@ test('organizer and anonymous participants complete the game in the browser', as
   await expect(historyList.getByText(' · ', { exact: false })).toHaveCount(0)
   await expect(historyList.getByText(/\d{1,2}\.\d{1,2}\./).first()).toBeVisible()
   await expect(historyList.getByText(/\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}/)).toHaveCount(0)
-  const historyKindSelect = historyCard.locator('select').first()
+  const historyKindSelect = historyCard.getByLabel(/^Тип события/)
+  const historyParticipantSelect = historyCard.getByLabel(/^Участник/)
+  const historyPeriodSelect = historyCard.getByLabel(/^Период/)
+  await expect(historyKindSelect).toBeVisible()
+  await expect(historyParticipantSelect).toBeVisible()
+  await expect(historyPeriodSelect).toBeVisible()
+  await expect(historyCard.getByRole('combobox')).toHaveCount(3)
+  await expect(historyCard.getByRole('combobox', { name: /^\s*$/ })).toHaveCount(0)
+  await expect(historyCard.getByRole('combobox', { name: /^(Все события|Все участники|Всё время)$/ })).toHaveCount(0)
   await historyKindSelect.selectOption('message')
   await expect(
     historyCard.getByText('Под выбранные условия событий пока нет. Попробуйте другой фильтр или период.', {

@@ -1174,25 +1174,45 @@ function saveTenant() {
         <div class="rounded-2xl border border-white/10 bg-white/5 p-5">
           <h2 class="font-bold">История</h2>
           <div class="mt-3 grid gap-2 sm:grid-cols-3">
-            <select v-model="historyKind" class="rounded-xl border border-white/15 px-3 py-2 text-sm outline-none">
-              <option value="all">Все события</option>
-              <option value="join">Участники</option>
-              <option value="settings">Настройки</option>
-              <option value="draw">Жеребьёвка</option>
-              <option value="message">Сообщения</option>
-            </select>
-            <select
-              v-model="historyParticipant"
-              class="rounded-xl border border-white/15 px-3 py-2 text-sm outline-none"
-            >
-              <option value="">Все участники</option>
-              <option v-for="person in data.participants" :key="person.id" :value="person.id">{{ person.name }}</option>
-            </select>
-            <select v-model="historyPeriod" class="rounded-xl border border-white/15 px-3 py-2 text-sm outline-none">
-              <option value="all">Всё время</option>
-              <option value="1">За сутки</option>
-              <option value="7">За 7 дней</option>
-            </select>
+            <label for="history-kind" class="grid gap-1 text-sm">
+              <span class="text-xs font-semibold uppercase tracking-widest opacity-60">Тип события</span>
+              <select
+                id="history-kind"
+                v-model="historyKind"
+                class="rounded-xl border border-white/15 px-3 py-2 text-sm outline-none"
+              >
+                <option value="all">Все события</option>
+                <option value="join">Участники</option>
+                <option value="settings">Настройки</option>
+                <option value="draw">Жеребьёвка</option>
+                <option value="message">Сообщения</option>
+              </select>
+            </label>
+            <label for="history-participant" class="grid gap-1 text-sm">
+              <span class="text-xs font-semibold uppercase tracking-widest opacity-60">Участник</span>
+              <select
+                id="history-participant"
+                v-model="historyParticipant"
+                class="rounded-xl border border-white/15 px-3 py-2 text-sm outline-none"
+              >
+                <option value="">Все участники</option>
+                <option v-for="person in data.participants" :key="person.id" :value="person.id">
+                  {{ person.name }}
+                </option>
+              </select>
+            </label>
+            <label for="history-period" class="grid gap-1 text-sm">
+              <span class="text-xs font-semibold uppercase tracking-widest opacity-60">Период</span>
+              <select
+                id="history-period"
+                v-model="historyPeriod"
+                class="rounded-xl border border-white/15 px-3 py-2 text-sm outline-none"
+              >
+                <option value="all">Всё время</option>
+                <option value="1">За сутки</option>
+                <option value="7">За 7 дней</option>
+              </select>
+            </label>
           </div>
           <ol class="mt-3 grid gap-2 text-sm opacity-70">
             <li v-for="item in filteredEvents" :key="item.id" class="flex flex-wrap gap-x-3">
