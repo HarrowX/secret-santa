@@ -1,6 +1,5 @@
 <script setup>
 import { computed, onMounted, ref } from 'vue'
-import { domain } from '../config'
 import { api } from '../lib/api'
 import { MAX_ORGANIZERS_WORD_AFTER_DO, MAX_QUESTIONS } from '../../limits.js'
 
@@ -34,7 +33,7 @@ const features = computed(() => [
   {
     title: 'Своё пространство',
     text: 'Персональный адрес игры и оформление, которое чувствуется как ваше.',
-    hint: domain,
+    hint: 'Личная ссылка',
   },
   {
     title: 'Все темы оформления',
