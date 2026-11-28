@@ -176,6 +176,8 @@ test('organizer and anonymous participants complete the game in the browser', as
     'placeholder',
     'https://example.com/gift.jpg',
   )
+  await expect(ania.getByLabel('Текст сообщения')).not.toHaveAttribute('aria-label')
+  await expect(ania.getByLabel('Ссылка на изображение (необязательно)')).not.toHaveAttribute('aria-label')
 
   await ania.getByLabel('Текст сообщения').fill('Привет, Борис!')
   await ania.getByLabel('Ссылка на изображение (необязательно)').fill('https://example.com/gift.jpg')
