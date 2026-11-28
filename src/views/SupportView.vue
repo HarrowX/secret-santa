@@ -58,7 +58,7 @@ function startNew() {
             v-model="email"
             type="email"
             maxlength="160"
-            placeholder="you@example.com"
+            placeholder="name@example.com"
             class="rounded-xl border border-white/15 bg-white/5 px-4 py-2.5 text-sm outline-none focus:border-white/40"
           />
         </label>
