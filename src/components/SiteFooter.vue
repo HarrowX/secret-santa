@@ -10,7 +10,7 @@ defineProps({
     <div class="mx-auto grid max-w-6xl gap-8 px-5 py-12 sm:grid-cols-2 lg:grid-cols-4">
       <div>
         <p class="text-lg font-black tracking-tight">тайный санта<span :style="{ color: accent }">.</span></p>
-        <p class="mt-3 max-w-xs text-sm leading-relaxed opacity-60">Праздник начинается с маленькой тайны.</p>
+        <p class="mt-3 max-w-xs text-sm leading-relaxed opacity-60">Друзьям, коллегам и семье</p>
       </div>
       <div>
         <p class="text-xs font-semibold uppercase tracking-widest opacity-60">Игра</p>
