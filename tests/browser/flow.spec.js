@@ -995,9 +995,13 @@ test('clipboard failure stays local to each copy button', async ({ browser }) =>
   const codesRegion = page.getByRole('region', { name: 'Код восстановления' })
   const copyCodeButton = codesRegion.getByRole('button', { name: 'Скопировать код восстановления' }).first()
   const codeRow = copyCodeButton.locator('xpath=../..')
+  const recoveryCode = String(await codeRow.locator('code').textContent()).trim()
+  const codeFailureStatus = 'Не удалось скопировать код восстановления'
+  const codeSuccessStatus = 'Код восстановления скопирован'
   await copyCodeButton.click()
   await expect(gamesHeading).toBeVisible()
-  await expect(codeRow.getByText('Не удалось скопировать код')).toBeVisible()
+  await expect(codeRow.getByText(codeFailureStatus, { exact: true })).toBeVisible()
+  await expect(codeRow.getByText('Не удалось скопировать код', { exact: true })).toHaveCount(0)
 
   await page.evaluate(() => {
     window.__clipboardFail = false
@@ -1007,7 +1011,14 @@ test('clipboard failure stays local to each copy button', async ({ browser }) =>
   await expect(gameCard.getByText('Скопировано', { exact: true })).toHaveCount(0)
   await expect(gameCard.getByText(successStatus, { exact: true })).toBeVisible()
   expect(await page.evaluate(() => navigator.clipboard.readText())).toBe(gameUrl)
-  await expect(codeRow.getByText('Не удалось скопировать код')).toBeVisible()
+  await expect(codeRow.getByText(codeFailureStatus, { exact: true })).toBeVisible()
+
+  await copyCodeButton.click()
+  await expect(codeRow.getByText(codeFailureStatus, { exact: true })).toHaveCount(0)
+  await expect(codeRow.getByText('Скопировано', { exact: true })).toHaveCount(0)
+  await expect(codeRow.getByText(codeSuccessStatus, { exact: true })).toBeVisible()
+  expect(await page.evaluate(() => navigator.clipboard.readText())).toBe(recoveryCode)
+  await expect(gameCard.getByText(successStatus, { exact: true })).toBeVisible()
 
   await context.close()
 })

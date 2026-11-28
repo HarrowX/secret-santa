@@ -156,7 +156,12 @@ function copyLink(value, key, title) {
 }
 
 function copyCode(value) {
-  return copyToClipboard(value, `code:${value}`, 'Скопировано', 'Не удалось скопировать код')
+  return copyToClipboard(
+    value,
+    `code:${value}`,
+    'Код восстановления скопирован',
+    'Не удалось скопировать код восстановления',
+  )
 }
 
 function gameUrl(game) {

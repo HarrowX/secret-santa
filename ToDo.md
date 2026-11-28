@@ -571,3 +571,4 @@
 - [x] 13.223 Кнопка копирования персонального приглашения называет участника и игру; E2E проверяет подписи, generic и clipboard.
 - [x] 13.224 Clipboard-статус общей ссылки адресный; E2E проверяет success/failure, generic и clipboard.
 - [x] 13.225 Clipboard-статус ссылки на игру в кабинете адресный; E2E проверяет success/failure, generic и абсолютный URL.
+- [x] 13.226 Clipboard-статус кода восстановления адресный; E2E проверяет success/failure, generic и содержимое clipboard.
