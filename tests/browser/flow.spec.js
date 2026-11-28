@@ -458,16 +458,20 @@ test('past-game autofill button inserts the saved code into the questionnaire', 
   const organizer = await organizerContext.newPage()
 
   await organizer.goto('/new')
+  const origin = await organizer.evaluate(() => window.location.origin)
+  await organizerContext.grantPermissions(['clipboard-read', 'clipboard-write'], { origin })
   await organizer.getByLabel('Название').fill('Первая игра')
   await organizer.getByRole('main').getByRole('button', { name: 'Создать игру' }).click()
   await expect(organizer).toHaveURL(/\/game\//)
-  const firstCommonUrl = String(
-    await organizer
-      .getByRole('button', { name: 'Скопировать общую ссылку на игру' })
-      .locator('xpath=..')
-      .locator('span')
-      .textContent(),
-  ).trim()
+  const firstCommonButton = organizer.getByRole('button', {
+    name: 'Скопировать общую ссылку на игру: Первая игра',
+    exact: true,
+  })
+  await expect(firstCommonButton).toBeVisible()
+  await expect(organizer.getByRole('button', { name: 'Скопировать общую ссылку на игру', exact: true })).toHaveCount(0)
+  const firstCommonUrl = String(await firstCommonButton.locator('xpath=..').locator('span').textContent()).trim()
+  await firstCommonButton.click()
+  expect(await organizer.evaluate(() => navigator.clipboard.readText())).toBe(firstCommonUrl)
   const firstCommonPath = new URL(firstCommonUrl).pathname
 
   const participantContext = await browser.newContext()
@@ -502,7 +506,7 @@ test('past-game autofill button inserts the saved code into the questionnaire', 
   await expect(organizer).toHaveURL(/\/game\//)
   const secondCommonUrl = String(
     await organizer
-      .getByRole('button', { name: 'Скопировать общую ссылку на игру' })
+      .getByRole('button', { name: 'Скопировать общую ссылку на игру: Вторая игра', exact: true })
       .locator('xpath=..')
       .locator('span')
       .textContent(),
@@ -544,9 +548,13 @@ test('participants join by the common link and the organizer can remove a bad na
   await organizer.getByRole('button', { name: 'Добавить вопрос: Любите ли вы читать?', exact: true }).click()
   await expect(organizer.getByText('Любите ли вы читать? · Да/Нет')).toBeVisible()
 
-  const commonButton = organizer.getByRole('button', { name: 'Скопировать общую ссылку на игру' })
+  const commonButton = organizer.getByRole('button', {
+    name: 'Скопировать общую ссылку на игру: Игра с общими приглашениями',
+    exact: true,
+  })
   await expect(commonButton).toBeVisible()
-  await expect(commonButton).toHaveText('Скопировать общую ссылку на игру')
+  await expect(commonButton).toHaveText('Скопировать общую ссылку на игру: Игра с общими приглашениями')
+  await expect(organizer.getByRole('button', { name: 'Скопировать общую ссылку на игру', exact: true })).toHaveCount(0)
   await expect(commonButton).not.toHaveAttribute('aria-label')
   const commonUrl = String(await commonButton.locator('xpath=..').locator('span').textContent()).trim()
   const commonPath = commonUrl.startsWith('http') ? new URL(commonUrl).pathname : commonUrl
@@ -1220,9 +1228,13 @@ test('organizer creates a choice question through the game form', async ({ brows
   await organizer.getByRole('button', { name: 'Добавить вопрос: Любимые цвета', exact: true }).click()
   await expect(organizer.getByText('Любимые цвета · Несколько')).toBeVisible()
 
-  const commonButton = organizer.getByRole('button', { name: 'Скопировать общую ссылку на игру' })
+  const commonButton = organizer.getByRole('button', {
+    name: 'Скопировать общую ссылку на игру: Игра с вариантами вопроса',
+    exact: true,
+  })
   await expect(commonButton).toBeVisible()
-  await expect(commonButton).toHaveText('Скопировать общую ссылку на игру')
+  await expect(commonButton).toHaveText('Скопировать общую ссылку на игру: Игра с вариантами вопроса')
+  await expect(organizer.getByRole('button', { name: 'Скопировать общую ссылку на игру', exact: true })).toHaveCount(0)
   await expect(commonButton).not.toHaveAttribute('aria-label')
   const commonUrl = String(await commonButton.locator('xpath=..').locator('span').textContent()).trim()
   const commonPath = commonUrl.startsWith('http') ? new URL(commonUrl).pathname : commonUrl
