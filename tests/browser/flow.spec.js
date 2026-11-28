@@ -218,7 +218,8 @@ test('organizer and anonymous participants complete the game in the browser', as
   await expect(boris.getByRole('button', { name: 'От Санты' })).toBeVisible()
   await expect(boris.getByRole('button', { name: 'От Санты' })).toHaveAttribute('aria-pressed', 'true')
 
-  const historyList = organizer.getByRole('heading', { name: 'История', exact: true }).locator('xpath=..').locator('ol')
+  const historyCard = organizer.getByRole('heading', { name: 'История', exact: true }).locator('xpath=..')
+  const historyList = historyCard.locator('ol')
   const historyRows = historyList.locator('li')
   await expect(historyRows.first()).toBeVisible()
   for (const row of await historyRows.all()) {
@@ -229,6 +230,15 @@ test('organizer and anonymous participants complete the game in the browser', as
   await expect(historyList.getByText(' · ', { exact: false })).toHaveCount(0)
   await expect(historyList.getByText(/\d{1,2}\.\d{1,2}\./).first()).toBeVisible()
   await expect(historyList.getByText(/\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}/)).toHaveCount(0)
+  const historyKindSelect = historyCard.locator('select').first()
+  await historyKindSelect.selectOption('message')
+  await expect(
+    historyCard.getByText('Под выбранные условия событий пока нет. Попробуйте другой фильтр или период.', {
+      exact: true,
+    }),
+  ).toBeVisible()
+  await expect(historyCard.getByText('Событий по фильтру нет', { exact: true })).toHaveCount(0)
+  await historyKindSelect.selectOption('all')
 
   await expect(
     ania

@@ -1180,7 +1180,9 @@ function saveTenant() {
               <span><span class="font-semibold">Событие:</span> {{ item.text }}</span>
               <span v-if="item.actor" class="opacity-60">— {{ item.actor }}</span>
             </li>
-            <li v-if="!filteredEvents.length" class="opacity-50">Событий по фильтру нет</li>
+            <li v-if="!filteredEvents.length" class="opacity-50">
+              Под выбранные условия событий пока нет. Попробуйте другой фильтр или период.
+            </li>
           </ol>
         </div>
         <NotificationsPanel
