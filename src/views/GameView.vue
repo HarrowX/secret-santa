@@ -772,7 +772,7 @@ function saveTenant() {
         </form>
         <div v-if="tenantUrl" class="mt-2 flex flex-wrap items-center gap-2 text-sm">
           <a :href="tenantUrl" target="_blank" rel="noopener noreferrer" class="truncate underline">
-            Открыть адрес игры
+            Открыть адрес игры: {{ data?.game?.title || 'игра' }}
           </a>
           <span class="min-w-0 truncate">{{ tenantUrl }}</span>
         </div>
