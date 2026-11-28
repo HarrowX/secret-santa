@@ -115,3 +115,58 @@ test('participants join by the common link and the organizer can remove a bad na
   await organizerContext.close()
   await joinerContext.close()
 })
+
+test('assistant invite is accepted in another browser context and survives page reload', async ({ browser }) => {
+  const organizerContext = await browser.newContext()
+  const organizer = await organizerContext.newPage()
+
+  await organizer.goto('/new')
+  await organizer.getByLabel('Название').fill('Игра с помощником')
+  await organizer.getByRole('main').getByRole('button', { name: 'Создать игру' }).click()
+  await expect(organizer).toHaveURL(/\/game\//)
+  await expect(organizer.getByRole('heading', { name: 'Игра с помощником' })).toBeVisible()
+
+  await organizer.getByLabel('Список имён через запятую').fill('Вера, Глеб')
+  await organizer.getByRole('button', { name: 'Добавить список' }).click()
+  await expect(organizer.getByRole('button', { name: 'Ссылка-приглашение для Вера' })).toBeVisible()
+
+  const inviteResponsePromise = organizer.waitForResponse(
+    (response) => response.url().includes('/organizers/invite') && response.request().method() === 'POST',
+  )
+  await organizer.getByRole('button', { name: 'Пригласить помощника' }).click()
+  const inviteResponse = await inviteResponsePromise
+  expect(inviteResponse.status()).toBe(201)
+  const invitePath = new URL((await inviteResponse.json()).url).pathname
+
+  const team = organizer.getByTestId('organizer-team')
+  await expect(team.getByText('создатель', { exact: true })).toHaveCount(1)
+  await expect(team.getByText('ожидает принятия', { exact: true })).toHaveCount(1)
+  await expect(team.getByText('организатор', { exact: true })).toHaveCount(0)
+  await expect(team.getByText('Приглашение ещё не принято')).toHaveCount(0)
+  await expect(team).not.toContainText('@')
+  await expect(team).not.toContainText('/organizer/')
+
+  const assistantContext = await browser.newContext()
+  const assistant = await assistantContext.newPage()
+  await assistant.goto(invitePath)
+  await expect(assistant).toHaveURL(/\/game\//)
+  await expect(assistant.getByRole('heading', { name: 'Игра с помощником' })).toBeVisible()
+
+  await organizer.reload()
+  const organizerTeam = organizer.getByTestId('organizer-team')
+  await expect(organizerTeam.getByText('создатель', { exact: true })).toHaveCount(1)
+  await expect(organizerTeam.getByText('организатор', { exact: true })).toHaveCount(1)
+  await expect(organizerTeam.getByText('ожидает принятия', { exact: true })).toHaveCount(0)
+  await expect(organizerTeam.getByText('Приглашение ещё не принято')).toHaveCount(0)
+  await expect(organizerTeam).not.toContainText('@')
+  await expect(organizerTeam).not.toContainText('/organizer/')
+
+  await assistant.reload()
+  const assistantTeam = assistant.getByTestId('organizer-team')
+  await expect(assistantTeam.getByText('создатель', { exact: true })).toHaveCount(1)
+  await expect(assistantTeam.getByText('организатор', { exact: true })).toHaveCount(1)
+  await expect(assistantTeam.getByText('ожидает принятия', { exact: true })).toHaveCount(0)
+
+  await organizerContext.close()
+  await assistantContext.close()
+})
