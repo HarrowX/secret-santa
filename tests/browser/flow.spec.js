@@ -378,6 +378,71 @@ test('organizer and anonymous participants complete the game in the browser', as
   await borisContext.close()
 })
 
+test('past-game autofill button inserts the saved code into the questionnaire', async ({ browser }) => {
+  const organizerContext = await browser.newContext()
+  const organizer = await organizerContext.newPage()
+
+  await organizer.goto('/new')
+  await organizer.getByLabel('Название').fill('Первая игра')
+  await organizer.getByRole('main').getByRole('button', { name: 'Создать игру' }).click()
+  await expect(organizer).toHaveURL(/\/game\//)
+  const firstCommonUrl = String(
+    await organizer
+      .getByRole('button', { name: 'Скопировать общую ссылку на игру' })
+      .locator('xpath=..')
+      .locator('span')
+      .textContent(),
+  ).trim()
+  const firstCommonPath = new URL(firstCommonUrl).pathname
+
+  const participantContext = await browser.newContext()
+  const participant = await participantContext.newPage()
+  await participant.goto(firstCommonPath)
+  await participant.getByLabel('Ваше имя').fill('Аня')
+  await participant.getByRole('button', { name: 'Присоединиться' }).click()
+  await expect(participant).toHaveURL(/\/join\//)
+  await participant.getByRole('button', { name: 'Подтвердить участие' }).click()
+  await expect(participant.getByText('Вы в игре')).toBeVisible()
+
+  const savedCode = await participant.evaluate(async () => {
+    const response = await fetch('/api/me/past-games', { credentials: 'include' })
+    const games = await response.json()
+    const token = games.find((game) => game.identity_token)?.identity_token
+    localStorage.setItem('santa-past-identity-token', token ?? '')
+    return token
+  })
+  expect(savedCode).toBeTruthy()
+
+  await organizer.goto('/new')
+  await organizer.getByLabel('Название').fill('Вторая игра')
+  await organizer.getByRole('main').getByRole('button', { name: 'Создать игру' }).click()
+  await expect(organizer).toHaveURL(/\/game\//)
+  const secondCommonUrl = String(
+    await organizer
+      .getByRole('button', { name: 'Скопировать общую ссылку на игру' })
+      .locator('xpath=..')
+      .locator('span')
+      .textContent(),
+  ).trim()
+  const secondCommonPath = new URL(secondCommonUrl).pathname
+
+  await participant.goto(secondCommonPath)
+  await participant.getByLabel('Ваше имя').fill('Аня')
+  await participant.getByRole('button', { name: 'Присоединиться' }).click()
+  await expect(participant).toHaveURL(/\/join\//)
+  const pastCodeField = participant.getByLabel('Код участия из прошлой игры (необязательно)')
+  const autofillButton = participant.getByRole('button', { name: 'Подставить код из прошлой игры', exact: true })
+  await expect(autofillButton).toBeVisible()
+  await expect(autofillButton).toHaveText('Подставить код из прошлой игры')
+  await expect(participant.getByRole('button', { name: 'Подставить из прошлой игры', exact: true })).toHaveCount(0)
+  await pastCodeField.fill('')
+  await autofillButton.click()
+  await expect(pastCodeField).toHaveValue(savedCode)
+
+  await organizerContext.close()
+  await participantContext.close()
+})
+
 test('participants join by the common link and the organizer can remove a bad name', async ({ browser }) => {
   const organizerContext = await browser.newContext()
   const organizer = await organizerContext.newPage()

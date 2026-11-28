@@ -332,7 +332,7 @@ async function saveAnswers(payload) {
               class="justify-self-start text-xs underline opacity-70 transition hover:opacity-100"
               @click="fillPastIdentity"
             >
-              Подставить из прошлой игры
+              Подставить код из прошлой игры
             </button>
             <p v-if="pastTokenError" role="alert" class="text-xs text-amber-300">{{ pastTokenError }}</p>
           </div>
