@@ -1067,7 +1067,8 @@ function saveTenant() {
               :disabled="busy"
               @click="removeExclusion(item.from_id, item.to_id)"
             >
-              Убрать
+              Убрать исключение: {{ participantName(item.from_id) }} не дарит
+              {{ participantName(item.to_id) }}
             </button>
           </li>
           <li v-if="!data.exclusions.length" class="opacity-50">Исключений пока нет</li>

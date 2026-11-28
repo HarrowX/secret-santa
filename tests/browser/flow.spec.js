@@ -391,13 +391,23 @@ test('organizer and anonymous participants complete the game in the browser', as
   await organizer.getByLabel('Кто не дарит').selectOption({ label: 'Аня' })
   await organizer.getByLabel('Кому не дарит').selectOption({ label: 'Борис' })
   await organizer.getByRole('button', { name: 'Исключить' }).click()
-  await expect(organizer.getByText('Аня не дарит Борис', { exact: true })).toBeVisible()
+  const exclusionText = organizer.getByText('Аня не дарит Борис', { exact: true })
+  const exclusionRow = exclusionText.locator('xpath=..')
+  const removeExclusion = exclusionRow.getByRole('button', {
+    name: 'Убрать исключение: Аня не дарит Борис',
+    exact: true,
+  })
+  await expect(exclusionText).toBeVisible()
+  await expect(removeExclusion).toBeVisible()
+  await expect(exclusionRow.getByRole('button', { name: 'Убрать', exact: true })).toHaveCount(0)
   await clearPairsInExclusions.click()
   await expect(pairsCard.locator('ol > li').first()).toHaveText(
     'Пары появятся после жеребьёвки. Нажмите «Провести жеребьёвку», когда все участники будут готовы.',
   )
   await expect(pairsCard.getByRole('button', { name: clearPairsLabel, exact: true })).toBeDisabled()
-  await expect(organizer.getByText('Аня не дарит Борис', { exact: true })).toBeVisible()
+  await expect(exclusionText).toBeVisible()
+  await removeExclusion.click()
+  await expect(exclusionRow).toHaveCount(0)
 
   await organizerContext.close()
   await aniaContext.close()
