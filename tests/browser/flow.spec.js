@@ -543,6 +543,15 @@ test('anonymous access is restored from a recovery code in a clean context', asy
 
   await owner.goto('/my')
   const ownerCodes = owner.getByRole('region', { name: 'Код восстановления' })
+  await expect(
+    ownerCodes.getByText(
+      'Сохраните код: он вернёт доступ к играм в другом браузере. Код одноразовый — после восстановления появится новый.',
+      { exact: true },
+    ),
+  ).toBeVisible()
+  await expect(
+    ownerCodes.getByText('Сохраните код: он вернёт доступ к играм в другом браузере.', { exact: true }),
+  ).toHaveCount(0)
   const copyButton = ownerCodes.getByRole('button', { name: 'Скопировать код восстановления' }).first()
   await expect(ownerCodes.getByRole('button', { name: 'Скопировать код восстановления' })).toHaveCount(1)
   await expect(copyButton).toHaveText('Скопировать код восстановления')
