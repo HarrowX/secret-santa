@@ -88,6 +88,7 @@ async function submit() {
             type="text"
             required
             maxlength="120"
+            placeholder="Корпоратив в декабре"
             class="rounded-xl border border-white/15 bg-white/5 px-4 py-2.5 text-sm outline-none focus:border-white/40"
           />
         </label>
