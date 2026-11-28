@@ -205,7 +205,6 @@ async function send() {
               rel="noopener noreferrer"
               referrerpolicy="no-referrer"
               class="underline"
-              :aria-label="`Открыть внешнюю ссылку: ${message.imageUrl}`"
             >
               Открыть изображение (внешняя ссылка)
             </a>

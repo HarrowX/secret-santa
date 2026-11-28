@@ -145,11 +145,20 @@ test('organizer and anonymous participants complete the game in the browser', as
   )
 
   await ania.getByLabel('Текст сообщения').fill('Привет, Борис!')
+  await ania.getByLabel('Ссылка на изображение (необязательно)').fill('https://example.com/gift.jpg')
   await ania.getByRole('button', { name: 'Отправить' }).click()
   await expect(ania.getByText('Привет, Борис!')).toBeVisible()
+  const imageLink = ania.getByRole('link', { name: 'Открыть изображение (внешняя ссылка)' })
+  await expect(imageLink).toHaveText('Открыть изображение (внешняя ссылка)')
+  await expect(imageLink).not.toHaveAttribute('aria-label')
+  await expect(imageLink).toHaveAttribute('href', 'https://example.com/gift.jpg')
 
   await boris.reload()
   await expect(boris.getByText('Привет, Борис!')).toBeVisible()
+  await expect(boris.getByRole('link', { name: 'Открыть изображение (внешняя ссылка)' })).toHaveAttribute(
+    'href',
+    'https://example.com/gift.jpg',
+  )
 
   await organizerContext.close()
   await aniaContext.close()
