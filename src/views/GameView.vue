@@ -655,7 +655,7 @@ function saveTenant() {
                 )
               "
             >
-              Скопировать ссылку-приглашение для {{ person.name }}
+              {{ `Скопировать ссылку-приглашение для ${person.name} — ${data?.game?.title || 'игра'}` }}
             </button>
             <span class="min-w-0 flex-1 truncate">{{ person.url }}</span>
             <p

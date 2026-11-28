@@ -149,12 +149,21 @@ test('organizer and anonymous participants complete the game in the browser', as
   await giftForm.getByRole('button', { name: 'Подарок отправлен: Аня', exact: true }).click()
   await expect(sentProgress.locator('span').last()).toHaveText('50%')
 
-  const aniaLink = organizer.getByRole('button', { name: 'Скопировать ссылку-приглашение для Аня' })
-  const borisLink = organizer.getByRole('button', { name: 'Скопировать ссылку-приглашение для Борис' })
+  const aniaLink = organizer.getByRole('button', {
+    name: 'Скопировать ссылку-приглашение для Аня — Браузерная игра',
+    exact: true,
+  })
+  const borisLink = organizer.getByRole('button', {
+    name: 'Скопировать ссылку-приглашение для Борис — Браузерная игра',
+    exact: true,
+  })
   await expect(aniaLink).toBeVisible()
   await expect(borisLink).toBeVisible()
-  await expect(aniaLink).toHaveText('Скопировать ссылку-приглашение для Аня')
-  await expect(borisLink).toHaveText('Скопировать ссылку-приглашение для Борис')
+  await expect(aniaLink).toHaveText('Скопировать ссылку-приглашение для Аня — Браузерная игра')
+  await expect(borisLink).toHaveText('Скопировать ссылку-приглашение для Борис — Браузерная игра')
+  await expect(
+    organizer.getByRole('button', { name: 'Скопировать ссылку-приглашение для Аня', exact: true }),
+  ).toHaveCount(0)
   await expect(aniaLink).not.toHaveAttribute('aria-label')
   await expect(borisLink).not.toHaveAttribute('aria-label')
   const aniaUrl = (await aniaLink.locator('xpath=..').locator('span').nth(1).textContent()).trim()
@@ -584,7 +593,10 @@ test('participants join by the common link and the organizer can remove a bad na
   await expect(joiner.getByText('Вы в игре')).toBeVisible()
 
   await organizer.reload()
-  const badInvite = organizer.getByRole('button', { name: 'Скопировать ссылку-приглашение для Глупое имя' })
+  const badInvite = organizer.getByRole('button', {
+    name: 'Скопировать ссылку-приглашение для Глупое имя — Игра с общими приглашениями',
+    exact: true,
+  })
   await expect(badInvite).toBeVisible()
   await organizer.getByRole('button', { name: /Глупое имя участвует/ }).click()
   organizer.once('dialog', (dialog) => dialog.accept())
@@ -613,7 +625,12 @@ test('assistant invite is accepted in another browser context and survives page 
 
   await organizer.getByLabel('Список имён через запятую').fill('Вера, Глеб')
   await organizer.getByRole('button', { name: 'Добавить список: Вера, Глеб', exact: true }).click()
-  await expect(organizer.getByRole('button', { name: 'Скопировать ссылку-приглашение для Вера' })).toBeVisible()
+  await expect(
+    organizer.getByRole('button', {
+      name: 'Скопировать ссылку-приглашение для Вера — Игра с помощником',
+      exact: true,
+    }),
+  ).toBeVisible()
 
   const inviteAssistant = organizer.getByRole('button', {
     name: 'Пригласить помощника в игру: Игра с помощником',
@@ -1018,7 +1035,10 @@ test('game copy links show local clipboard status', async ({ browser }) => {
   const gameHeading = page.getByRole('heading', { name: title, level: 1 })
   await expect(gameHeading).toBeVisible()
 
-  const inviteButton = page.getByRole('button', { name: 'Скопировать ссылку-приглашение для Аня' })
+  const inviteButton = page.getByRole('button', {
+    name: `Скопировать ссылку-приглашение для Аня — ${title}`,
+    exact: true,
+  })
   const inviteRow = inviteButton.locator('xpath=..')
   const inviteUrl = String(await inviteButton.locator('xpath=following-sibling::span[1]').textContent()).trim()
   const failureStatus = `Не удалось скопировать ссылку-приглашение: Аня — ${title}`
