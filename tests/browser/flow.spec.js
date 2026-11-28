@@ -224,6 +224,16 @@ test('organizer and anonymous participants complete the game in the browser', as
     'https://example.com/gift.jpg',
   )
 
+  await organizer.getByLabel('Список имён через запятую').fill('Вика, Дима')
+  await organizer.getByRole('button', { name: 'Добавить список' }).click()
+  const newDrawButton = organizer.getByRole('button', {
+    name: 'Жеребьёвка для новых участников: 2',
+    exact: true,
+  })
+  await expect(newDrawButton).toBeVisible()
+  await expect(newDrawButton).toHaveText('Жеребьёвка для новых участников: 2')
+  await expect(organizer.getByRole('button', { name: 'Доп. жеребьёвка', exact: false })).toHaveCount(0)
+
   await organizerContext.close()
   await aniaContext.close()
   await borisContext.close()

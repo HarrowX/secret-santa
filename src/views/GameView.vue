@@ -511,7 +511,7 @@ function saveTenant() {
               :disabled="busy"
               @click="drawNew"
             >
-              Доп. жеребьёвка: {{ pendingParticipants.length }}
+              Жеребьёвка для новых участников: {{ pendingParticipants.length }}
             </button>
             <button
               type="button"
