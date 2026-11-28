@@ -220,9 +220,21 @@ test('organizer and anonymous participants complete the game in the browser', as
     await expect(organizer.getByLabel(name)).not.toHaveAttribute('aria-label')
   }
 
+  await expect(
+    organizer.getByRole('button', {
+      name: 'Зафиксировать пару: Выберите участника дарит Выберите участника',
+      exact: true,
+    }),
+  ).toBeVisible()
   await organizer.getByLabel('Кто дарит в ручной паре').selectOption({ label: 'Аня' })
   await organizer.getByLabel('Кому дарит в ручной паре').selectOption({ label: 'Борис' })
-  await organizer.getByRole('button', { name: 'Зафиксировать' }).click()
+  const manualPairButton = organizer.getByRole('button', {
+    name: 'Зафиксировать пару: Аня дарит Борис',
+    exact: true,
+  })
+  await expect(manualPairButton).toBeVisible()
+  await expect(organizer.getByRole('button', { name: 'Зафиксировать', exact: true })).toHaveCount(0)
+  await manualPairButton.click()
   await expect(pairsCard.getByText('Дарит: Аня', { exact: true })).toBeVisible()
   await expect(pairsCard.getByText('Получает: Борис', { exact: true })).toBeVisible()
   await expect(pairsCard.getByText('Аня → Борис', { exact: true })).toHaveCount(0)
@@ -540,13 +552,15 @@ test('assistant invite is accepted in another browser context and survives page 
   expect(inviteResponse.status()).toBe(201)
   const invitePath = new URL((await inviteResponse.json()).url).pathname
 
-  const waitForOrganizers = () =>
-    organizer.waitForResponse(
-      (response) => response.url().includes('/organizers') && response.request().method() === 'GET',
-    )
-  const pendingReload = waitForOrganizers()
+  const readOrganizers = () =>
+    organizer.evaluate(async () => {
+      const token = location.pathname.split('/').filter(Boolean).pop()
+      const response = await fetch(`/api/games/${encodeURIComponent(token)}/organizers`)
+      if (!response.ok) throw new Error('Не удалось прочитать организаторов')
+      return response.json()
+    })
   await organizer.reload()
-  const pendingOrganizers = await (await pendingReload).json()
+  const pendingOrganizers = await readOrganizers()
   const owner = pendingOrganizers.find((item) => item.role === 'owner')
   const pending = pendingOrganizers.find((item) => item.invited)
   expect(owner?.displayName).toBeTruthy()
@@ -575,9 +589,8 @@ test('assistant invite is accepted in another browser context and survives page 
   await expect(assistant).toHaveURL(/\/game\//)
   await expect(assistant.getByRole('heading', { name: 'Игра с помощником' })).toBeVisible()
 
-  const acceptedReload = waitForOrganizers()
   await organizer.reload()
-  const acceptedOrganizers = await (await acceptedReload).json()
+  const acceptedOrganizers = await readOrganizers()
   const accepted = acceptedOrganizers.find((item) => item.role === 'organizer' && item.status === 'accepted')
   expect(accepted?.displayName).toBeTruthy()
 
@@ -615,9 +628,8 @@ test('assistant invite is accepted in another browser context and survives page 
   )
   await organizer.getByRole('button', { name: 'Пригласить помощника' }).click()
   expect((await secondInviteResponsePromise).status()).toBe(201)
-  const secondReload = waitForOrganizers()
   await organizer.reload()
-  const cancelOrganizers = await (await secondReload).json()
+  const cancelOrganizers = await readOrganizers()
   const cancelTarget = cancelOrganizers.find((item) => item.invited)
   expect(cancelTarget?.displayName).toBeTruthy()
   const cancelInvite = organizer
