@@ -403,6 +403,9 @@ test('anonymous access is restored from a recovery code in a clean context', asy
   const restored = await cleanContext.newPage()
 
   await restored.goto('/my')
+  const recoveryInput = restored.getByRole('textbox', { name: 'Код восстановления' })
+  await expect(recoveryInput).toBeVisible()
+  await expect(recoveryInput).not.toHaveAttribute('aria-label')
   await expect(restored.getByRole('textbox', { name: 'Код восстановления' })).toHaveAttribute(
     'placeholder',
     'A1B2C3D4E5F60718293A4B5C6D7E8F90',
