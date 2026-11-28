@@ -530,13 +530,34 @@ test('assistant invite is accepted in another browser context and survives page 
   expect(inviteResponse.status()).toBe(201)
   const invitePath = new URL((await inviteResponse.json()).url).pathname
 
+  const waitForOrganizers = () =>
+    organizer.waitForResponse(
+      (response) => response.url().includes('/organizers') && response.request().method() === 'GET',
+    )
+  const pendingReload = waitForOrganizers()
+  await organizer.reload()
+  const pendingOrganizers = await (await pendingReload).json()
+  const owner = pendingOrganizers.find((item) => item.role === 'owner')
+  const pending = pendingOrganizers.find((item) => item.invited)
+  expect(owner?.displayName).toBeTruthy()
+  expect(pending?.displayName).toBeTruthy()
+
   const team = organizer.getByTestId('organizer-team')
+  await expect(team.getByText(owner.displayName, { exact: true })).toBeVisible()
+  await expect(team.getByText(pending.displayName, { exact: true })).toBeVisible()
   await expect(team.getByText('создатель', { exact: true })).toHaveCount(1)
   await expect(team.getByText('ожидает принятия', { exact: true })).toHaveCount(1)
   await expect(team.getByText('организатор', { exact: true })).toHaveCount(0)
   await expect(team.getByText('Приглашение ещё не принято')).toHaveCount(0)
   await expect(team).not.toContainText('@')
   await expect(team).not.toContainText('/organizer/')
+  const pendingCancel = team.getByRole('button', {
+    name: `Отменить приглашение: ${pending.displayName}`,
+    exact: true,
+  })
+  await expect(pendingCancel).toBeVisible()
+  await expect(team.getByRole('button', { name: 'Отменить', exact: true })).toHaveCount(0)
+  await expect(team.getByRole('button', { name: 'Удалить', exact: true })).toHaveCount(0)
 
   const assistantContext = await browser.newContext()
   const assistant = await assistantContext.newPage()
@@ -544,20 +565,63 @@ test('assistant invite is accepted in another browser context and survives page 
   await expect(assistant).toHaveURL(/\/game\//)
   await expect(assistant.getByRole('heading', { name: 'Игра с помощником' })).toBeVisible()
 
+  const acceptedReload = waitForOrganizers()
   await organizer.reload()
+  const acceptedOrganizers = await (await acceptedReload).json()
+  const accepted = acceptedOrganizers.find((item) => item.role === 'organizer' && item.status === 'accepted')
+  expect(accepted?.displayName).toBeTruthy()
+
   const organizerTeam = organizer.getByTestId('organizer-team')
+  await expect(organizerTeam.getByText(accepted.displayName, { exact: true })).toBeVisible()
   await expect(organizerTeam.getByText('создатель', { exact: true })).toHaveCount(1)
   await expect(organizerTeam.getByText('организатор', { exact: true })).toHaveCount(1)
   await expect(organizerTeam.getByText('ожидает принятия', { exact: true })).toHaveCount(0)
   await expect(organizerTeam.getByText('Приглашение ещё не принято')).toHaveCount(0)
   await expect(organizerTeam).not.toContainText('@')
   await expect(organizerTeam).not.toContainText('/organizer/')
+  const removeAssistant = organizerTeam.getByRole('button', {
+    name: `Удалить организатора: ${accepted.displayName}`,
+    exact: true,
+  })
+  await expect(removeAssistant).toBeVisible()
+  await expect(organizerTeam.getByRole('button', { name: 'Удалить', exact: true })).toHaveCount(0)
 
   await assistant.reload()
   const assistantTeam = assistant.getByTestId('organizer-team')
   await expect(assistantTeam.getByText('создатель', { exact: true })).toHaveCount(1)
   await expect(assistantTeam.getByText('организатор', { exact: true })).toHaveCount(1)
   await expect(assistantTeam.getByText('ожидает принятия', { exact: true })).toHaveCount(0)
+
+  const removeResponsePromise = organizer.waitForResponse(
+    (response) => response.url().includes('/organizers/') && response.request().method() === 'DELETE',
+  )
+  organizer.once('dialog', (dialog) => dialog.accept())
+  await removeAssistant.click()
+  expect((await removeResponsePromise).status()).toBe(200)
+  await expect(removeAssistant).toHaveCount(0)
+
+  const secondInviteResponsePromise = organizer.waitForResponse(
+    (response) => response.url().includes('/organizers/invite') && response.request().method() === 'POST',
+  )
+  await organizer.getByRole('button', { name: 'Пригласить помощника' }).click()
+  expect((await secondInviteResponsePromise).status()).toBe(201)
+  const secondReload = waitForOrganizers()
+  await organizer.reload()
+  const cancelOrganizers = await (await secondReload).json()
+  const cancelTarget = cancelOrganizers.find((item) => item.invited)
+  expect(cancelTarget?.displayName).toBeTruthy()
+  const cancelInvite = organizer
+    .getByTestId('organizer-team')
+    .getByRole('button', { name: `Отменить приглашение: ${cancelTarget.displayName}`, exact: true })
+  await expect(cancelInvite).toBeVisible()
+  const cancelResponsePromise = organizer.waitForResponse(
+    (response) => response.url().includes('/organizers/') && response.request().method() === 'DELETE',
+  )
+  organizer.once('dialog', (dialog) => dialog.accept())
+  await cancelInvite.click()
+  expect((await cancelResponsePromise).status()).toBe(200)
+  await expect(cancelInvite).toHaveCount(0)
+  await expect(organizer.getByRole('button', { name: 'Отменить', exact: true })).toHaveCount(0)
 
   await organizerContext.close()
   await assistantContext.close()

@@ -843,14 +843,19 @@ function saveTenant() {
             :key="organizer.id"
             class="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-white/10 bg-white/5 px-4 py-2"
           >
-            <span>{{ organizerStatus(organizer) }}</span>
+            <span>{{ organizer.displayName }}</span>
+            <span class="text-xs opacity-60">{{ organizerStatus(organizer) }}</span>
             <button
               type="button"
               class="text-xs underline transition hover:opacity-100 disabled:opacity-50"
               :disabled="!canRemoveOrganizer(organizer)"
               @click="removeOrganizer(organizer)"
             >
-              {{ organizer.invited ? 'Отменить' : 'Удалить' }}
+              {{
+                organizer.invited
+                  ? `Отменить приглашение: ${organizer.displayName}`
+                  : `Удалить организатора: ${organizer.displayName}`
+              }}
             </button>
           </li>
           <li v-if="!organizers.length" class="opacity-50">Организаторов пока нет</li>
