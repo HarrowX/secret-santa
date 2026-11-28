@@ -38,6 +38,13 @@ test('organizer and anonymous participants complete the game in the browser', as
       .locator('span')
       .getByText('Прошлая игра для импорта пар', { exact: true }),
   ).toBeVisible()
+  await expect(
+    organizer
+      .locator('label')
+      .filter({ has: organizer.getByLabel('Участник, отметки о подарке') })
+      .locator('span')
+      .getByText('Участник для отметки подарка', { exact: true }),
+  ).toBeVisible()
 
   await expect(organizer.getByText('Список имён через запятую', { exact: true })).toBeVisible()
   await expect(organizer.getByLabel('Список имён через запятую')).toHaveAttribute('placeholder', 'Аня, Борис, Вика')
