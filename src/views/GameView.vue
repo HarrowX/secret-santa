@@ -204,7 +204,7 @@ function copyStatusClass(message) {
   return message === 'Скопировано' ? 'text-emerald-300' : 'text-rose-300'
 }
 
-function reminderStatusLabel(status) {
+function reminderStatus(status) {
   if (status === 'sent') return 'Отправлено'
   if (status === 'queued') return 'В очереди'
   return 'Статус неизвестен'
@@ -1221,8 +1221,10 @@ function saveTenant() {
           </div>
         </form>
         <ul class="mt-3 grid gap-1 text-sm opacity-70">
-          <li v-for="item in reminders" :key="item.id">
-            {{ item.created_at }} · {{ item.participant_name }} · {{ reminderStatusLabel(item.status) }}
+          <li v-for="item in reminders" :key="item.id" class="flex flex-wrap gap-x-3">
+            <span><span class="font-semibold">Когда:</span> {{ item.created_at }}</span>
+            <span><span class="font-semibold">Кому:</span> {{ item.participant_name }}</span>
+            <span><span class="font-semibold">Статус:</span> {{ reminderStatus(item.status) }}</span>
             <span v-if="item.error" class="text-amber-300">— {{ item.error }}</span>
           </li>
           <li v-if="!reminders.length" class="opacity-50">

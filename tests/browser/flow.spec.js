@@ -268,6 +268,13 @@ test('organizer and anonymous participants complete the game in the browser', as
   await remindersSection.getByLabel('Получатели напоминания').selectOption([{ label: 'Аня' }, { label: 'Борис' }])
   await remindersSection.getByRole('button', { name: 'Отправить', exact: true }).click()
   const reminderList = remindersSection.locator('ul')
+  const reminderRows = reminderList.locator('li')
+  await expect(reminderRows).toHaveCount(2)
+  for (const row of await reminderRows.all()) {
+    await expect(row.getByText('Когда:', { exact: true })).toBeVisible()
+    await expect(row.getByText('Кому:', { exact: true })).toBeVisible()
+    await expect(row.getByText('Статус:', { exact: true })).toBeVisible()
+  }
   await expect(reminderList.getByText('Отправлено', { exact: false })).toBeVisible()
   await expect(reminderList.getByText('В очереди', { exact: false })).toBeVisible()
   await expect(reminderList.getByText(/sent|queued/)).toHaveCount(0)
