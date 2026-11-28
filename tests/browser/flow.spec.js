@@ -741,3 +741,26 @@ test('organizer creates a choice question through the game form', async ({ brows
   await organizerContext.close()
   await joinerContext.close()
 })
+
+test('mobile menu button has a visible name and toggles navigation', async ({ browser }) => {
+  const context = await browser.newContext({ viewport: { width: 390, height: 844 } })
+  const page = await context.newPage()
+
+  await page.goto('/')
+  const menuButton = page.getByRole('button', { name: 'Меню', exact: true })
+  await expect(menuButton).toBeVisible()
+  await expect(menuButton).toHaveText('Меню')
+  await expect(menuButton).not.toHaveAttribute('aria-label')
+  await expect(page.getByRole('navigation', { name: 'Мобильная навигация' })).toHaveCount(0)
+
+  await menuButton.click()
+  await expect(page.getByRole('navigation', { name: 'Мобильная навигация' })).toBeVisible()
+  const closeButton = page.getByRole('button', { name: 'Закрыть', exact: true })
+  await expect(closeButton).toBeVisible()
+  await expect(closeButton).toHaveText('Закрыть')
+  await expect(closeButton).not.toHaveAttribute('aria-label')
+
+  await closeButton.click()
+  await expect(page.getByRole('navigation', { name: 'Мобильная навигация' })).toHaveCount(0)
+  await context.close()
+})

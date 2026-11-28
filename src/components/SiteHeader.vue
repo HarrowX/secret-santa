@@ -88,13 +88,13 @@ onBeforeUnmount(() => document.removeEventListener('keydown', onKeydown))
         </button>
         <button
           type="button"
-          class="grid h-9 w-9 place-items-center rounded-full border md:hidden"
+          class="flex items-center gap-2 rounded-full border px-3 py-2 text-sm font-semibold transition hover:opacity-80 md:hidden"
           :class="isDay ? 'border-slate-900/20' : 'border-white/25'"
           :aria-expanded="menuOpen"
           :aria-controls="'mobile-menu'"
-          :aria-label="menuOpen ? 'Закрыть меню' : 'Открыть меню'"
           @click="menuOpen = !menuOpen"
         >
+          <span>{{ menuOpen ? 'Закрыть' : 'Меню' }}</span>
           <svg
             viewBox="0 0 24 24"
             class="h-5 w-5"
