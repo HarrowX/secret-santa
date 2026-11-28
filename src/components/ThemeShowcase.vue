@@ -5,6 +5,7 @@ import { plural } from '../lib/plural.js'
 defineProps({
   themes: Array,
   themesMessage: String,
+  themesError: String,
   themeId: String,
   mode: String,
 })
@@ -24,6 +25,7 @@ const idleClass = 'text-inherit opacity-70 hover:opacity-100'
         <p v-if="themes.length" class="mt-2 text-sm opacity-60">
           {{ plural(themes.length, ['оформление', 'оформления', 'оформлений']) }} · каждая тема доступна бесплатно
         </p>
+        <p v-else-if="themesError" class="mt-2 text-sm opacity-60">{{ themesError }}</p>
         <p v-else class="mt-2 text-sm opacity-60">{{ themesMessage }}</p>
       </div>
 

@@ -996,6 +996,32 @@ test('landing declines the theme count in Russian', async ({ browser }) => {
   expect(emptyFeatureCardText).not.toContain('— выбирайте под настроение.')
   await page.unroute('**/api/themes')
 
+  const unavailableMessage = 'Оформления временно недоступны. Попробуйте зайти позже.'
+  for (const failThemes of [
+    { name: 'abort', route: (route) => route.abort() },
+    {
+      name: '500',
+      route: (route) =>
+        route.fulfill({ status: 500, contentType: 'application/json', body: JSON.stringify({ error: 'boom' }) }),
+    },
+  ]) {
+    await page.route('**/api/themes', failThemes.route)
+    await page.goto('/')
+    const failedThemeSection = page.locator('section').filter({ hasText: 'Атмосфера вашей игры' })
+    const failedFeatureCard = page.locator('article').filter({ hasText: 'Все темы оформления' })
+    await expect(failedThemeSection.getByText(unavailableMessage)).toBeVisible()
+    await expect(failedFeatureCard.getByText(unavailableMessage)).toBeVisible()
+    await expect(page.getByText('Оформления пока не добавлены')).toHaveCount(0)
+    await expect(page.getByText(/— выбирайте под настроение/)).toHaveCount(0)
+    const failedThemeSectionText = await failedThemeSection.textContent()
+    const failedFeatureCardText = await failedFeatureCard.textContent()
+    for (const name of themes.map((item) => item.name)) {
+      expect(failedThemeSectionText).not.toContain(name)
+      expect(failedFeatureCardText).not.toContain(name)
+    }
+    await page.unroute('**/api/themes', failThemes.route)
+  }
+
   await context.close()
 })
 

@@ -6,6 +6,7 @@ import { MAX_ORGANIZERS_WORD_AFTER_DO, MAX_QUESTIONS } from '../../limits.js'
 const props = defineProps({
   themes: Array,
   themesMessage: String,
+  themesError: String,
   accent: String,
 })
 
@@ -56,7 +57,7 @@ const features = computed(() => [
     title: 'Все темы оформления',
     text: (props.themes ?? []).length
       ? `${props.themes.map((item) => item.name).join(', ')} — выбирайте под настроение.`
-      : props.themesMessage,
+      : props.themesError || props.themesMessage,
     hint: 'Ночь и день',
   },
   {

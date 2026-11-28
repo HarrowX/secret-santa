@@ -13,6 +13,7 @@ const router = useRouter()
 const preferences = usePreferencesStore()
 const availableThemes = ref([])
 const themesMessage = ref('Загружаем оформления…')
+const themesError = ref('')
 
 onMounted(async () => {
   try {
@@ -20,7 +21,8 @@ onMounted(async () => {
     availableThemes.value = Array.isArray(loaded) ? loaded : []
     themesMessage.value = availableThemes.value.length ? '' : 'Оформления пока не добавлены'
   } catch {
-    themesMessage.value = 'Оформления пока недоступны'
+    availableThemes.value = []
+    themesError.value = 'Оформления временно недоступны. Попробуйте зайти позже.'
   }
 })
 
@@ -36,11 +38,13 @@ function openCreate() {
     v-model:mode="preferences.mode"
     :themes="availableThemes"
     :themes-message="themesMessage"
+    :themes-error="themesError"
   />
   <StepsSection :accent="preferences.theme.accent" />
   <FeatureSection
     :themes="availableThemes"
     :themes-message="themesMessage"
+    :themes-error="themesError"
     :accent="preferences.theme.accent"
     @open-create="openCreate"
   />
