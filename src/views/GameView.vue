@@ -575,11 +575,11 @@ function saveTenant() {
             <button
               type="button"
               class="min-w-0 flex-1 truncate rounded-xl border border-white/15 bg-white/5 px-4 py-2 text-left transition hover:bg-white/10"
-              :aria-label="`Общая ссылка на игру: ${invite.commonUrl}`"
               @click="copyLink(invite.commonUrl, 'common')"
             >
-              <span class="opacity-50">Общая ссылка на игру: </span>{{ invite.commonUrl }}
+              Скопировать общую ссылку на игру
             </button>
+            <span class="min-w-0 flex-1 truncate">{{ invite.commonUrl }}</span>
             <p
               v-if="copyStatus.common"
               role="status"

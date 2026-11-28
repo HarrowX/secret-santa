@@ -192,10 +192,11 @@ test('participants join by the common link and the organizer can remove a bad na
   await organizer.getByRole('button', { name: 'Добавить вопрос' }).click()
   await expect(organizer.getByText('Любите ли вы читать? · Да/Нет')).toBeVisible()
 
-  const commonButton = organizer.getByRole('button', { name: /Общая ссылка на игру:/ })
+  const commonButton = organizer.getByRole('button', { name: 'Скопировать общую ссылку на игру' })
   await expect(commonButton).toBeVisible()
-  const commonLabel = String(await commonButton.getAttribute('aria-label'))
-  const commonUrl = commonLabel.replace(/^Общая ссылка на игру:\s*/, '')
+  await expect(commonButton).toHaveText('Скопировать общую ссылку на игру')
+  await expect(commonButton).not.toHaveAttribute('aria-label')
+  const commonUrl = String(await commonButton.locator('xpath=..').locator('span').textContent()).trim()
   const commonPath = commonUrl.startsWith('http') ? new URL(commonUrl).pathname : commonUrl
 
   const joinerContext = await browser.newContext()
@@ -693,9 +694,11 @@ test('organizer creates a choice question through the game form', async ({ brows
   await organizer.getByRole('button', { name: 'Добавить вопрос' }).click()
   await expect(organizer.getByText('Любимые цвета · Несколько')).toBeVisible()
 
-  const commonButton = organizer.getByRole('button', { name: /Общая ссылка на игру:/ })
-  const commonLabel = String(await commonButton.getAttribute('aria-label'))
-  const commonUrl = commonLabel.replace(/^Общая ссылка на игру:\s*/, '')
+  const commonButton = organizer.getByRole('button', { name: 'Скопировать общую ссылку на игру' })
+  await expect(commonButton).toBeVisible()
+  await expect(commonButton).toHaveText('Скопировать общую ссылку на игру')
+  await expect(commonButton).not.toHaveAttribute('aria-label')
+  const commonUrl = String(await commonButton.locator('xpath=..').locator('span').textContent()).trim()
   const commonPath = commonUrl.startsWith('http') ? new URL(commonUrl).pathname : commonUrl
 
   const joinerContext = await browser.newContext()
