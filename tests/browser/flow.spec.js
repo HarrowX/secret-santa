@@ -968,13 +968,14 @@ test('landing declines the theme count in Russian', async ({ browser }) => {
   await page.unroute('**/api/themes')
 
   for (const [count, caption] of [
-    [1, '1 оформление · каждая тема доступна бесплатно'],
-    [2, '2 оформления · каждая тема доступна бесплатно'],
-    [10, '10 оформлений · каждая тема доступна бесплатно'],
+    [1, '1 оформление'],
+    [2, '2 оформления'],
+    [10, '10 оформлений'],
   ]) {
     await page.route('**/api/themes', (route) => route.fulfill({ json: themes.slice(0, count) }))
     await page.goto('/')
-    await expect(page.getByText(caption)).toBeVisible()
+    await expect(page.getByText(caption, { exact: true })).toBeVisible()
+    await expect(themeSection.getByText(/бесплатно/)).toHaveCount(0)
     await expect(themeButtons).toHaveCount(count)
     await page.unroute('**/api/themes')
   }
@@ -985,7 +986,7 @@ test('landing declines the theme count in Russian', async ({ browser }) => {
   const emptyFeatureCard = page.locator('article').filter({ hasText: 'Все темы оформления' })
   await expect(emptyThemeSection.getByText('Оформления пока не добавлены')).toBeVisible()
   await expect(emptyFeatureCard.getByText('Оформления пока не добавлены')).toBeVisible()
-  await expect(page.getByText('0 оформлений · каждая тема доступна бесплатно')).toHaveCount(0)
+  await expect(emptyThemeSection.getByText(/бесплатно/)).toHaveCount(0)
   await expect(page.getByText(/— выбирайте под настроение/)).toHaveCount(0)
   const emptyThemeSectionText = await emptyThemeSection.textContent()
   const emptyFeatureCardText = await emptyFeatureCard.textContent()
@@ -1011,6 +1012,7 @@ test('landing declines the theme count in Russian', async ({ browser }) => {
     const failedFeatureCard = page.locator('article').filter({ hasText: 'Все темы оформления' })
     await expect(failedThemeSection.getByText(unavailableMessage)).toBeVisible()
     await expect(failedFeatureCard.getByText(unavailableMessage)).toBeVisible()
+    await expect(failedThemeSection.getByText(/бесплатно/)).toHaveCount(0)
     await expect(page.getByText('Оформления пока не добавлены')).toHaveCount(0)
     await expect(page.getByText(/— выбирайте под настроение/)).toHaveCount(0)
     const failedThemeSectionText = await failedThemeSection.textContent()

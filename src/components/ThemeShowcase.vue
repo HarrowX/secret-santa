@@ -23,7 +23,7 @@ const idleClass = 'text-inherit opacity-70 hover:opacity-100'
         <p class="text-xs font-semibold uppercase tracking-[0.3em] opacity-60">Выберите свой мир</p>
         <h2 class="mt-2 text-2xl font-bold tracking-tight">Атмосфера вашей игры</h2>
         <p v-if="themes.length" class="mt-2 text-sm opacity-60">
-          {{ plural(themes.length, ['оформление', 'оформления', 'оформлений']) }} · каждая тема доступна бесплатно
+          {{ plural(themes.length, ['оформление', 'оформления', 'оформлений']) }}
         </p>
         <p v-else-if="themesError" class="mt-2 text-sm opacity-60">{{ themesError }}</p>
         <p v-else class="mt-2 text-sm opacity-60">{{ themesMessage }}</p>
