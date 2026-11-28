@@ -59,12 +59,12 @@ test('organizer and anonymous participants complete the game in the browser', as
   await organizer.getByLabel('Список имён через запятую').fill('Аня, Борис')
   await organizer.getByRole('button', { name: 'Добавить список' }).click()
 
-  const aniaLink = organizer.getByRole('button', { name: 'Ссылка-приглашение для Аня' })
-  const borisLink = organizer.getByRole('button', { name: 'Ссылка-приглашение для Борис' })
+  const aniaLink = organizer.getByRole('button', { name: 'Скопировать ссылку-приглашение для Аня' })
+  const borisLink = organizer.getByRole('button', { name: 'Скопировать ссылку-приглашение для Борис' })
   await expect(aniaLink).toBeVisible()
   await expect(borisLink).toBeVisible()
-  await expect(aniaLink).toHaveText('Ссылка-приглашение для Аня')
-  await expect(borisLink).toHaveText('Ссылка-приглашение для Борис')
+  await expect(aniaLink).toHaveText('Скопировать ссылку-приглашение для Аня')
+  await expect(borisLink).toHaveText('Скопировать ссылку-приглашение для Борис')
   await expect(aniaLink).not.toHaveAttribute('aria-label')
   await expect(borisLink).not.toHaveAttribute('aria-label')
   const aniaUrl = (await aniaLink.locator('xpath=..').locator('span').nth(1).textContent()).trim()
@@ -218,7 +218,7 @@ test('participants join by the common link and the organizer can remove a bad na
   await expect(joiner.getByText('Вы в игре')).toBeVisible()
 
   await organizer.reload()
-  const badInvite = organizer.getByRole('button', { name: 'Ссылка-приглашение для Глупое имя' })
+  const badInvite = organizer.getByRole('button', { name: 'Скопировать ссылку-приглашение для Глупое имя' })
   await expect(badInvite).toBeVisible()
   await organizer.getByRole('button', { name: /Глупое имя участвует/ }).click()
   organizer.once('dialog', (dialog) => dialog.accept())
@@ -244,7 +244,7 @@ test('assistant invite is accepted in another browser context and survives page 
 
   await organizer.getByLabel('Список имён через запятую').fill('Вера, Глеб')
   await organizer.getByRole('button', { name: 'Добавить список' }).click()
-  await expect(organizer.getByRole('button', { name: 'Ссылка-приглашение для Вера' })).toBeVisible()
+  await expect(organizer.getByRole('button', { name: 'Скопировать ссылку-приглашение для Вера' })).toBeVisible()
 
   const inviteResponsePromise = organizer.waitForResponse(
     (response) => response.url().includes('/organizers/invite') && response.request().method() === 'POST',
@@ -520,7 +520,7 @@ test('game copy links show local clipboard status', async ({ browser }) => {
   const gameHeading = page.getByRole('heading', { name: title, level: 1 })
   await expect(gameHeading).toBeVisible()
 
-  const inviteButton = page.getByRole('button', { name: 'Ссылка-приглашение для Аня' })
+  const inviteButton = page.getByRole('button', { name: 'Скопировать ссылку-приглашение для Аня' })
   const inviteRow = inviteButton.locator('xpath=..')
   await expect(inviteButton).toBeVisible()
   await inviteButton.click()
