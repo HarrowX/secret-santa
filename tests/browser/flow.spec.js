@@ -914,17 +914,34 @@ test('landing declines the theme count in Russian', async ({ browser }) => {
   await page.route('**/api/metrics', (route) =>
     route.fulfill({
       json: {
-        stages: [{ key: 'organizer_return', title: 'Организатор вернулся', count: 2, conversion: 67 }],
+        stages: [
+          { key: 'game_created', title: 'Создана игра', count: 3, conversion: 100 },
+          { key: 'participant_invited', title: 'Приглашены участники', count: 1, conversion: 33 },
+          { key: 'draw_completed', title: 'Проведена жеребьёвка', count: 1, conversion: 33 },
+          { key: 'gift_sent', title: 'Отправлен подарок', count: 1, conversion: 33 },
+          { key: 'organizer_return', title: 'Организатор вернулся', count: 2, conversion: 67 },
+        ],
         updatedAt: '2026-01-01T00:00:00.000Z',
       },
     }),
   )
   await page.goto('/')
-  const metricsSection = page.locator('section').filter({ hasText: 'Воронка игр на этом сайте' })
-  const returningStage = metricsSection.locator('div').filter({ hasText: 'Организатор вернулся' }).last()
-  await expect(returningStage.getByText('Организатор вернулся')).toBeVisible()
-  await expect(returningStage.locator('p').first()).toHaveText('2')
-  await expect(returningStage.locator('p').last()).toHaveText('67% от созданных игр')
+  const metricsSection = page.locator('section').filter({ hasText: 'Как проходит игра' })
+  for (const [title, count, caption] of [
+    ['Игра создана', '3', '100 из 100 игр доходят до этого шага'],
+    ['Участники в сборе', '1', '33 из 100 игр доходят до этого шага'],
+    ['Пары распределены', '1', '33 из 100 игр доходят до этого шага'],
+    ['Подарки отправлены', '1', '33 из 100 игр доходят до этого шага'],
+    ['Хочется ещё одну игру', '2', '67 из 100 игр доходят до этого шага'],
+  ]) {
+    const stage = metricsSection.locator('div').filter({ hasText: title }).last()
+    await expect(stage.locator('p').first()).toHaveText(count)
+    await expect(stage.locator('p').nth(1)).toHaveText(title)
+    await expect(stage.locator('p').last()).toHaveText(caption)
+  }
+  await expect(page.getByText('Воронка', { exact: false })).toHaveCount(0)
+  await expect(page.getByText('% от созданных игр', { exact: false })).toHaveCount(0)
+  await expect(page.getByText('Организатор вернулся', { exact: false })).toHaveCount(0)
   const ownSpaceCard = page.locator('article').filter({ hasText: 'Своё пространство' })
   await expect(ownSpaceCard.getByText('Личная ссылка')).toBeVisible()
   expect(await ownSpaceCard.textContent()).not.toContain(new URL(page.url()).hostname)

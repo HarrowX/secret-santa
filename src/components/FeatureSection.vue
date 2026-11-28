@@ -15,8 +15,24 @@ const stages = ref([])
 const metricsError = ref('')
 const loaded = ref(false)
 
+const stageCopy = {
+  game_created: 'Игра создана',
+  participant_invited: 'Участники в сборе',
+  draw_completed: 'Пары распределены',
+  gift_sent: 'Подарки отправлены',
+  organizer_return: 'Хочется ещё одну игру',
+}
+
+function stageTitle(stage) {
+  return stageCopy[stage.key] ?? 'Ещё один шаг'
+}
+
 function numberText(value) {
   return new Intl.NumberFormat('ru-RU').format(Number(value) || 0)
+}
+
+function stageCaption(stage) {
+  return `${numberText(stage.conversion)} из 100 игр доходят до этого шага`
 }
 
 onMounted(async () => {
@@ -69,16 +85,16 @@ const features = computed(() => [
 <template>
   <section id="features" class="mx-auto max-w-6xl px-5 py-14">
     <div class="rounded-3xl border border-white/10 bg-white/5 p-6 backdrop-blur">
-      <p class="text-xs font-semibold uppercase tracking-[0.3em] opacity-60">Воронка игр на этом сайте</p>
+      <p class="text-xs font-semibold uppercase tracking-[0.3em] opacity-60">Как проходит игра</p>
       <div v-if="stages.length" class="mt-4 grid gap-6 text-center sm:grid-cols-3 lg:grid-cols-5">
         <div v-for="stage in stages" :key="stage.key">
           <p class="text-3xl font-black" :style="{ color: accent }">{{ numberText(stage.count) }}</p>
-          <p class="mt-1 text-sm opacity-65">{{ stage.title }}</p>
-          <p class="mt-1 text-xs opacity-50">{{ stage.conversion }}% от созданных игр</p>
+          <p class="mt-1 text-sm opacity-65">{{ stageTitle(stage) }}</p>
+          <p class="mt-1 text-xs opacity-50">{{ stageCaption(stage) }}</p>
         </div>
       </div>
       <p v-else-if="loaded" class="mt-4 text-center text-sm opacity-60">
-        {{ metricsError || 'Пока нет данных по воронке' }}
+        {{ metricsError || 'Пока нет данных об играх' }}
       </p>
       <p v-else class="mt-4 text-center text-sm opacity-60">Загружаем метрики…</p>
     </div>
