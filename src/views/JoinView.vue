@@ -271,7 +271,6 @@ async function saveAnswers(payload) {
               type="email"
               maxlength="160"
               placeholder="name@example.com"
-              aria-label="Email по желанию"
               class="rounded-xl border border-white/15 bg-white/5 px-4 py-2.5 text-sm outline-none placeholder:text-current/40 focus:border-white/40"
             />
           </label>
@@ -282,7 +281,6 @@ async function saveAnswers(payload) {
               rows="2"
               maxlength="2000"
               :placeholder="'Книга &quot;Мастер и Маргарита&quot;'"
-              aria-label="Желания"
               class="rounded-xl border border-white/15 bg-white/5 px-4 py-2.5 text-sm outline-none placeholder:text-current/40 focus:border-white/40"
             ></textarea>
           </label>
@@ -293,7 +291,6 @@ async function saveAnswers(payload) {
               type="text"
               maxlength="2000"
               placeholder="Москва, ул. Лесная, 5"
-              aria-label="Адрес доставки"
               class="rounded-xl border border-white/15 bg-white/5 px-4 py-2.5 text-sm outline-none placeholder:text-current/40 focus:border-white/40"
             />
           </label>
@@ -304,7 +301,6 @@ async function saveAnswers(payload) {
               type="text"
               maxlength="2000"
               placeholder="Аня, Борис, Вика"
-              aria-label="С кем хотите играть"
               class="rounded-xl border border-white/15 bg-white/5 px-4 py-2.5 text-sm outline-none placeholder:text-current/40 focus:border-white/40"
             />
           </label>
@@ -315,7 +311,6 @@ async function saveAnswers(payload) {
               rows="2"
               maxlength="2000"
               placeholder="Не звонить после 21:00"
-              aria-label="Заметки организатору"
               class="rounded-xl border border-white/15 bg-white/5 px-4 py-2.5 text-sm outline-none placeholder:text-current/40 focus:border-white/40"
             ></textarea>
           </label>
@@ -329,7 +324,6 @@ async function saveAnswers(payload) {
                 type="text"
                 maxlength="120"
                 placeholder="A1B2-C3D4-E5F6-7182"
-                aria-label="Код участия из прошлой игры (необязательно)"
                 class="rounded-xl border border-white/15 bg-white/5 px-4 py-2.5 text-sm outline-none placeholder:text-current/40 focus:border-white/40"
               />
             </label>

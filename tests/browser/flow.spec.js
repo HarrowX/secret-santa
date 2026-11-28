@@ -96,6 +96,12 @@ test('organizer and anonymous participants complete the game in the browser', as
     'placeholder',
     'A1B2-C3D4-E5F6-7182',
   )
+  await expect(ania.getByLabel('Email по желанию')).not.toHaveAttribute('aria-label')
+  await expect(ania.getByLabel('Желания')).not.toHaveAttribute('aria-label')
+  await expect(ania.getByLabel('Адрес доставки')).not.toHaveAttribute('aria-label')
+  await expect(ania.getByLabel('С кем хотите играть')).not.toHaveAttribute('aria-label')
+  await expect(ania.getByLabel('Заметки организатору')).not.toHaveAttribute('aria-label')
+  await expect(ania.getByLabel('Код участия из прошлой игры (необязательно)')).not.toHaveAttribute('aria-label')
   await ania.getByLabel('Желания').fill('Книга для Ани')
   await ania.getByRole('button', { name: 'Подтвердить участие' }).click()
   await expect(ania.getByText('Пара ещё не раскрыта')).toBeVisible()
