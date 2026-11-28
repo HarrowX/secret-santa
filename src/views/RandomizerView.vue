@@ -28,9 +28,9 @@ async function copyResult() {
   const text = pairs.value.map((pair) => `Дарит: ${pair.from}; Получает: ${pair.to}`).join('\n')
   try {
     await navigator.clipboard.writeText(text)
-    copyStatus.value = 'Скопировано'
+    copyStatus.value = 'Пары скопированы'
   } catch {
-    copyStatus.value = 'Не удалось скопировать результат'
+    copyStatus.value = 'Не удалось скопировать пары'
   }
 }
 </script>
@@ -72,7 +72,7 @@ async function copyResult() {
             class="rounded-full border border-white/20 px-4 py-2 text-xs font-semibold transition hover:bg-white/10"
             @click="copyResult"
           >
-            Скопировать
+            Скопировать пары
           </button>
         </div>
         <p
@@ -80,7 +80,7 @@ async function copyResult() {
           role="status"
           aria-live="polite"
           class="mt-2 text-xs"
-          :class="copyStatus === 'Скопировано' ? 'text-emerald-300' : 'text-rose-300'"
+          :class="copyStatus === 'Пары скопированы' ? 'text-emerald-300' : 'text-rose-300'"
         >
           {{ copyStatus }}
         </p>
