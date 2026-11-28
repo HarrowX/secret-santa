@@ -962,7 +962,7 @@ function saveTenant() {
         </form>
         <p v-if="errors.past" role="alert" class="mt-2 text-sm text-rose-300">{{ errors.past }}</p>
         <p v-if="!pastGames.length" class="mt-2 text-sm opacity-50">
-          Войдите и поучаствуйте в игре, чтобы увидеть здесь прошлые игры
+          Прошлых игр пока нет. Они появятся здесь после вашего участия в игре.
         </p>
       </div>
 

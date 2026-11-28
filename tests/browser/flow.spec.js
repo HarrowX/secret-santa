@@ -83,6 +83,10 @@ test('organizer and anonymous participants complete the game in the browser', as
   await expect(pastGameSelect).toBeVisible()
   await expect(pastGameSelect).not.toHaveAttribute('aria-label')
   await expect(
+    organizer.getByText('Прошлых игр пока нет. Они появятся здесь после вашего участия в игре.', { exact: true }),
+  ).toBeVisible()
+  await expect(organizer.getByText('Войдите и поучаствуйте в игре', { exact: false })).toHaveCount(0)
+  await expect(
     organizer
       .locator('label')
       .filter({ has: organizer.getByLabel('Участник для отметки подарка') })
