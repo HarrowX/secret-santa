@@ -329,12 +329,11 @@ load()
             <button
               type="button"
               class="flex w-full items-center justify-between gap-2 text-left"
-              :aria-label="`Открыть игру ${game.title}`"
               @click="router.push(`/game/${game.token}`)"
             >
-              <span class="font-semibold">{{ game.title }}</span>
-              <span class="text-xs opacity-60">{{ roleLabel(game.role) }}</span>
+              Открыть игру {{ game.title }}
             </button>
+            <span class="text-xs opacity-60">{{ roleLabel(game.role) }}</span>
             <p class="mt-1 text-xs opacity-60">
               {{ game.budget || 'без бюджета' }} · {{ game.exchange_date || 'дата не задана' }}
             </p>
