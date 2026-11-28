@@ -228,8 +228,10 @@ test('organizer and anonymous participants complete the game in the browser', as
   )
   await expect(organizer.getByRole('button', { name: 'Сбросить пары', exact: false })).toHaveCount(0)
 
+  await expect(pairsCard.getByRole('button', { name: 'Показать пару', exact: true })).toHaveCount(0)
+  await expect(pairsCard.getByRole('button', { name: 'Показать пару: Аня дарит Борис', exact: true })).toBeVisible()
   organizer.once('dialog', (dialog) => dialog.accept())
-  await organizer.getByRole('button', { name: 'Показать пару' }).click()
+  await pairsCard.getByRole('button', { name: 'Показать пару: Аня дарит Борис', exact: true }).click()
 
   await ania.reload()
   await expect(ania.getByText('Вы дарите: Борис')).toBeVisible()

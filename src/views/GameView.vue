@@ -1159,7 +1159,7 @@ function saveTenant() {
                 :disabled="busy"
                 @click="reveal(pair)"
               >
-                Показать пару
+                Показать пару: {{ participantName(pair.from_id) }} дарит {{ participantName(pair.to_id) }}
               </button>
             </li>
             <li v-if="!data.pairs.length" class="opacity-50">
