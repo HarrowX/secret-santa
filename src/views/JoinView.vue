@@ -265,7 +265,7 @@ async function saveAnswers(payload) {
 
         <form class="mt-6 grid gap-3" @submit.prevent="accept">
           <label class="grid gap-1 text-sm">
-            <span class="text-xs font-semibold uppercase tracking-widest opacity-60">Email по желанию</span>
+            <span class="text-xs font-semibold uppercase tracking-widest opacity-60">Почта (необязательно)</span>
             <input
               v-model="email"
               type="email"

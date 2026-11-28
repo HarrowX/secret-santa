@@ -152,7 +152,11 @@ test('organizer and anonymous participants complete the game in the browser', as
   const aniaContext = await browser.newContext()
   const ania = await aniaContext.newPage()
   await ania.goto(aniaUrl)
-  await expect(ania.getByLabel('Email по желанию')).toHaveAttribute('placeholder', 'name@example.com')
+  await expect(ania.getByLabel('Почта (необязательно)', { exact: true })).toHaveAttribute(
+    'placeholder',
+    'name@example.com',
+  )
+  await expect(ania.getByLabel('Email по желанию', { exact: true })).toHaveCount(0)
   await expect(ania.getByLabel('Желания')).toHaveAttribute('placeholder', 'Книга "Мастер и Маргарита"')
   await expect(ania.getByLabel('Адрес доставки')).toHaveAttribute('placeholder', 'Москва, ул. Лесная, 5')
   await expect(ania.getByLabel('С кем хотите играть')).toHaveAttribute('placeholder', 'Аня, Борис, Вика')
@@ -165,13 +169,13 @@ test('organizer and anonymous participants complete the game in the browser', as
     'placeholder',
     'A1B2-C3D4-E5F6-7182',
   )
-  await expect(ania.getByLabel('Email по желанию')).not.toHaveAttribute('aria-label')
+  await expect(ania.getByLabel('Почта (необязательно)', { exact: true })).not.toHaveAttribute('aria-label')
   await expect(ania.getByLabel('Желания')).not.toHaveAttribute('aria-label')
   await expect(ania.getByLabel('Адрес доставки')).not.toHaveAttribute('aria-label')
   await expect(ania.getByLabel('С кем хотите играть')).not.toHaveAttribute('aria-label')
   await expect(ania.getByLabel('Заметки организатору')).not.toHaveAttribute('aria-label')
   await expect(ania.getByLabel('Код участия из прошлой игры (необязательно)')).not.toHaveAttribute('aria-label')
-  await ania.getByLabel('Email по желанию').fill('ania@example.test')
+  await ania.getByLabel('Почта (необязательно)', { exact: true }).fill('ania@example.test')
   await ania.getByLabel('Желания').fill('Книга для Ани')
   await ania.getByRole('button', { name: 'Подтвердить участие' }).click()
   await expect(ania.getByText('Пара ещё не раскрыта')).toBeVisible()
