@@ -701,7 +701,7 @@ function saveTenant() {
               minlength="3"
               maxlength="32"
               pattern="[a-z0-9-]+"
-              placeholder="moia-igra"
+              placeholder="korporativ-2026"
               aria-label="Адрес игры на поддомене"
               class="w-full rounded-xl border border-white/15 bg-white/5 px-3 py-2 text-sm outline-none focus:border-white/40"
             />

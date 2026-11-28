@@ -31,6 +31,7 @@ test('organizer and anonymous participants complete the game in the browser', as
     'placeholder',
     'Напоминаю: обмен подарками 25 декабря',
   )
+  await expect(organizer.getByLabel('Адрес игры на поддомене')).toHaveAttribute('placeholder', 'korporativ-2026')
   await expect(organizer.getByText('Получатели напоминания', { exact: true })).toBeVisible()
   await expect(
     organizer
