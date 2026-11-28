@@ -18,7 +18,7 @@ const emit = defineEmits(['open-create'])
       <p class="relative text-xs font-semibold uppercase tracking-[0.3em] opacity-60">
         Праздник начинается с маленькой тайны
       </p>
-      <h2 class="relative mt-3 text-3xl font-black sm:text-4xl">Готовы удивить свою команду?</h2>
+      <h2 class="relative mt-3 text-3xl font-black sm:text-4xl">Готовы удивить друзей или коллег?</h2>
       <p class="relative mx-auto mt-3 max-w-xl leading-relaxed opacity-70">
         Создайте игру за пару минут, пригласите близких и наблюдайте, как растёт предвкушение подарков.
       </p>
