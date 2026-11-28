@@ -61,7 +61,8 @@ onBeforeUnmount(() => document.removeEventListener('keydown', onKeydown))
         <span>тайный санта<span :style="{ color: accent }">.</span></span>
       </button>
 
-      <nav class="hidden items-center gap-6 text-sm md:flex" aria-label="Основная навигация">
+      <nav class="hidden items-center gap-6 text-sm md:flex" aria-labelledby="desktop-navigation-title">
+        <span id="desktop-navigation-title">Навигация</span>
         <button
           v-for="(link, index) in links"
           :key="index"
@@ -117,7 +118,10 @@ onBeforeUnmount(() => document.removeEventListener('keydown', onKeydown))
       class="border-t px-5 py-3 md:hidden"
       :class="isDay ? 'border-slate-900/10' : 'border-white/10'"
     >
-      <nav class="mx-auto grid max-w-6xl gap-1" aria-label="Мобильная навигация">
+      <nav class="mx-auto grid max-w-6xl gap-1" aria-labelledby="mobile-navigation-title">
+        <span id="mobile-navigation-title" class="px-3 pb-1 text-xs font-semibold uppercase tracking-widest opacity-60">
+          Навигация
+        </span>
         <button
           v-for="(link, index) in links"
           :key="index"
