@@ -442,3 +442,46 @@ test('support form sends two requests in one session', async ({ page }) => {
   expect((await secondResponse).status()).toBe(201)
   await expect(confirmation).toBeVisible()
 })
+
+test('randomizer draws pairs and reports clipboard status', async ({ browser }) => {
+  const context = await browser.newContext({ permissions: ['clipboard-read', 'clipboard-write'] })
+  await context.addInitScript(() => {
+    window.__clipboardFail = false
+    const nativeWriteText = navigator.clipboard.writeText.bind(navigator.clipboard)
+    Object.defineProperty(navigator.clipboard, 'writeText', {
+      configurable: true,
+      value: async (text) => {
+        if (window.__clipboardFail) {
+          throw new Error('отказ')
+        }
+        return nativeWriteText(text)
+      },
+    })
+  })
+  const page = await context.newPage()
+
+  await page.goto('/randomizer')
+  await page.getByPlaceholder('Аня, Борис, Вика').fill('Аня, Борис, Вика')
+  await page.getByRole('button', { name: 'Перемешать' }).click()
+
+  const pairItems = page.locator('ol li')
+  await expect(pairItems).toHaveCount(3)
+  const pairTexts = (await pairItems.allTextContents()).map((text) => text.trim())
+  expect(pairTexts.map((text) => text.split(' → ')[0]).sort()).toEqual(['Аня', 'Борис', 'Вика'])
+  expect(pairTexts.map((text) => text.split(' → ')[1]).sort()).toEqual(['Аня', 'Борис', 'Вика'])
+
+  const copyButton = page.getByRole('button', { name: 'Скопировать' })
+  await copyButton.click()
+  await expect(page.getByText('Скопировано')).toBeVisible()
+  expect(await page.evaluate(() => navigator.clipboard.readText())).toBe(pairTexts.join('\n'))
+
+  await page.evaluate(() => {
+    window.__clipboardFail = true
+  })
+  await copyButton.click()
+  await expect(page.getByText('Не удалось скопировать результат')).toBeVisible()
+  await expect(pairItems).toHaveCount(3)
+  expect((await pairItems.allTextContents()).map((text) => text.trim())).toEqual(pairTexts)
+
+  await context.close()
+})

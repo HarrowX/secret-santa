@@ -7,11 +7,13 @@ const preferences = usePreferencesStore()
 const names = ref('')
 const pairs = ref([])
 const error = ref('')
+const copyStatus = ref('')
 const busy = ref(false)
 
 async function draw() {
   busy.value = true
   error.value = ''
+  copyStatus.value = ''
   pairs.value = []
   try {
     pairs.value = await api.randomizer.draw(names.value)
@@ -26,8 +28,9 @@ async function copyResult() {
   const text = pairs.value.map((pair) => `${pair.from} → ${pair.to}`).join('\n')
   try {
     await navigator.clipboard.writeText(text)
+    copyStatus.value = 'Скопировано'
   } catch {
-    error.value = 'Не удалось скопировать результат'
+    copyStatus.value = 'Не удалось скопировать результат'
   }
 }
 </script>
@@ -69,6 +72,15 @@ async function copyResult() {
             Скопировать
           </button>
         </div>
+        <p
+          v-if="copyStatus"
+          role="status"
+          aria-live="polite"
+          class="mt-2 text-xs"
+          :class="copyStatus === 'Скопировано' ? 'text-emerald-300' : 'text-rose-300'"
+        >
+          {{ copyStatus }}
+        </p>
         <ol class="mt-3 grid gap-2 text-sm">
           <li
             v-for="(pair, index) in pairs"
