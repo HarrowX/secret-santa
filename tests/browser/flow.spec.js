@@ -654,6 +654,12 @@ test('organizer creates a choice question through the game form', async ({ brows
   await organizer.getByLabel('Варианты через запятую').fill('Синий, Зелёный, Красный')
   await organizer.getByRole('button', { name: 'Добавить вопрос' }).click()
   await expect(organizer.getByText('Любимый цвет · Один выбор')).toBeVisible()
+  await organizer.getByLabel('Название вопроса').fill('Любимые цвета')
+  await organizer.getByLabel('Подсказка').fill('Например, синий и зелёный')
+  await organizer.getByLabel('Тип вопроса').selectOption('multi')
+  await organizer.getByLabel('Варианты через запятую').fill('Синий, Зелёный, Красный')
+  await organizer.getByRole('button', { name: 'Добавить вопрос' }).click()
+  await expect(organizer.getByText('Любимые цвета · Несколько')).toBeVisible()
 
   const commonButton = organizer.getByRole('button', { name: /Общая ссылка на игру:/ })
   const commonLabel = String(await commonButton.getAttribute('aria-label'))
@@ -668,7 +674,13 @@ test('organizer creates a choice question through the game form', async ({ brows
   await expect(joiner).toHaveURL(/\/join\//)
   await expect(joiner.getByText('Например, синий', { exact: true })).toHaveCount(1)
   await expect(joiner.getByText('Синий, Зелёный, Красный')).toHaveCount(0)
-  await expect(joiner.getByText('Выберите подходящий вариант')).toBeVisible()
+  await expect(joiner.getByText('Выберите подходящий вариант')).toHaveCount(2)
+  await expect(joiner.getByRole('group', { name: 'Любимые цвета' })).toBeVisible()
+  for (const option of ['Синий', 'Зелёный', 'Красный']) {
+    const checkbox = joiner.getByRole('checkbox', { name: option })
+    await expect(checkbox).not.toHaveAttribute('aria-label')
+    await expect(checkbox.locator('..')).toHaveText(option)
+  }
   await expect(joiner.getByRole('combobox', { name: 'Любимый цвет' }).locator('option')).toHaveText([
     'Не выбрано',
     'Синий',
@@ -677,10 +689,17 @@ test('organizer creates a choice question through the game form', async ({ brows
   ])
 
   await joiner.getByLabel('Любимый цвет').selectOption('Зелёный')
+  await joiner.getByRole('checkbox', { name: 'Синий' }).check()
+  await joiner.getByRole('checkbox', { name: 'Красный' }).check()
   await joiner.getByRole('button', { name: 'Сохранить ответы' }).click()
   await expect(joiner.getByRole('combobox', { name: 'Любимый цвет' })).toHaveValue('Зелёный')
+  await expect(joiner.getByRole('checkbox', { name: 'Синий' })).toBeChecked()
+  await expect(joiner.getByRole('checkbox', { name: 'Красный' })).toBeChecked()
   await joiner.reload()
   await expect(joiner.getByRole('combobox', { name: 'Любимый цвет' })).toHaveValue('Зелёный')
+  await expect(joiner.getByRole('checkbox', { name: 'Синий' })).toBeChecked()
+  await expect(joiner.getByRole('checkbox', { name: 'Красный' })).toBeChecked()
+  await expect(joiner.getByRole('checkbox', { name: 'Зелёный' })).not.toBeChecked()
 
   await organizerContext.close()
   await joinerContext.close()

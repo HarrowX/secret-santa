@@ -161,7 +161,6 @@ function save() {
             type="checkbox"
             class="h-3.5 w-3.5"
             :checked="checked(question.id, option)"
-            :aria-label="`${question.title}: ${option}`"
             :disabled="!editable || busy"
             @change="toggle(question.id, option)"
           />
