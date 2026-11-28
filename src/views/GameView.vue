@@ -976,7 +976,9 @@ function saveTenant() {
         <div class="flex flex-wrap items-center justify-between gap-3">
           <div>
             <h2 class="font-bold">Исключения и ручные пары</h2>
-            <p class="mt-1 text-sm opacity-60">Исключения и ручные пары сохраняются при повторной жеребьёвке</p>
+            <p class="mt-1 text-sm opacity-60">
+              Исключения и ручные пары сохраняются при повторной жеребьёвке и при очистке пар
+            </p>
           </div>
           <button
             type="button"
@@ -984,7 +986,7 @@ function saveTenant() {
             :disabled="busy || !data.pairs.length"
             @click="resetPairs"
           >
-            Очистить пары, оставить исключения
+            Очистить пары
           </button>
         </div>
 
@@ -1112,7 +1114,7 @@ function saveTenant() {
                 :disabled="busy || !data.pairs.length"
                 @click="resetPairs"
               >
-                Очистить пары, оставить исключения
+                Очистить пары
               </button>
             </div>
           </div>
