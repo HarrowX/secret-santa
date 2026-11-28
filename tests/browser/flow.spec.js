@@ -842,12 +842,18 @@ test('support form sends two requests in one session', async ({ page }) => {
   await page.goto('/support')
   await expect(page.getByText('Опишите ситуацию — если вы укажете почту, мы ответим на неё.')).toBeVisible()
 
-  const email = page.getByLabel('Email для ответа')
+  const email = page.getByLabel('Почта для ответа', { exact: true })
   const subject = page.getByLabel('Тема')
   const body = page.getByLabel('Сообщение')
-  const confirmation = page.getByText('Обращение отправлено. Если вы указали email, мы ответим на него.')
+  const confirmation = page.getByText('Обращение отправлено. Если вы указали почту, мы ответим на неё.', {
+    exact: true,
+  })
 
-  await expect(page.getByText('Email для ответа', { exact: true })).toBeVisible()
+  await expect(page.getByText('Почта для ответа', { exact: true })).toBeVisible()
+  await expect(page.getByText('Email для ответа', { exact: true })).toHaveCount(0)
+  await expect(
+    page.getByText('Обращение отправлено. Если вы указали email, мы ответим на него.', { exact: true }),
+  ).toHaveCount(0)
   await expect(email).toHaveAttribute('placeholder', 'name@example.com')
   await expect(subject).toHaveAttribute('placeholder', 'Вопрос по игре')
   await expect(body).toHaveAttribute('placeholder', 'Не пришло приглашение, подскажите, что делать')

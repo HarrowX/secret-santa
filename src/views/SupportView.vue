@@ -45,7 +45,7 @@ function startNew() {
       <p class="mt-2 text-sm opacity-70">Опишите ситуацию — если вы укажете почту, мы ответим на неё.</p>
 
       <div v-if="sent" role="status" class="mt-6 rounded-xl border border-emerald-400/30 bg-emerald-400/10 p-4 text-sm">
-        <p>Обращение отправлено. Если вы указали email, мы ответим на него.</p>
+        <p>Обращение отправлено. Если вы указали почту, мы ответим на неё.</p>
         <button type="button" class="mt-3 text-sm underline opacity-70 transition hover:opacity-100" @click="startNew">
           Написать ещё
         </button>
@@ -53,7 +53,7 @@ function startNew() {
 
       <form v-else class="mt-6 grid gap-3" @submit.prevent="submit">
         <label class="grid gap-1 text-sm">
-          <span class="text-xs font-semibold uppercase tracking-widest opacity-60">Email для ответа</span>
+          <span class="text-xs font-semibold uppercase tracking-widest opacity-60">Почта для ответа</span>
           <input
             v-model="email"
             type="email"
