@@ -125,8 +125,11 @@ test('organizer and anonymous participants complete the game in the browser', as
   await expect(organizer.getByText('Список имён через запятую', { exact: true })).toBeVisible()
   await expect(organizer.getByLabel('Список имён через запятую')).toHaveAttribute('placeholder', 'Аня, Борис, Вика')
   await expect(organizer.getByLabel('Список имён через запятую')).not.toHaveAttribute('aria-label')
+  await expect(organizer.getByRole('button', { name: 'Добавить список: введите имена', exact: true })).toBeVisible()
+  await expect(organizer.getByRole('button', { name: 'Добавить список', exact: true })).toHaveCount(0)
   await organizer.getByLabel('Список имён через запятую').fill('Аня, Борис')
-  await organizer.getByRole('button', { name: 'Добавить список' }).click()
+  await expect(organizer.getByRole('button', { name: 'Добавить список: Аня, Борис', exact: true })).toBeVisible()
+  await organizer.getByRole('button', { name: 'Добавить список: Аня, Борис', exact: true }).click()
   const giftForm = organizer.locator('form').filter({ has: organizer.getByLabel('Участник для отметки подарка') })
   await expect(
     giftForm.getByRole('button', { name: 'Отметить подарок отправленным: выберите участника', exact: true }),
@@ -397,7 +400,7 @@ test('organizer and anonymous participants complete the game in the browser', as
   await expect(reminderList.getByText(/sent|queued/)).toHaveCount(0)
 
   await organizer.getByLabel('Список имён через запятую').fill('Вика, Дима')
-  await organizer.getByRole('button', { name: 'Добавить список' }).click()
+  await organizer.getByRole('button', { name: 'Добавить список: Вика, Дима', exact: true }).click()
   const newDrawButton = organizer.getByRole('button', {
     name: 'Жеребьёвка для новых участников: 2',
     exact: true,
@@ -601,7 +604,7 @@ test('assistant invite is accepted in another browser context and survives page 
   await expect(organizer.getByText('Максимум три организатора')).toBeVisible()
 
   await organizer.getByLabel('Список имён через запятую').fill('Вера, Глеб')
-  await organizer.getByRole('button', { name: 'Добавить список' }).click()
+  await organizer.getByRole('button', { name: 'Добавить список: Вера, Глеб', exact: true }).click()
   await expect(organizer.getByRole('button', { name: 'Скопировать ссылку-приглашение для Вера' })).toBeVisible()
 
   const inviteAssistant = organizer.getByRole('button', {
