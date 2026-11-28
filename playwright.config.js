@@ -5,7 +5,6 @@ const baseURL = `http://127.0.0.1:${port}`
 
 export default defineConfig({
   testDir: './tests/browser',
-  globalSetup: './tests/browser/global-setup.js',
   fullyParallel: false,
   workers: 1,
   timeout: 60000,
@@ -16,7 +15,7 @@ export default defineConfig({
     screenshot: 'only-on-failure',
   },
   webServer: {
-    command: 'node server/index.js',
+    command: 'node scripts/reset-browser-db.js && node server/index.js',
     env: {
       NODE_ENV: 'production',
       PORT: String(port),
