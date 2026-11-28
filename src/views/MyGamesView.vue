@@ -290,7 +290,7 @@ load()
             type="text"
             required
             maxlength="40"
-            placeholder="A1B2-C3D4-E5F6-7182"
+            placeholder="A1B2C3D4E5F60718293A4B5C6D7E8F90"
             aria-label="Код восстановления"
             class="rounded-xl border border-white/15 bg-white/5 px-4 py-2 text-sm outline-none focus:border-white/40"
           />
