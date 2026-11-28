@@ -597,11 +597,11 @@ test('assistant invite is accepted in another browser context and survives page 
   const pendingOrganizers = await readOrganizers()
   const owner = pendingOrganizers.find((item) => item.role === 'owner')
   const pending = pendingOrganizers.find((item) => item.invited)
-  expect(owner?.displayName).toBeTruthy()
+  expect(owner?.displayName).toBe('Создатель игры')
   expect(pending?.displayName).toBe('Приглашённый организатор')
 
   const team = organizer.getByTestId('organizer-team')
-  await expect(team.getByText(owner.displayName, { exact: true })).toBeVisible()
+  await expect(team.getByText('Создатель игры', { exact: true })).toBeVisible()
   await expect(team.getByText('Приглашённый организатор', { exact: true })).toBeVisible()
   await expect(team.getByText('Ожидает принятия', { exact: true })).toHaveCount(0)
   await expect(team.getByText('создатель', { exact: true })).toHaveCount(1)
@@ -610,6 +610,7 @@ test('assistant invite is accepted in another browser context and survives page 
   await expect(team.getByText('Приглашение ещё не принято')).toHaveCount(0)
   await expect(team).not.toContainText('@')
   await expect(team).not.toContainText('/organizer/')
+  await expect(team).not.toContainText('Организатор #')
   const pendingCancel = team.getByRole('button', {
     name: 'Отменить приглашение: Приглашённый организатор',
     exact: true,
@@ -627,18 +628,19 @@ test('assistant invite is accepted in another browser context and survives page 
   await organizer.reload()
   const acceptedOrganizers = await readOrganizers()
   const accepted = acceptedOrganizers.find((item) => item.role === 'organizer' && item.status === 'accepted')
-  expect(accepted?.displayName).toBeTruthy()
+  expect(accepted?.displayName).toBe('Помощник организатора')
 
   const organizerTeam = organizer.getByTestId('organizer-team')
-  await expect(organizerTeam.getByText(accepted.displayName, { exact: true })).toBeVisible()
+  await expect(organizerTeam.getByText('Помощник организатора', { exact: true })).toBeVisible()
   await expect(organizerTeam.getByText('создатель', { exact: true })).toHaveCount(1)
   await expect(organizerTeam.getByText('организатор', { exact: true })).toHaveCount(1)
   await expect(organizerTeam.getByText('ожидает принятия', { exact: true })).toHaveCount(0)
   await expect(organizerTeam.getByText('Приглашение ещё не принято')).toHaveCount(0)
   await expect(organizerTeam).not.toContainText('@')
   await expect(organizerTeam).not.toContainText('/organizer/')
+  await expect(organizerTeam).not.toContainText('Организатор #')
   const removeAssistant = organizerTeam.getByRole('button', {
-    name: `Удалить организатора: ${accepted.displayName}`,
+    name: 'Удалить организатора: Помощник организатора',
     exact: true,
   })
   await expect(removeAssistant).toBeVisible()
