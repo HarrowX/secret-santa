@@ -841,7 +841,6 @@ function saveTenant() {
               type="text"
               maxlength="120"
               placeholder="Любимый цвет"
-              aria-label="Название вопроса"
               class="rounded-xl border border-white/15 bg-white/5 px-3 py-2 text-sm outline-none focus:border-white/40"
             />
           </label>
@@ -852,7 +851,6 @@ function saveTenant() {
               type="text"
               maxlength="200"
               placeholder="Например, синий"
-              aria-label="Подсказка"
               class="rounded-xl border border-white/15 bg-white/5 px-3 py-2 text-sm outline-none focus:border-white/40"
             />
           </label>
@@ -863,7 +861,6 @@ function saveTenant() {
               type="text"
               maxlength="200"
               placeholder="Синий, Зелёный, Красный"
-              aria-label="Варианты через запятую"
               class="rounded-xl border border-white/15 bg-white/5 px-3 py-2 text-sm outline-none focus:border-white/40"
             />
           </label>
@@ -871,7 +868,6 @@ function saveTenant() {
             <span class="text-xs font-semibold uppercase tracking-widest opacity-60">Тип вопроса</span>
             <select
               v-model="questionType"
-              aria-label="Тип вопроса"
               class="rounded-xl border border-white/15 px-3 py-2 text-sm outline-none focus:border-white/40"
             >
               <option value="text">Текст</option>
