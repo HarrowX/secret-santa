@@ -12,6 +12,15 @@ async function expectDateFieldTheme(page, colorScheme, backgroundColor, borderCo
   expect(backgroundImage).toContain(calendarColor)
 }
 
+async function clickAddressedSaveAnswers(page, label) {
+  const button = page.getByRole('button', { name: label, exact: true })
+  await expect(button).toBeVisible()
+  await expect(button).toHaveText(label)
+  await expect(button).not.toHaveAttribute('aria-label')
+  await expect(page.getByRole('button', { name: 'Сохранить ответы', exact: true })).toHaveCount(0)
+  await button.click()
+}
+
 test('organizer and anonymous participants complete the game in the browser', async ({ browser }) => {
   const organizerContext = await browser.newContext()
   await organizerContext.addInitScript(() => localStorage.setItem('santa-mode', 'day'))
@@ -605,7 +614,7 @@ test('participants join by the common link and the organizer can remove a bad na
   await expect(joiner.getByRole('heading', { name: 'Анкета' })).toBeVisible()
   await expect(joiner.getByText('Любите ли вы читать? (обязательно)', { exact: true })).toBeVisible()
   await joiner.getByLabel('Любите ли вы читать? (обязательно)').selectOption('да')
-  await joiner.getByRole('button', { name: 'Сохранить ответы' }).click()
+  await clickAddressedSaveAnswers(joiner, 'Сохранить ответы: Игра с общими приглашениями')
   await expect(joiner.getByRole('combobox', { name: 'Любите ли вы читать? (обязательно)' })).toHaveValue('да')
 
   await joiner.getByLabel('Желания').fill('Книга')
@@ -1385,7 +1394,7 @@ test('organizer creates a choice question through the game form', async ({ brows
   expect(formLabelPairs.length).toBeGreaterThan(0)
   for (const pair of formLabelPairs) expect(pair.targetId).toBe(pair.htmlFor)
 
-  await joiner.getByRole('button', { name: 'Сохранить ответы' }).click()
+  await clickAddressedSaveAnswers(joiner, 'Сохранить ответы: Игра с вариантами вопроса')
   const questionnaireSelect = joiner.getByRole('combobox', { name: 'Любимый цвет (обязательно)' })
   await expect(questionnaireSelect).toBeVisible()
   await expect(questionnaireSelect).not.toHaveAttribute('aria-label')
@@ -1408,7 +1417,7 @@ test('organizer creates a choice question through the game form', async ({ brows
   await questionnaireSelect.selectOption('Зелёный')
   await joiner.getByRole('checkbox', { name: 'Синий' }).check()
   await joiner.getByRole('checkbox', { name: 'Красный' }).check()
-  await joiner.getByRole('button', { name: 'Сохранить ответы' }).click()
+  await clickAddressedSaveAnswers(joiner, 'Сохранить ответы: Игра с вариантами вопроса')
   await expect(questionnaireSelect).toHaveValue('Зелёный')
   await expect(joiner.getByRole('checkbox', { name: 'Синий' })).toBeChecked()
   await expect(joiner.getByRole('checkbox', { name: 'Красный' })).toBeChecked()
@@ -1428,7 +1437,7 @@ test('organizer creates a choice question through the game form', async ({ brows
   await expect(secondJoiner).toHaveURL(/\/join\//)
   await secondJoiner.getByLabel('Любимый цвет (обязательно)').selectOption('Синий')
   await secondJoiner.getByRole('checkbox', { name: 'Зелёный' }).check()
-  await secondJoiner.getByRole('button', { name: 'Сохранить ответы' }).click()
+  await clickAddressedSaveAnswers(secondJoiner, 'Сохранить ответы: Игра с вариантами вопроса')
 
   await organizer.reload()
   await expect(organizer.getByText('Маша — 2 ответа')).toBeVisible()
@@ -1457,7 +1466,7 @@ test('organizer creates a choice question through the game form', async ({ brows
   await thirdJoiner.getByRole('button', { name: 'Присоединиться к игре: Оля', exact: true }).click()
   await expect(thirdJoiner).toHaveURL(/\/join\//)
   await thirdJoiner.getByLabel('Любимый цвет (обязательно)').selectOption('Красный')
-  await thirdJoiner.getByRole('button', { name: 'Сохранить ответы' }).click()
+  await clickAddressedSaveAnswers(thirdJoiner, 'Сохранить ответы: Игра с вариантами вопроса')
 
   await organizer.reload()
   await expect(organizer.getByText('Оля — 1 ответ')).toBeVisible()

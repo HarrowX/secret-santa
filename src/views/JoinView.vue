@@ -369,6 +369,7 @@ async function saveAnswers(payload) {
             :busy="questionnaireBusy"
             :accent="preferences.theme.accent"
             :editable="true"
+            :game-title="game?.title"
             @save="saveAnswers"
           />
         </div>

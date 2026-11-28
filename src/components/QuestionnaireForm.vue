@@ -16,6 +16,10 @@ const props = defineProps({
   },
   busy: Boolean,
   accent: String,
+  gameTitle: {
+    type: String,
+    default: '',
+  },
 })
 
 const emit = defineEmits(['save'])
@@ -201,7 +205,7 @@ function save() {
       :style="{ background: accent, color: '#0b1120' }"
       :disabled="busy"
     >
-      Сохранить ответы
+      Сохранить ответы: {{ gameTitle || 'игра' }}
     </button>
   </form>
   <p v-else class="text-sm opacity-50">Организатор ещё не добавил вопросы</p>
