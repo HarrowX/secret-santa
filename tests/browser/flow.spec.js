@@ -968,6 +968,15 @@ test('landing declines the theme count in Russian', async ({ browser }) => {
   ).toBeVisible()
   await expect(page.getByText('под настроение компании', { exact: false })).toHaveCount(0)
   await expect(
+    page.getByText(
+      'Пригласите участников по ссылке, задайте исключения и распределите пары. Каждый узнает, кому дарит подарок.',
+      { exact: true },
+    ),
+  ).toBeVisible()
+  for (const oldDrawWord of ['подопечный', 'подопечного']) {
+    await expect(page.getByText(oldDrawWord, { exact: false })).toHaveCount(0)
+  }
+  await expect(
     page.getByText('Настраивайте анкету, управляйте парами, работайте в команде и храните историю', { exact: true }),
   ).toBeVisible()
   await expect(page.getByText(/Больше контроля|волшебство/)).toHaveCount(0)
