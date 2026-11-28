@@ -999,6 +999,8 @@ test('landing declines the theme count in Russian', async ({ browser }) => {
   for (const name of themes.map((item) => item.name)) expect(featureCardText).not.toContain(name)
   for (const oldName of ['Альпы', 'Египет', 'пиксели', 'сакура']) expect(featureCardText).not.toContain(oldName)
   const themeSection = page.locator('section').filter({ hasText: 'Атмосфера вашей игры' })
+  await expect(themeSection.getByText('Оформление игры', { exact: true })).toBeVisible()
+  await expect(page.getByText('Выберите свой мир', { exact: false })).toHaveCount(0)
   const themeButtons = themeSection
     .getByRole('button')
     .filter({ hasText: /Классика|Природа|История|Ретро|Весна|Космос|Неон|Лето/ })

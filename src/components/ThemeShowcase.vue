@@ -20,7 +20,7 @@ const idleClass = 'text-inherit opacity-70 hover:opacity-100'
   <section class="mx-auto max-w-6xl px-5 pb-16">
     <div class="flex flex-wrap items-end justify-between gap-4">
       <div>
-        <p class="text-xs font-semibold uppercase tracking-[0.3em] opacity-60">Выберите свой мир</p>
+        <p class="text-xs font-semibold uppercase tracking-[0.3em] opacity-60">Оформление игры</p>
         <h2 class="mt-2 text-2xl font-bold tracking-tight">Атмосфера вашей игры</h2>
         <p v-if="themes.length" class="mt-2 text-sm opacity-60">
           {{ plural(themes.length, ['оформление', 'оформления', 'оформлений']) }}
