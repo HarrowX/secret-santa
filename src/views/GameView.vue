@@ -1176,7 +1176,9 @@ function saveTenant() {
 
       <div v-if="data.canManage" class="rounded-2xl border border-white/10 bg-white/5 p-5">
         <h2 class="font-bold">Массовые напоминания</h2>
-        <p class="mt-1 text-sm opacity-60">До 1000 символов, выбранные получатели и защита от повторов</p>
+        <p class="mt-1 text-sm opacity-60">
+          До 1000 символов, выбранные получатели и один текст можно отправить тем же получателям только один раз
+        </p>
         <form class="mt-4 grid gap-2" @submit.prevent="sendReminder">
           <label class="grid gap-1 text-sm">
             <span class="text-xs font-semibold uppercase tracking-widest opacity-60">Текст напоминания</span>
