@@ -843,13 +843,22 @@ test('randomizer draws pairs and reports clipboard status', async ({ browser }) 
   const pairItems = page.locator('ol li')
   await expect(pairItems).toHaveCount(3)
   const pairTexts = (await pairItems.allTextContents()).map((text) => text.trim())
-  expect(pairTexts.map((text) => text.split(' → ')[0]).sort()).toEqual(['Аня', 'Борис', 'Вика'])
-  expect(pairTexts.map((text) => text.split(' → ')[1]).sort()).toEqual(['Аня', 'Борис', 'Вика'])
+  const parsedPairs = pairTexts.map((text) => {
+    const match = /^Дарит: (.+); Получает: (.+)$/.exec(text)
+    if (!match) throw new Error(`Unexpected randomizer pair: ${text}`)
+    return { from: match[1], to: match[2] }
+  })
+  expect(parsedPairs.map((pair) => pair.from).sort()).toEqual(['Аня', 'Борис', 'Вика'])
+  expect(parsedPairs.map((pair) => pair.to).sort()).toEqual(['Аня', 'Борис', 'Вика'])
+  await expect(page.getByText('Аня → Борис', { exact: false })).toHaveCount(0)
+  await expect(pairItems.getByText(/→/)).toHaveCount(0)
 
   const copyButton = page.getByRole('button', { name: 'Скопировать' })
   await copyButton.click()
   await expect(page.getByText('Скопировано')).toBeVisible()
-  expect(await page.evaluate(() => navigator.clipboard.readText())).toBe(pairTexts.join('\n'))
+  const clipboardText = await page.evaluate(() => navigator.clipboard.readText())
+  expect(clipboardText).toBe(pairTexts.join('\n'))
+  expect(clipboardText).not.toContain('→')
 
   await page.evaluate(() => {
     window.__clipboardFail = true

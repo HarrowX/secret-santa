@@ -25,7 +25,7 @@ async function draw() {
 }
 
 async function copyResult() {
-  const text = pairs.value.map((pair) => `${pair.from} → ${pair.to}`).join('\n')
+  const text = pairs.value.map((pair) => `Дарит: ${pair.from}; Получает: ${pair.to}`).join('\n')
   try {
     await navigator.clipboard.writeText(text)
     copyStatus.value = 'Скопировано'
@@ -90,7 +90,7 @@ async function copyResult() {
             :key="index"
             class="rounded-xl border border-white/10 bg-white/5 px-4 py-2"
           >
-            {{ pair.from }} → {{ pair.to }}
+            Дарит: {{ pair.from }}; Получает: {{ pair.to }}
           </li>
         </ol>
       </div>
