@@ -50,7 +50,6 @@ async function copyResult() {
             rows="8"
             maxlength="5000"
             placeholder="Аня, Борис, Вика"
-            aria-label="Имена участников"
             class="rounded-xl border border-white/15 bg-white/5 px-4 py-3 text-sm outline-none placeholder:text-current/40 focus:border-white/40"
           ></textarea>
         </label>

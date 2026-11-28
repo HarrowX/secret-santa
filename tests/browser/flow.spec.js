@@ -650,6 +650,8 @@ test('randomizer draws pairs and reports clipboard status', async ({ browser }) 
       .locator('span')
       .getByText('Имена участников', { exact: true }),
   ).toBeVisible()
+  await expect(page.getByLabel('Имена участников')).toHaveAttribute('placeholder', 'Аня, Борис, Вика')
+  await expect(page.getByLabel('Имена участников')).not.toHaveAttribute('aria-label')
   await page.getByPlaceholder('Аня, Борис, Вика').fill('Аня, Борис, Вика')
   await page.getByRole('button', { name: 'Перемешать' }).click()
 
