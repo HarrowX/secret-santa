@@ -868,13 +868,10 @@ test('organizer creates a choice question through the game form', async ({ brows
   await organizer.reload()
   await expect(organizer.getByText('Маша — 2 ответов')).toBeVisible()
   await expect(organizer.getByText('Саша — 2 ответов')).toBeVisible()
-  const questionnaireFormCount = await organizer
-    .locator('form')
-    .filter({ has: organizer.locator('[id^="v-"]') })
-    .count()
-  expect(questionnaireFormCount).toBe(2)
-  const questionnaireIds = await organizer.evaluate(() =>
-    [...document.querySelectorAll('[id^="v-"]')].map((element) => element.id),
+  const questionnaireForms = organizer.locator('form[data-testid="questionnaire-form"]')
+  await expect(questionnaireForms).toHaveCount(2)
+  const questionnaireIds = await questionnaireForms.evaluateAll((forms) =>
+    forms.flatMap((form) => [...form.querySelectorAll('[id]')].map((element) => element.id)),
   )
   expect(questionnaireIds.length).toBeGreaterThan(0)
   expect(new Set(questionnaireIds).size).toBe(questionnaireIds.length)

@@ -104,7 +104,7 @@ function save() {
 </script>
 
 <template>
-  <form v-if="questions.length" class="grid gap-3" @submit.prevent="save">
+  <form v-if="questions.length" data-testid="questionnaire-form" class="grid gap-3" @submit.prevent="save">
     <div v-for="question in questions" :key="question.id" class="grid gap-1 text-sm">
       <label v-if="question.type !== 'multi'" :for="`${formId}-question-${question.id}`" class="font-semibold">{{
         questionLabel(question)
