@@ -991,22 +991,28 @@ function saveTenant() {
         </div>
 
         <form class="mt-4 grid gap-2 sm:grid-cols-[1fr_1fr_auto]" @submit.prevent="addExclusion">
-          <select
-            v-model="exclusionFrom"
-            aria-label="Кто не дарит"
-            class="rounded-xl border border-white/15 px-3 py-2 text-sm outline-none focus:border-white/40"
-          >
-            <option value="" disabled>Кто не дарит</option>
-            <option v-for="person in data.participants" :key="person.id" :value="person.id">{{ person.name }}</option>
-          </select>
-          <select
-            v-model="exclusionTo"
-            aria-label="Кому не дарит"
-            class="rounded-xl border border-white/15 px-3 py-2 text-sm outline-none focus:border-white/40"
-          >
-            <option value="" disabled>Кому не дарит</option>
-            <option v-for="person in data.participants" :key="person.id" :value="person.id">{{ person.name }}</option>
-          </select>
+          <label class="grid gap-1 text-sm">
+            <span class="text-xs font-semibold uppercase tracking-widest opacity-60">Кто не дарит</span>
+            <select
+              v-model="exclusionFrom"
+              aria-label="Кто не дарит"
+              class="rounded-xl border border-white/15 px-3 py-2 text-sm outline-none focus:border-white/40"
+            >
+              <option value="" disabled>Кто не дарит</option>
+              <option v-for="person in data.participants" :key="person.id" :value="person.id">{{ person.name }}</option>
+            </select>
+          </label>
+          <label class="grid gap-1 text-sm">
+            <span class="text-xs font-semibold uppercase tracking-widest opacity-60">Кому не дарит</span>
+            <select
+              v-model="exclusionTo"
+              aria-label="Кому не дарит"
+              class="rounded-xl border border-white/15 px-3 py-2 text-sm outline-none focus:border-white/40"
+            >
+              <option value="" disabled>Кому не дарит</option>
+              <option v-for="person in data.participants" :key="person.id" :value="person.id">{{ person.name }}</option>
+            </select>
+          </label>
           <button
             type="submit"
             class="rounded-xl border border-white/20 px-4 py-2 text-sm font-semibold transition hover:bg-white/10 disabled:opacity-50"
@@ -1035,22 +1041,28 @@ function saveTenant() {
         </ul>
 
         <form class="mt-4 grid gap-2 sm:grid-cols-[1fr_1fr_auto]" @submit.prevent="setPair">
-          <select
-            v-model="manualFrom"
-            aria-label="Кто дарит в ручной паре"
-            class="rounded-xl border border-white/15 px-3 py-2 text-sm outline-none focus:border-white/40"
-          >
-            <option value="" disabled>Кто дарит</option>
-            <option v-for="person in data.participants" :key="person.id" :value="person.id">{{ person.name }}</option>
-          </select>
-          <select
-            v-model="manualTo"
-            aria-label="Кому дарит в ручной паре"
-            class="rounded-xl border border-white/15 px-3 py-2 text-sm outline-none focus:border-white/40"
-          >
-            <option value="" disabled>Кому дарит</option>
-            <option v-for="person in data.participants" :key="person.id" :value="person.id">{{ person.name }}</option>
-          </select>
+          <label class="grid gap-1 text-sm">
+            <span class="text-xs font-semibold uppercase tracking-widest opacity-60">Кто дарит в ручной паре</span>
+            <select
+              v-model="manualFrom"
+              aria-label="Кто дарит в ручной паре"
+              class="rounded-xl border border-white/15 px-3 py-2 text-sm outline-none focus:border-white/40"
+            >
+              <option value="" disabled>Кто дарит</option>
+              <option v-for="person in data.participants" :key="person.id" :value="person.id">{{ person.name }}</option>
+            </select>
+          </label>
+          <label class="grid gap-1 text-sm">
+            <span class="text-xs font-semibold uppercase tracking-widest opacity-60">Кому дарит в ручной паре</span>
+            <select
+              v-model="manualTo"
+              aria-label="Кому дарит в ручной паре"
+              class="rounded-xl border border-white/15 px-3 py-2 text-sm outline-none focus:border-white/40"
+            >
+              <option value="" disabled>Кому дарит</option>
+              <option v-for="person in data.participants" :key="person.id" :value="person.id">{{ person.name }}</option>
+            </select>
+          </label>
           <button
             type="submit"
             class="rounded-xl border border-white/20 px-4 py-2 text-sm font-semibold transition hover:bg-white/10 disabled:opacity-50"

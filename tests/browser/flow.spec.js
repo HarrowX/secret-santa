@@ -68,6 +68,21 @@ test('organizer and anonymous participants complete the game in the browser', as
   await boris.getByRole('button', { name: 'Подтвердить участие' }).click()
   await expect(boris.getByText('Вы в игре')).toBeVisible()
 
+  for (const [name, text] of [
+    ['Кто не дарит', 'Кто не дарит'],
+    ['Кому не дарит', 'Кому не дарит'],
+    ['Кто дарит в ручной паре', 'Кто дарит в ручной паре'],
+    ['Кому дарит в ручной паре', 'Кому дарит в ручной паре'],
+  ]) {
+    await expect(
+      organizer
+        .locator('label')
+        .filter({ has: organizer.getByLabel(name) })
+        .locator('span')
+        .getByText(text, { exact: true }),
+    ).toBeVisible()
+  }
+
   await organizer.getByLabel('Кто дарит в ручной паре').selectOption({ label: 'Аня' })
   await organizer.getByLabel('Кому дарит в ручной паре').selectOption({ label: 'Борис' })
   await organizer.getByRole('button', { name: 'Зафиксировать' }).click()
