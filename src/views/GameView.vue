@@ -978,7 +978,7 @@ function saveTenant() {
             :disabled="busy || !data.pairs.length"
             @click="resetPairs"
           >
-            Сбросить пары
+            Очистить пары
           </button>
         </div>
 

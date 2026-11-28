@@ -179,6 +179,15 @@ test('organizer and anonymous participants complete the game in the browser', as
   await organizer.getByLabel('Кому дарит в ручной паре').selectOption({ label: 'Борис' })
   await organizer.getByRole('button', { name: 'Зафиксировать' }).click()
   await expect(organizer.getByText('Аня → Борис')).toBeVisible()
+  const exclusionsHeading = organizer.getByRole('heading', { name: 'Исключения и ручные пары', exact: true })
+  await expect(
+    exclusionsHeading.locator('xpath=../..').getByRole('button', { name: 'Очистить пары', exact: true }),
+  ).toBeVisible()
+  const pairsHeading = organizer.getByRole('heading', { name: 'Пары', exact: true })
+  await expect(
+    pairsHeading.locator('xpath=..').getByRole('button', { name: 'Очистить пары', exact: true }),
+  ).toBeVisible()
+  await expect(organizer.getByRole('button', { name: 'Сбросить пары', exact: false })).toHaveCount(0)
 
   organizer.once('dialog', (dialog) => dialog.accept())
   await organizer.getByRole('button', { name: 'Показать пару' }).click()
