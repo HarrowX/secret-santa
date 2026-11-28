@@ -242,7 +242,7 @@ async function send() {
           :style="{ background: accent, color: '#0b1120' }"
           :disabled="busy || !selectedToId || (!body.trim() && !imageUrl.trim())"
         >
-          {{ busy ? 'Отправляем…' : 'Отправить' }}
+          {{ busy ? 'Отправляем сообщение…' : 'Отправить сообщение' }}
         </button>
       </form>
     </template>

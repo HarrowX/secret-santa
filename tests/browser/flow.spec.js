@@ -314,9 +314,12 @@ test('organizer and anonymous participants complete the game in the browser', as
   await expect(ania.getByLabel('Текст сообщения')).not.toHaveAttribute('aria-label')
   await expect(ania.getByLabel('Ссылка на изображение (необязательно)')).not.toHaveAttribute('aria-label')
 
+  const chatForm = ania.locator('form').filter({ has: ania.getByLabel('Текст сообщения') })
+  await expect(chatForm.getByRole('button', { name: 'Отправить сообщение', exact: true })).toBeVisible()
+  await expect(chatForm.getByRole('button', { name: 'Отправить', exact: true })).toHaveCount(0)
   await ania.getByLabel('Текст сообщения').fill('Привет, Борис!')
   await ania.getByLabel('Ссылка на изображение (необязательно)').fill('https://example.com/gift.jpg')
-  await ania.getByRole('button', { name: 'Отправить' }).click()
+  await chatForm.getByRole('button', { name: 'Отправить сообщение', exact: true }).click()
   await expect(ania.getByText('Привет, Борис!')).toBeVisible()
   const imageLink = ania.getByRole('link', { name: 'Открыть изображение (внешняя ссылка)' })
   await expect(imageLink).toHaveText('Открыть изображение (внешняя ссылка)')
