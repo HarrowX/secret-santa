@@ -298,6 +298,7 @@ test('assistant invite is accepted in another browser context and survives page 
   await organizer.getByRole('main').getByRole('button', { name: 'Создать игру' }).click()
   await expect(organizer).toHaveURL(/\/game\//)
   await expect(organizer.getByRole('heading', { name: 'Игра с помощником' })).toBeVisible()
+  await expect(organizer.getByText('Максимум три организатора')).toBeVisible()
 
   await organizer.getByLabel('Список имён через запятую').fill('Вера, Глеб')
   await organizer.getByRole('button', { name: 'Добавить список' }).click()
@@ -910,6 +911,8 @@ test('landing declines the theme count in Russian', async ({ browser }) => {
   await expect(
     page.getByText(`До ${MAX_QUESTIONS} своих вопросов: текст, число, да/нет и выбор вариантов.`),
   ).toBeVisible()
+  await expect(page.getByText('До трёх человек управляют одной игрой и спокойно передают её дальше.')).toBeVisible()
+  await expect(page.getByText('До три человек', { exact: false })).toHaveCount(0)
   const themeSection = page.locator('section').filter({ hasText: 'Атмосфера вашей игры' })
   const themeButtons = themeSection
     .getByRole('button')

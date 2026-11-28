@@ -2,7 +2,7 @@
 import { onMounted, ref } from 'vue'
 import { domain } from '../config'
 import { api } from '../lib/api'
-import { MAX_ORGANIZERS_WORD, MAX_QUESTIONS } from '../../limits.js'
+import { MAX_ORGANIZERS_WORD_AFTER_DO, MAX_QUESTIONS } from '../../limits.js'
 
 defineProps({
   accent: String,
@@ -52,7 +52,7 @@ const features = [
   },
   {
     title: 'Команда организаторов',
-    text: `До ${MAX_ORGANIZERS_WORD} человек управляют одной игрой и спокойно передают её дальше.`,
+    text: `До ${MAX_ORGANIZERS_WORD_AFTER_DO} человек управляют одной игрой и спокойно передают её дальше.`,
     hint: 'Общая подготовка',
   },
   {
