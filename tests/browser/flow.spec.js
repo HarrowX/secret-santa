@@ -26,6 +26,10 @@ test('organizer and anonymous participants complete the game in the browser', as
   await organizer.getByRole('main').getByRole('button', { name: 'Создать игру' }).click()
   await expect(organizer).toHaveURL(/\/game\//)
   await expect(organizer.getByRole('heading', { name: 'Браузерная игра' })).toBeVisible()
+  const notifications = organizer.getByRole('region', { name: 'Уведомления об изменениях' })
+  const refreshNotifications = notifications.getByRole('button', { name: 'Обновить уведомления' })
+  await expect(refreshNotifications).toHaveText('Обновить уведомления')
+  await expect(refreshNotifications).not.toHaveAttribute('aria-label')
   await expect(organizer.getByText('Текст напоминания', { exact: true })).toBeVisible()
   await expect(organizer.getByLabel('Текст напоминания')).toHaveAttribute(
     'placeholder',

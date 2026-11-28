@@ -98,10 +98,9 @@ defineExpose({ refresh })
         type="button"
         class="rounded-full border border-white/20 px-3 py-1 text-xs transition hover:bg-white/10 disabled:opacity-50"
         :disabled="loading"
-        aria-label="Обновить уведомления"
         @click="refresh"
       >
-        Обновить
+        Обновить уведомления
       </button>
     </div>
     <p class="mt-1 text-xs opacity-60">Обновляется автоматически каждые 15 секунд</p>
