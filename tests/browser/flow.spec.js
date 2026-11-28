@@ -803,7 +803,8 @@ test('my games copies an absolute game link from the cabinet', async ({ browser 
   )
 
   await copyButton.click()
-  await expect(page.getByText('Не удалось скопировать ссылку')).toHaveCount(0)
+  await expect(page.getByText(`Ссылка на игру скопирована: ${title}`, { exact: true })).toBeVisible()
+  await expect(page.getByText('Скопировано', { exact: true })).toHaveCount(0)
   const clipboard = await page.evaluate(() => navigator.clipboard.readText())
   expect(clipboard).toBe(`${origin}/game/${gameToken}`)
 
@@ -948,14 +949,17 @@ test('clipboard failure stays local to each copy button', async ({ browser }) =>
   const context = await browser.newContext()
   await context.addInitScript(() => {
     window.__clipboardFail = true
+    window.__copiedText = ''
     Object.defineProperty(navigator, 'clipboard', {
       configurable: true,
       value: {
-        writeText: async () => {
+        writeText: async (text) => {
           if (window.__clipboardFail) {
             throw new Error('отказ')
           }
+          window.__copiedText = text
         },
+        readText: async () => window.__copiedText,
       },
     })
   })
@@ -966,6 +970,9 @@ test('clipboard failure stays local to each copy button', async ({ browser }) =>
   await page.getByLabel('Название').fill(title)
   await page.getByRole('main').getByRole('button', { name: 'Создать игру' }).click()
   await expect(page).toHaveURL(/\/game\//)
+  const origin = await page.evaluate(() => window.location.origin)
+  const gameToken = new URL(page.url()).pathname.split('/').pop()
+  const gameUrl = `${origin}/game/${gameToken}`
 
   await page.goto('/my')
   const gamesHeading = page.getByRole('heading', { name: 'Игры', exact: true })
@@ -973,11 +980,17 @@ test('clipboard failure stays local to each copy button', async ({ browser }) =>
 
   const gameButton = page.getByRole('button', { name: `Открыть игру ${title}` })
   const gameCard = gameButton.locator('xpath=..')
-  const copyLinkButton = gameCard.getByRole('button', { name: /Скопировать ссылку на игру/ })
+  const copyLinkButton = gameCard.getByRole('button', {
+    name: `Скопировать ссылку на игру ${title}`,
+    exact: true,
+  })
+  const failureStatus = `Не удалось скопировать ссылку на игру: ${title}`
+  const successStatus = `Ссылка на игру скопирована: ${title}`
   await copyLinkButton.click()
   await expect(gamesHeading).toBeVisible()
   await expect(gameButton).toBeVisible()
-  await expect(gameCard.getByText('Не удалось скопировать ссылку')).toBeVisible()
+  await expect(gameCard.getByText(failureStatus, { exact: true })).toBeVisible()
+  await expect(gameCard.getByText('Не удалось скопировать ссылку', { exact: true })).toHaveCount(0)
 
   const codesRegion = page.getByRole('region', { name: 'Код восстановления' })
   const copyCodeButton = codesRegion.getByRole('button', { name: 'Скопировать код восстановления' }).first()
@@ -990,8 +1003,10 @@ test('clipboard failure stays local to each copy button', async ({ browser }) =>
     window.__clipboardFail = false
   })
   await copyLinkButton.click()
-  await expect(gameCard.getByText('Не удалось скопировать ссылку')).toHaveCount(0)
-  await expect(gameCard.getByText('Скопировано')).toBeVisible()
+  await expect(gameCard.getByText(failureStatus, { exact: true })).toHaveCount(0)
+  await expect(gameCard.getByText('Скопировано', { exact: true })).toHaveCount(0)
+  await expect(gameCard.getByText(successStatus, { exact: true })).toBeVisible()
+  expect(await page.evaluate(() => navigator.clipboard.readText())).toBe(gameUrl)
   await expect(codeRow.getByText('Не удалось скопировать код')).toBeVisible()
 
   await context.close()

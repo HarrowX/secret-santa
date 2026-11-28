@@ -134,24 +134,29 @@ async function logout() {
 }
 
 function statusClass(message) {
-  return message === 'Скопировано' ? 'text-emerald-300' : 'text-rose-300'
+  return message.startsWith('Не удалось') ? 'text-rose-300' : 'text-emerald-300'
 }
 
-async function copyToClipboard(value, key, failureMessage) {
+async function copyToClipboard(value, key, successMessage, failureMessage) {
   try {
     await navigator.clipboard.writeText(value)
-    copyStatus.value[key] = 'Скопировано'
+    copyStatus.value[key] = successMessage
   } catch {
     copyStatus.value[key] = failureMessage
   }
 }
 
-function copyLink(value, key) {
-  return copyToClipboard(value, `link:${key}`, 'Не удалось скопировать ссылку')
+function copyLink(value, key, title) {
+  return copyToClipboard(
+    value,
+    `link:${key}`,
+    `Ссылка на игру скопирована: ${title}`,
+    `Не удалось скопировать ссылку на игру: ${title}`,
+  )
 }
 
 function copyCode(value) {
-  return copyToClipboard(value, `code:${value}`, 'Не удалось скопировать код')
+  return copyToClipboard(value, `code:${value}`, 'Скопировано', 'Не удалось скопировать код')
 }
 
 function gameUrl(game) {
@@ -343,7 +348,7 @@ load()
               v-if="game.token"
               type="button"
               class="mt-2 text-xs underline opacity-70 transition hover:opacity-100"
-              @click="copyLink(gameUrl(game), game.id)"
+              @click="copyLink(gameUrl(game), game.id, game.title)"
             >
               Скопировать ссылку на игру {{ game.title }}
             </button>
