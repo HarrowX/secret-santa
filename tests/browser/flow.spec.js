@@ -229,13 +229,12 @@ test('organizer and anonymous participants complete the game in the browser', as
   await expect(pairsCard.getByRole('button', { name: 'Перемешать заново', exact: true })).toBeVisible()
   await expect(pairsCard.getByRole('button', { name: 'Провести жеребьёвку', exact: false })).toHaveCount(0)
   const exclusionsHeading = organizer.getByRole('heading', { name: 'Исключения и ручные пары', exact: true })
-  await expect(
-    exclusionsHeading.locator('xpath=../..').getByRole('button', { name: 'Очистить пары', exact: true }),
-  ).toBeVisible()
-  await expect(pairsCard.getByRole('button', { name: 'Очистить пары', exact: true })).toBeVisible()
-  await expect(organizer.getByRole('button', { name: 'Очистить пары, оставить исключения', exact: false })).toHaveCount(
-    0,
-  )
+  const clearPairsLabel = 'Очистить пары, оставить исключения'
+  const clearPairsInExclusions = exclusionsHeading
+    .locator('xpath=../..')
+    .getByRole('button', { name: clearPairsLabel, exact: true })
+  await expect(clearPairsInExclusions).toBeVisible()
+  await expect(pairsCard.getByRole('button', { name: clearPairsLabel, exact: true })).toBeVisible()
   await expect(organizer.getByRole('button', { name: 'Сбросить пары', exact: false })).toHaveCount(0)
 
   await expect(pairsCard.getByRole('button', { name: 'Показать пару', exact: true })).toHaveCount(0)
@@ -376,6 +375,17 @@ test('organizer and anonymous participants complete the game in the browser', as
   await expect(newDrawButton).toBeVisible()
   await expect(newDrawButton).toHaveText('Жеребьёвка для новых участников: 2')
   await expect(organizer.getByRole('button', { name: 'Доп. жеребьёвка', exact: false })).toHaveCount(0)
+
+  await organizer.getByLabel('Кто не дарит').selectOption({ label: 'Аня' })
+  await organizer.getByLabel('Кому не дарит').selectOption({ label: 'Борис' })
+  await organizer.getByRole('button', { name: 'Исключить' }).click()
+  await expect(organizer.getByText('Аня не дарит Борис', { exact: true })).toBeVisible()
+  await clearPairsInExclusions.click()
+  await expect(pairsCard.locator('ol > li').first()).toHaveText(
+    'Пары появятся после жеребьёвки. Нажмите «Провести жеребьёвку», когда все участники будут готовы.',
+  )
+  await expect(pairsCard.getByRole('button', { name: clearPairsLabel, exact: true })).toBeDisabled()
+  await expect(organizer.getByText('Аня не дарит Борис', { exact: true })).toBeVisible()
 
   await organizerContext.close()
   await aniaContext.close()
