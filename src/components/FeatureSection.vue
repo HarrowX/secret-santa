@@ -56,7 +56,7 @@ const features = computed(() => [
   {
     title: 'Все темы оформления',
     text: (props.themes ?? []).length
-      ? `${props.themes.map((item) => item.name).join(', ')} — выбирайте под настроение.`
+      ? props.themes.map((item) => item.name).join(', ')
       : props.themesError || props.themesMessage,
     hint: 'Режимы дня и ночи',
   },
