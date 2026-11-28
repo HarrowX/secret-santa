@@ -508,3 +508,51 @@ test('tenant warning stays on game route and clears in the cabinet', async ({ br
 
   await context.close()
 })
+
+test('participant sees saved hint for a single-choice question', async ({ browser }) => {
+  const organizerContext = await browser.newContext()
+  const organizer = await organizerContext.newPage()
+
+  await organizer.goto('/new')
+  await organizer.getByLabel('Название').fill('Игра с подсказкой вопроса')
+  await organizer.getByRole('main').getByRole('button', { name: 'Создать игру' }).click()
+  await expect(organizer).toHaveURL(/\/game\//)
+
+  const gameToken = new URL(organizer.url()).pathname.split('/').at(-1)
+  const csrf = (await organizer.context().cookies()).find((cookie) => cookie.name === 'santa_csrf')?.value
+  const createdQuestion = await organizer.request.post(`/api/games/${gameToken}/questions`, {
+    headers: { 'x-csrf-token': csrf ?? '' },
+    data: {
+      title: 'Любимый цвет',
+      hint: 'Синий, Зелёный, Красный',
+      type: 'single',
+      options: ['Синий', 'Зелёный', 'Красный'],
+      required: false,
+      position: 0,
+    },
+  })
+  expect(createdQuestion.ok()).toBe(true)
+
+  const commonButton = organizer.getByRole('button', { name: /Общая ссылка на игру:/ })
+  const commonLabel = String(await commonButton.getAttribute('aria-label'))
+  const commonUrl = commonLabel.replace(/^Общая ссылка на игру:\s*/, '')
+  const commonPath = commonUrl.startsWith('http') ? new URL(commonUrl).pathname : commonUrl
+
+  const joinerContext = await browser.newContext()
+  const joiner = await joinerContext.newPage()
+  await joiner.goto(commonPath)
+  await joiner.getByLabel('Ваше имя').fill('Маша')
+  await joiner.getByRole('button', { name: 'Присоединиться' }).click()
+  await expect(joiner).toHaveURL(/\/join\//)
+  await expect(joiner.getByText('Синий, Зелёный, Красный')).toBeVisible()
+  await expect(joiner.getByText('Выберите подходящий вариант')).toBeVisible()
+
+  await joiner.getByLabel('Любимый цвет').selectOption('Зелёный')
+  await joiner.getByRole('button', { name: 'Сохранить ответы' }).click()
+  await expect(joiner.getByRole('combobox', { name: 'Любимый цвет' })).toHaveValue('Зелёный')
+  await joiner.reload()
+  await expect(joiner.getByRole('combobox', { name: 'Любимый цвет' })).toHaveValue('Зелёный')
+
+  await organizerContext.close()
+  await joinerContext.close()
+})

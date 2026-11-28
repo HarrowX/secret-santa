@@ -119,10 +119,10 @@ function save() {
         {{ question.title }}
         <span v-if="question.required" class="opacity-60">*</span>
       </label>
-      <span v-if="question.hint && ['single', 'multi'].includes(question.type)" class="text-xs opacity-50">
+      <span v-if="question.hint" class="text-xs opacity-50">{{ question.hint }}</span>
+      <span v-if="['single', 'multi'].includes(question.type)" class="text-xs opacity-50">
         Выберите подходящий вариант
       </span>
-      <span v-else-if="question.hint" class="text-xs opacity-50">{{ question.hint }}</span>
 
       <input
         v-if="question.type === 'number'"
