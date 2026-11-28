@@ -627,7 +627,7 @@ function saveTenant() {
               type="text"
               required
               maxlength="120"
-              aria-label="Название игры"
+              aria-label="Название"
               class="rounded-xl border border-white/15 bg-white/5 px-3 py-2 text-sm outline-none focus:border-white/40"
             />
           </label>
@@ -637,7 +637,7 @@ function saveTenant() {
               v-model="settings.budget"
               type="text"
               maxlength="80"
-              aria-label="Бюджет подарка"
+              aria-label="Бюджет"
               class="rounded-xl border border-white/15 bg-white/5 px-3 py-2 text-sm outline-none focus:border-white/40"
             />
           </label>
@@ -654,7 +654,7 @@ function saveTenant() {
             <span class="text-xs font-semibold uppercase tracking-widest opacity-60">Формат</span>
             <select
               v-model="settings.format"
-              aria-label="Формат игры"
+              aria-label="Формат"
               class="rounded-xl border border-white/15 px-3 py-2 text-sm outline-none focus:border-white/40"
             >
               <option value="">Без формата</option>
@@ -665,7 +665,7 @@ function saveTenant() {
             <span class="text-xs font-semibold uppercase tracking-widest opacity-60">Тема</span>
             <select
               v-model="settings.themeId"
-              aria-label="Тема оформления"
+              aria-label="Тема"
               class="rounded-xl border border-white/15 px-3 py-2 text-sm outline-none focus:border-white/40"
             >
               <option v-for="theme in themes" :key="theme.id" :value="theme.id">{{ theme.name }}</option>
@@ -677,7 +677,7 @@ function saveTenant() {
               v-model="settings.rules"
               rows="3"
               maxlength="2000"
-              aria-label="Правила игры"
+              aria-label="Правила"
               class="w-full rounded-xl border border-white/15 bg-white/5 px-3 py-2 text-sm outline-none focus:border-white/40"
             ></textarea>
           </label>

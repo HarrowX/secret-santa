@@ -262,7 +262,7 @@ test('my games copies an absolute game link from the cabinet', async ({ browser 
   await page.getByRole('main').getByRole('button', { name: 'Создать игру' }).click()
   await expect(page).toHaveURL(/\/game\/[^/]+$/)
   const gameToken = new URL(page.url()).pathname.split('/').pop()
-  await expect(page.getByLabel('Формат игры')).toHaveCSS('color-scheme', 'dark')
+  await expect(page.getByLabel('Формат')).toHaveCSS('color-scheme', 'dark')
   await expectDateFieldTheme(page, 'dark', 'rgba(255, 255, 255, 0.05)', 'rgba(255, 255, 255, 0.15)', '%23cbd5e1')
 
   await page.goto('/my')
