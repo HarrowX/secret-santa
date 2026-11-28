@@ -572,3 +572,4 @@
 - [x] 13.224 Clipboard-статус общей ссылки адресный; E2E проверяет success/failure, generic и clipboard.
 - [x] 13.225 Clipboard-статус ссылки на игру в кабинете адресный; E2E проверяет success/failure, generic и абсолютный URL.
 - [x] 13.226 Clipboard-статус кода восстановления адресный; E2E проверяет success/failure, generic и содержимое clipboard.
+- [x] 13.227 Кнопка и clipboard-статусы жеребьёвки называют число пар с русским склонением; E2E проверяет подписи, статусы, generic, clipboard и стиль ошибки.

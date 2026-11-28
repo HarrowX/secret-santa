@@ -1,6 +1,7 @@
 <script setup>
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 import { api } from '../lib/api'
+import { plural } from '../lib/plural.js'
 import { usePreferencesStore } from '../stores/preferences'
 
 const preferences = usePreferencesStore()
@@ -9,6 +10,7 @@ const pairs = ref([])
 const error = ref('')
 const copyStatus = ref('')
 const busy = ref(false)
+const pairCountLabel = computed(() => plural(pairs.value.length, ['пара', 'пары', 'пар']))
 
 async function draw() {
   busy.value = true
@@ -28,9 +30,9 @@ async function copyResult() {
   const text = pairs.value.map((pair) => `Дарит: ${pair.from}; Получает: ${pair.to}`).join('\n')
   try {
     await navigator.clipboard.writeText(text)
-    copyStatus.value = 'Пары скопированы'
+    copyStatus.value = `Пары скопированы: ${pairCountLabel.value}`
   } catch {
-    copyStatus.value = 'Не удалось скопировать пары'
+    copyStatus.value = `Не удалось скопировать пары: ${pairCountLabel.value}`
   }
 }
 </script>
@@ -72,7 +74,7 @@ async function copyResult() {
             class="rounded-full border border-white/20 px-4 py-2 text-xs font-semibold transition hover:bg-white/10"
             @click="copyResult"
           >
-            Скопировать пары
+            Скопировать пары: {{ pairCountLabel }}
           </button>
         </div>
         <p
@@ -80,7 +82,7 @@ async function copyResult() {
           role="status"
           aria-live="polite"
           class="mt-2 text-xs"
-          :class="copyStatus === 'Пары скопированы' ? 'text-emerald-300' : 'text-rose-300'"
+          :class="copyStatus.startsWith('Не удалось') ? 'text-rose-300' : 'text-emerald-300'"
         >
           {{ copyStatus }}
         </p>
