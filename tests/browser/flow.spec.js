@@ -906,6 +906,8 @@ test('landing declines the theme count in Russian', async ({ browser }) => {
   const context = await browser.newContext()
   const page = await context.newPage()
   await page.goto('/')
+  await expect(page.getByText('Участники по одному или списком')).toBeVisible()
+  await expect(page.getByText('Безлимит участников', { exact: false })).toHaveCount(0)
   await expect(page.getByText(`До ${MAX_QUESTIONS} вопросов в анкете`)).toBeVisible()
   await expect(page.getByText(`До ${MAX_ORGANIZERS} организаторов`)).toBeVisible()
   await expect(

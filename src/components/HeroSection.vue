@@ -56,7 +56,7 @@ const highlights = ['Приглашения по ссылке', 'Анкеты и
       </div>
 
       <div class="mt-8 flex flex-wrap gap-x-6 gap-y-2 text-sm opacity-70">
-        <span>Безлимит участников</span>
+        <span>Участники по одному или списком</span>
         <span>До {{ MAX_QUESTIONS }} вопросов в анкете</span>
         <span>До {{ MAX_ORGANIZERS }} организаторов</span>
       </div>
