@@ -1175,8 +1175,9 @@ function saveTenant() {
             </select>
           </div>
           <ol class="mt-3 grid gap-2 text-sm opacity-70">
-            <li v-for="item in filteredEvents" :key="item.id">
-              {{ formatDateTime(item.created_at) }} · {{ item.text }}
+            <li v-for="item in filteredEvents" :key="item.id" class="flex flex-wrap gap-x-3">
+              <span><span class="font-semibold">Когда:</span> {{ formatDateTime(item.created_at) }}</span>
+              <span><span class="font-semibold">Событие:</span> {{ item.text }}</span>
               <span v-if="item.actor" class="opacity-60">— {{ item.actor }}</span>
             </li>
             <li v-if="!filteredEvents.length" class="opacity-50">Событий по фильтру нет</li>

@@ -219,7 +219,14 @@ test('organizer and anonymous participants complete the game in the browser', as
   await expect(boris.getByRole('button', { name: 'От Санты' })).toHaveAttribute('aria-pressed', 'true')
 
   const historyList = organizer.getByRole('heading', { name: 'История', exact: true }).locator('xpath=..').locator('ol')
-  await expect(historyList.locator('li').first()).toBeVisible()
+  const historyRows = historyList.locator('li')
+  await expect(historyRows.first()).toBeVisible()
+  for (const row of await historyRows.all()) {
+    await expect(row.getByText('Когда:', { exact: true })).toBeVisible()
+    await expect(row.getByText('Событие:', { exact: true })).toBeVisible()
+  }
+  await expect(historyRows.filter({ hasText: '—' }).first()).toBeVisible()
+  await expect(historyList.getByText(' · ', { exact: false })).toHaveCount(0)
   await expect(historyList.getByText(/\d{1,2}\.\d{1,2}\./).first()).toBeVisible()
   await expect(historyList.getByText(/\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}/)).toHaveCount(0)
 
