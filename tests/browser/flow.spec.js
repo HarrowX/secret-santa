@@ -170,3 +170,37 @@ test('assistant invite is accepted in another browser context and survives page 
   await organizerContext.close()
   await assistantContext.close()
 })
+
+test('my games copies an absolute game link from the cabinet', async ({ browser }) => {
+  const context = await browser.newContext()
+  const page = await context.newPage()
+  const title = 'Игра с кабинетной ссылкой'
+
+  await page.goto('/new')
+  const origin = await page.evaluate(() => window.location.origin)
+  await context.grantPermissions(['clipboard-read', 'clipboard-write'], { origin })
+
+  await page.getByLabel('Название').fill(title)
+  await page.getByRole('main').getByRole('button', { name: 'Создать игру' }).click()
+  await expect(page).toHaveURL(/\/game\/[^/]+$/)
+  const gameToken = new URL(page.url()).pathname.split('/').pop()
+
+  await page.goto('/my')
+  await expect(page).toHaveURL(/\/my$/)
+  await expect(page.getByRole('heading', { name: 'Мои игры и обмены' })).toBeVisible()
+  await expect(page.getByText(/\/game\/[0-9a-f-]/i)).toHaveCount(0)
+
+  const copyButton = page.getByRole('button', { name: `Скопировать ссылку на игру ${title}` })
+  await expect(copyButton).toBeVisible()
+  expect(await copyButton.evaluate((element) => element.tagName)).toBe('BUTTON')
+  expect(await copyButton.evaluate((element) => element.querySelector('button, a, [role="button"]') !== null)).toBe(
+    false,
+  )
+
+  await copyButton.click()
+  await expect(page.getByText('Не удалось скопировать ссылку')).toHaveCount(0)
+  const clipboard = await page.evaluate(() => navigator.clipboard.readText())
+  expect(clipboard).toBe(`${origin}/game/${gameToken}`)
+
+  await context.close()
+})

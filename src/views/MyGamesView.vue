@@ -117,6 +117,10 @@ async function copyLink(value) {
   }
 }
 
+function gameUrl(game) {
+  return `${window.location.origin}/game/${game.token}`
+}
+
 function roleLabel(role) {
   if (role === 'owner') return 'создатель'
   if (role === 'organizer') return 'организатор'
@@ -218,32 +222,33 @@ load()
       <div class="rounded-2xl border border-white/10 bg-white/5 p-5">
         <h2 class="font-bold">Игры</h2>
         <div class="mt-3 grid gap-2 sm:grid-cols-2">
-          <button
+          <div
             v-for="game in games"
             :key="game.id"
-            type="button"
-            class="rounded-xl border border-white/15 bg-white/5 p-4 text-left transition hover:bg-white/10"
-            @click="router.push(`/game/${game.token}`)"
+            class="rounded-xl border border-white/15 bg-white/5 p-4 transition hover:bg-white/10"
           >
-            <span class="flex items-center justify-between gap-2">
+            <button
+              type="button"
+              class="flex w-full items-center justify-between gap-2 text-left"
+              :aria-label="`Открыть игру ${game.title}`"
+              @click="router.push(`/game/${game.token}`)"
+            >
               <span class="font-semibold">{{ game.title }}</span>
               <span class="text-xs opacity-60">{{ roleLabel(game.role) }}</span>
-            </span>
-            <span class="mt-1 block text-xs opacity-60"
-              >{{ game.budget || 'без бюджета' }} · {{ game.exchange_date || 'дата не задана' }}</span
-            >
-            <span
+            </button>
+            <p class="mt-1 text-xs opacity-60">
+              {{ game.budget || 'без бюджета' }} · {{ game.exchange_date || 'дата не задана' }}
+            </p>
+            <button
               v-if="game.token"
-              role="button"
-              tabindex="0"
-              class="mt-2 block truncate text-xs opacity-50 underline"
+              type="button"
+              class="mt-2 text-xs underline opacity-70 transition hover:opacity-100"
               :aria-label="`Скопировать ссылку на игру ${game.title}`"
-              @click.stop="copyLink(`/game/${game.token}`)"
-              @keydown.enter.stop="copyLink(`/game/${game.token}`)"
+              @click="copyLink(gameUrl(game))"
             >
-              /game/{{ game.token }}
-            </span>
-          </button>
+              Скопировать ссылку на игру {{ game.title }}
+            </button>
+          </div>
           <p v-if="!games.length" class="text-sm opacity-50">
             Пока нет игр.
             <RouterLink to="/new" class="underline">Создайте первую игру</RouterLink>.
