@@ -51,7 +51,8 @@ invitesRouter.post('/:token/accept', inviteAcceptRateLimit, validateBody(schemas
 
   const value = (key) => (req.body[key] === undefined ? participant[key] : req.body[key])
   const userId = req.user?.id ?? participant.user_id
-  const identityToken = participant.identity_token || req.body.pastIdentityToken || randomUUID()
+  const pastIdentity = typeof req.body.pastIdentityToken === 'string' ? req.body.pastIdentityToken.trim() : ''
+  const identityToken = pastIdentity || participant.identity_token || randomUUID()
   db.prepare(
     `
       UPDATE participants

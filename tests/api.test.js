@@ -873,61 +873,69 @@ describe('API', () => {
   })
 
   it('импортирует прошлые пары без раскрытия и исключает их', async () => {
-    const anna = await request('POST', '/auth/session', {})
-    const boris = await request('POST', '/auth/session', {})
+    const owner = await request('POST', '/auth/session', {})
+    const people = [
+      { name: 'Аня', session: await request('POST', '/auth/session', {}) },
+      { name: 'Борис', session: await request('POST', '/auth/session', {}) },
+      { name: 'Вика', session: await request('POST', '/auth/session', {}) },
+    ]
 
-    async function join(gameId, name, session) {
-      await addParticipants(gameId, [name], cookieHeader(anna))
-      const invite = await request('GET', `/games/${gameId}/invite`, undefined, cookieHeader(anna))
-      const person = invite.body.participants.find((item) => item.name === name)
-      const accepted = await request('POST', `/invites/${person.invite_token}/accept`, {}, cookieHeader(session))
+    async function join(gameId, person, pastIdentityToken) {
+      await addParticipants(gameId, [person.name], cookieHeader(owner))
+      const invite = await request('GET', `/games/${gameId}/invite`, undefined, cookieHeader(owner))
+      const participant = invite.body.participants.find((item) => item.name === person.name)
+      const payload = pastIdentityToken ? { pastIdentityToken } : {}
+      const accepted = await request(
+        'POST',
+        `/invites/${participant.invite_token}/accept`,
+        payload,
+        cookieHeader(person.session),
+      )
       assert.equal(accepted.status, 200)
+      return accepted.body.participant
     }
 
-    const past = await createGame('Прошлая игра', cookieHeader(anna))
-    await join(past.id, 'Аня', anna)
-    await join(past.id, 'Борис', boris)
-    const pastDraw = await request('POST', `/games/${past.id}/draw`, undefined, cookieHeader(anna))
+    function pairNames(game, pairs) {
+      const names = new Map(game.body.participants.map((person) => [person.id, person.name]))
+      return pairs.map((pair) => `${names.get(pair.from_id)}:${names.get(pair.to_id)}`)
+    }
+
+    const past = await createGame('Прошлая игра', cookieHeader(owner))
+    for (const person of people) await join(past.id, person)
+
+    const pastDraw = await request('POST', `/games/${past.id}/draw`, undefined, cookieHeader(owner))
     assert.equal(pastDraw.status, 200)
+    const pastGame = await request('GET', `/games/${past.id}`, undefined, cookieHeader(owner))
+    const pastPairs = pairNames(pastGame, pastGame.body.pairs)
+    assert.equal(pastPairs.length, 3)
 
-    const current = await createGame('Новая игра', cookieHeader(anna))
-    await join(current.id, 'Аня', anna)
-    await join(current.id, 'Борис', boris)
-
-    const pastGames = await request('GET', '/me/past-games', undefined, cookieHeader(anna))
-    assert.ok(pastGames.body.some((item) => item.id === past.id))
+    const current = await createGame('Новая игра', cookieHeader(owner))
+    for (const person of people) {
+      const pastGames = await request('GET', '/me/past-games', undefined, cookieHeader(person.session))
+      assert.equal(pastGames.status, 200)
+      const previous = pastGames.body.find((item) => item.id === past.id)
+      assert.ok(previous?.identity_token)
+      const accepted = await join(current.id, person, previous.identity_token)
+      assert.equal(accepted.identity_token, previous.identity_token)
+    }
 
     const imported = await request(
       'POST',
       `/games/${current.id}/past-pairs/import`,
       { pastGameId: past.id },
-      cookieHeader(anna),
+      cookieHeader(owner),
     )
     assert.equal(imported.status, 201)
-    assert.equal(imported.body.imported, 2)
+    assert.equal(imported.body.imported, 3)
 
-    const loaded = await request('GET', `/games/${current.id}`, undefined, cookieHeader(anna))
-    assert.equal(loaded.body.pastPairsCount, 2)
+    const loaded = await request('GET', `/games/${current.id}`, undefined, cookieHeader(owner))
+    assert.equal(loaded.body.pastPairsCount, 3)
     assert.equal(loaded.body.pastPairs, undefined)
 
-    db.prepare(
-      `
-      INSERT OR IGNORE INTO past_pairs (game_id, from_token, to_token)
-      VALUES (?, ?, ?)
-    `,
-    ).run(
-      current.id,
-      db
-        .prepare('SELECT identity_token FROM participants WHERE game_id = ? AND user_id = ?')
-        .get(current.id, boris.body.user.id).identity_token,
-      db
-        .prepare('SELECT identity_token FROM participants WHERE game_id = ? AND user_id = ?')
-        .get(current.id, anna.body.user.id).identity_token,
-    )
-
-    const blocked = await request('POST', `/games/${current.id}/draw`, undefined, cookieHeader(anna))
-    assert.equal(blocked.status, 409)
-    assert.match(blocked.body.error.message, /ограничениями/)
+    const draw = await request('POST', `/games/${current.id}/draw`, undefined, cookieHeader(owner))
+    assert.equal(draw.status, 200)
+    const repeated = pairNames(loaded, draw.body).filter((pair) => pastPairs.includes(pair))
+    assert.deepEqual(repeated, [])
   })
 
   it('ведёт прогресс и отправляет массовые напоминания', async () => {

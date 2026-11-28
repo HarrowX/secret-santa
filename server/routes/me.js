@@ -31,9 +31,11 @@ meRouter.get('/past-games', (req, res) => {
     db
       .prepare(
         `
-        SELECT DISTINCT g.id, g.token, g.title, g.exchange_date
+        SELECT DISTINCT g.id, g.token, g.title, g.exchange_date,
+          COALESCE(p.identity_token, u.token, p.invite_token) AS identity_token
         FROM games g
         JOIN participants p ON p.game_id = g.id
+        LEFT JOIN users u ON u.id = p.user_id
         WHERE p.user_id = ?
         ORDER BY g.id DESC
       `,

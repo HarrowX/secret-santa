@@ -202,9 +202,9 @@ async function fillPastIdentity() {
   pastTokenError.value = ''
   try {
     const past = await api.me.pastGames()
-    const found = past.find((item) => item.invite_token || item.token || item.identity_token)
+    const found = past.find((item) => item.identity_token)
     if (found) {
-      pastIdentityToken.value = found.invite_token ?? found.token ?? found.identity_token
+      pastIdentityToken.value = found.identity_token
       return
     }
     pastTokenError.value = 'В прошлых играх не найден код участия — возьмите его из персональной ссылки'
