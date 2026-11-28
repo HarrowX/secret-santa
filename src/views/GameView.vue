@@ -1238,7 +1238,9 @@ function saveTenant() {
             <span><span class="font-semibold">Когда:</span> {{ formatDateTime(item.created_at) }}</span>
             <span><span class="font-semibold">Кому:</span> {{ item.participant_name }}</span>
             <span><span class="font-semibold">Статус:</span> {{ reminderStatus(item.status) }}</span>
-            <span v-if="item.error" class="text-amber-300">— {{ item.error }}</span>
+            <span v-if="item.error" class="text-amber-300"
+              ><span class="font-semibold">Причина:</span> {{ item.error }}</span
+            >
           </li>
           <li v-if="!reminders.length" class="opacity-50">
             Напоминаний пока нет. Отправленные напоминания появятся здесь.

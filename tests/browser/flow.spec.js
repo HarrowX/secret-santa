@@ -306,6 +306,10 @@ test('organizer and anonymous participants complete the game in the browser', as
   }
   await expect(reminderRows.getByText(/\d{1,2}\.\d{1,2}\./).first()).toBeVisible()
   await expect(reminderRows.getByText(/\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}/)).toHaveCount(0)
+  const reminderErrorRow = reminderRows.filter({ hasText: 'Email не указан' }).first()
+  await expect(reminderErrorRow).toBeVisible()
+  await expect(reminderErrorRow.getByText('Причина:', { exact: true })).toBeVisible()
+  await expect(reminderList.getByText('— Email не указан', { exact: false })).toHaveCount(0)
   await expect(reminderList.getByText('Отправлено', { exact: false })).toBeVisible()
   await expect(reminderList.getByText('В очереди', { exact: false })).toBeVisible()
   await expect(reminderList.getByText(/sent|queued/)).toHaveCount(0)
