@@ -42,7 +42,7 @@ function startNew() {
   <section class="mx-auto max-w-2xl px-5 py-12">
     <div class="rounded-2xl border border-white/10 bg-white/5 p-6 backdrop-blur">
       <h1 class="text-3xl font-bold tracking-tight">Поддержка</h1>
-      <p class="mt-2 text-sm opacity-70">Опишите ситуацию — мы вернёмся с ответом на указанную почту.</p>
+      <p class="mt-2 text-sm opacity-70">Опишите ситуацию — если вы укажете почту, мы ответим на неё.</p>
 
       <div v-if="sent" role="status" class="mt-6 rounded-xl border border-emerald-400/30 bg-emerald-400/10 p-4 text-sm">
         <p>Обращение отправлено. Если вы указали email, мы ответим на него.</p>

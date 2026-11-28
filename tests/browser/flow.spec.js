@@ -409,6 +409,7 @@ test('game copy links show local clipboard status', async ({ browser }) => {
 
 test('support form sends two requests in one session', async ({ page }) => {
   await page.goto('/support')
+  await expect(page.getByText('Опишите ситуацию — если вы укажете почту, мы ответим на неё.')).toBeVisible()
 
   const email = page.getByLabel('Email для ответа')
   const subject = page.getByLabel('Тема')
