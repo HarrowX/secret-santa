@@ -501,7 +501,9 @@ function saveTenant() {
         <div class="flex flex-wrap items-end justify-between gap-3">
           <div>
             <h2 class="font-bold">Организатор</h2>
-            <p class="mt-1 text-sm opacity-60">Добавьте участников и распределите пары</p>
+            <p class="mt-1 text-sm opacity-60">
+              Добавляйте участников, выполняйте жеребьёвку и настраивайте пары вручную
+            </p>
           </div>
           <div class="flex flex-wrap gap-2">
             <button

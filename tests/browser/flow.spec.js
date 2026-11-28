@@ -30,6 +30,10 @@ test('organizer and anonymous participants complete the game in the browser', as
   await organizer.getByRole('main').getByRole('button', { name: 'Создать игру' }).click()
   await expect(organizer).toHaveURL(/\/game\//)
   await expect(organizer.getByRole('heading', { name: 'Браузерная игра' })).toBeVisible()
+  await expect(
+    organizer.getByText('Добавляйте участников, выполняйте жеребьёвку и настраивайте пары вручную', { exact: true }),
+  ).toBeVisible()
+  await expect(organizer.getByText('распределите пары', { exact: false })).toHaveCount(0)
   await expect(organizer.getByLabel('Название', { exact: true })).not.toHaveAttribute('aria-label')
   await expect(organizer.getByLabel('Бюджет')).not.toHaveAttribute('aria-label')
   await expect(organizer.getByLabel('Дата обмена')).not.toHaveAttribute('aria-label')
