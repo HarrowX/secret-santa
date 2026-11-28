@@ -586,11 +586,12 @@ test('assistant invite is accepted in another browser context and survives page 
   const owner = pendingOrganizers.find((item) => item.role === 'owner')
   const pending = pendingOrganizers.find((item) => item.invited)
   expect(owner?.displayName).toBeTruthy()
-  expect(pending?.displayName).toBeTruthy()
+  expect(pending?.displayName).toBe('Приглашённый организатор')
 
   const team = organizer.getByTestId('organizer-team')
   await expect(team.getByText(owner.displayName, { exact: true })).toBeVisible()
-  await expect(team.getByText(pending.displayName, { exact: true })).toBeVisible()
+  await expect(team.getByText('Приглашённый организатор', { exact: true })).toBeVisible()
+  await expect(team.getByText('Ожидает принятия', { exact: true })).toHaveCount(0)
   await expect(team.getByText('создатель', { exact: true })).toHaveCount(1)
   await expect(team.getByText('ожидает принятия', { exact: true })).toHaveCount(1)
   await expect(team.getByText('организатор', { exact: true })).toHaveCount(0)
@@ -598,7 +599,7 @@ test('assistant invite is accepted in another browser context and survives page 
   await expect(team).not.toContainText('@')
   await expect(team).not.toContainText('/organizer/')
   const pendingCancel = team.getByRole('button', {
-    name: `Отменить приглашение: ${pending.displayName}`,
+    name: 'Отменить приглашение: Приглашённый организатор',
     exact: true,
   })
   await expect(pendingCancel).toBeVisible()
@@ -653,10 +654,10 @@ test('assistant invite is accepted in another browser context and survives page 
   await organizer.reload()
   const cancelOrganizers = await readOrganizers()
   const cancelTarget = cancelOrganizers.find((item) => item.invited)
-  expect(cancelTarget?.displayName).toBeTruthy()
+  expect(cancelTarget?.displayName).toBe('Приглашённый организатор')
   const cancelInvite = organizer
     .getByTestId('organizer-team')
-    .getByRole('button', { name: `Отменить приглашение: ${cancelTarget.displayName}`, exact: true })
+    .getByRole('button', { name: 'Отменить приглашение: Приглашённый организатор', exact: true })
   await expect(cancelInvite).toBeVisible()
   const cancelResponsePromise = organizer.waitForResponse(
     (response) => response.url().includes('/organizers/') && response.request().method() === 'DELETE',

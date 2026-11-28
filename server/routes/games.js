@@ -1239,8 +1239,9 @@ gamesRouter.get('/:id/organizers', (req, res) => {
         userId: organizer.user_id,
         invited: Boolean(organizer.invited),
         status: organizer.user_id ? 'accepted' : 'pending',
-        displayName:
-          organizer.user_email || (organizer.user_id ? `Организатор #${organizer.user_id}` : 'Ожидает принятия'),
+        displayName: organizer.user_id
+          ? organizer.user_email || `Организатор #${organizer.user_id}`
+          : 'Приглашённый организатор',
         createdAt: organizer.created_at,
       })),
   )
