@@ -1196,11 +1196,15 @@ test('organizer creates a choice question through the game form', async ({ brows
   expect(questionnaireIds.length).toBeGreaterThan(0)
   expect(new Set(questionnaireIds).size).toBe(questionnaireIds.length)
 
-  await organizer
-    .getByRole('listitem')
-    .filter({ hasText: 'Любимые цвета · Несколько' })
-    .getByRole('button', { name: 'Удалить' })
-    .click()
+  const multiQuestionRow = organizer.getByRole('listitem').filter({ hasText: 'Любимые цвета · Несколько' })
+  const deleteMultiQuestion = multiQuestionRow.getByRole('button', {
+    name: 'Удалить вопрос: Любимые цвета',
+    exact: true,
+  })
+  await expect(deleteMultiQuestion).toBeVisible()
+  await expect(multiQuestionRow.getByRole('button', { name: 'Удалить', exact: true })).toHaveCount(0)
+  await deleteMultiQuestion.click()
+  await expect(multiQuestionRow).toHaveCount(0)
   const thirdJoinerContext = await browser.newContext()
   const thirdJoiner = await thirdJoinerContext.newPage()
   await thirdJoiner.goto(commonPath)

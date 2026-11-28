@@ -937,7 +937,7 @@ function saveTenant() {
               :disabled="busy"
               @click="deleteQuestion(question.id)"
             >
-              Удалить
+              Удалить вопрос: {{ question.title }}
             </button>
           </li>
           <li v-if="!data.questions.length" class="opacity-50">Вопросов пока нет</li>
