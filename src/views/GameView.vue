@@ -230,6 +230,13 @@ function organizerInviteCopyStatus(failed = false) {
     : `Приглашение помощника скопировано: ${title}`
 }
 
+function personalInviteCopyStatus(person, failed = false) {
+  const title = data.value?.game?.title || 'игра'
+  return failed
+    ? `Не удалось скопировать ссылку-приглашение: ${person.name} — ${title}`
+    : `Ссылка-приглашение скопирована: ${person.name} — ${title}`
+}
+
 function reminderStatus(status) {
   if (status === 'sent') return 'Отправлено'
   if (status === 'queued') return 'В очереди'
@@ -639,7 +646,14 @@ function saveTenant() {
             <button
               type="button"
               class="min-w-0 flex-1 truncate rounded-xl border border-white/15 bg-white/5 px-4 py-2 text-left transition hover:bg-white/10"
-              @click="copyLink(person.url, `person:${person.id}`)"
+              @click="
+                copyLink(
+                  person.url,
+                  `person:${person.id}`,
+                  personalInviteCopyStatus(person),
+                  personalInviteCopyStatus(person, true),
+                )
+              "
             >
               Скопировать ссылку-приглашение для {{ person.name }}
             </button>

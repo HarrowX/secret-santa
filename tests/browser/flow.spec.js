@@ -984,14 +984,17 @@ test('game copy links show local clipboard status', async ({ browser }) => {
   const context = await browser.newContext()
   await context.addInitScript(() => {
     window.__clipboardFail = true
+    window.__copiedText = ''
     Object.defineProperty(navigator, 'clipboard', {
       configurable: true,
       value: {
-        writeText: async () => {
+        writeText: async (text) => {
           if (window.__clipboardFail) {
             throw new Error('отказ')
           }
+          window.__copiedText = text
         },
+        readText: async () => window.__copiedText,
       },
     })
   })
@@ -1017,18 +1020,24 @@ test('game copy links show local clipboard status', async ({ browser }) => {
 
   const inviteButton = page.getByRole('button', { name: 'Скопировать ссылку-приглашение для Аня' })
   const inviteRow = inviteButton.locator('xpath=..')
+  const inviteUrl = String(await inviteButton.locator('xpath=following-sibling::span[1]').textContent()).trim()
+  const failureStatus = `Не удалось скопировать ссылку-приглашение: Аня — ${title}`
+  const successStatus = `Ссылка-приглашение скопирована: Аня — ${title}`
   await expect(inviteButton).toBeVisible()
   await expect(inviteRow).toContainText('Аня')
   await inviteButton.click()
   await expect(gameHeading).toBeVisible()
-  await expect(inviteRow.getByText('Не удалось скопировать ссылку')).toBeVisible()
+  await expect(inviteRow.getByText(failureStatus, { exact: true })).toBeVisible()
+  await expect(inviteRow.getByText('Не удалось скопировать ссылку', { exact: true })).toHaveCount(0)
 
   await page.evaluate(() => {
     window.__clipboardFail = false
   })
   await inviteButton.click()
-  await expect(inviteRow.getByText('Не удалось скопировать ссылку')).toHaveCount(0)
-  await expect(inviteRow.getByText('Скопировано')).toBeVisible()
+  await expect(inviteRow.getByText(failureStatus, { exact: true })).toHaveCount(0)
+  await expect(inviteRow.getByText('Скопировано', { exact: true })).toHaveCount(0)
+  await expect(inviteRow.getByText(successStatus, { exact: true })).toBeVisible()
+  expect(await page.evaluate(() => navigator.clipboard.readText())).toBe(inviteUrl)
 
   await context.close()
 })
