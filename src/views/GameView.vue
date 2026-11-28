@@ -1052,8 +1052,11 @@ function saveTenant() {
             :disabled="busy || !exclusionFrom || !exclusionTo"
           >
             Исключить:
-            {{ exclusionFrom ? participantName(exclusionFrom) : 'Выберите участника' }} не дарит
-            {{ exclusionTo ? participantName(exclusionTo) : 'Выберите участника' }}
+            {{
+              !exclusionFrom || !exclusionTo
+                ? 'выберите двух участников'
+                : `${participantName(exclusionFrom)} не дарит ${participantName(exclusionTo)}`
+            }}
           </button>
         </form>
         <ul class="mt-3 grid gap-1 text-sm opacity-70">
@@ -1103,8 +1106,11 @@ function saveTenant() {
             :disabled="busy || !manualFrom || !manualTo"
           >
             Зафиксировать пару:
-            {{ manualFrom ? participantName(manualFrom) : 'Выберите участника' }} дарит
-            {{ manualTo ? participantName(manualTo) : 'Выберите участника' }}
+            {{
+              !manualFrom || !manualTo
+                ? 'выберите двух участников'
+                : `${participantName(manualFrom)} дарит ${participantName(manualTo)}`
+            }}
           </button>
         </form>
         <p v-if="errors.exclusion" role="alert" class="mt-2 text-sm text-rose-300">{{ errors.exclusion }}</p>

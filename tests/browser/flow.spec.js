@@ -222,10 +222,16 @@ test('organizer and anonymous participants complete the game in the browser', as
 
   await expect(
     organizer.getByRole('button', {
-      name: 'Зафиксировать пару: Выберите участника дарит Выберите участника',
+      name: 'Зафиксировать пару: выберите двух участников',
       exact: true,
     }),
   ).toBeVisible()
+  await expect(
+    organizer.getByRole('button', {
+      name: 'Зафиксировать пару: Выберите участника дарит Выберите участника',
+      exact: true,
+    }),
+  ).toHaveCount(0)
   await organizer.getByLabel('Кто дарит в ручной паре').selectOption({ label: 'Аня' })
   await organizer.getByLabel('Кому дарит в ручной паре').selectOption({ label: 'Борис' })
   const manualPairButton = organizer.getByRole('button', {
@@ -390,10 +396,16 @@ test('organizer and anonymous participants complete the game in the browser', as
 
   await expect(
     organizer.getByRole('button', {
-      name: 'Исключить: Выберите участника не дарит Выберите участника',
+      name: 'Исключить: выберите двух участников',
       exact: true,
     }),
   ).toBeVisible()
+  await expect(
+    organizer.getByRole('button', {
+      name: 'Исключить: Выберите участника не дарит Выберите участника',
+      exact: true,
+    }),
+  ).toHaveCount(0)
   await organizer.getByLabel('Кто не дарит').selectOption({ label: 'Аня' })
   await organizer.getByLabel('Кому не дарит').selectOption({ label: 'Борис' })
   const createExclusion = organizer.getByRole('button', {
