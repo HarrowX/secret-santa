@@ -71,8 +71,12 @@ test('organizer and anonymous participants complete the game in the browser', as
       .getByText('Участник для отметки подарка', { exact: true }),
   ).toBeVisible()
 
+  await expect(organizer.getByText('Имя участника', { exact: true })).toBeVisible()
+  await expect(organizer.getByLabel('Имя участника')).toHaveAttribute('placeholder', 'Аня')
+  await expect(organizer.getByLabel('Имя участника')).not.toHaveAttribute('aria-label')
   await expect(organizer.getByText('Список имён через запятую', { exact: true })).toBeVisible()
   await expect(organizer.getByLabel('Список имён через запятую')).toHaveAttribute('placeholder', 'Аня, Борис, Вика')
+  await expect(organizer.getByLabel('Список имён через запятую')).not.toHaveAttribute('aria-label')
   await organizer.getByLabel('Список имён через запятую').fill('Аня, Борис')
   await organizer.getByRole('button', { name: 'Добавить список' }).click()
 
@@ -231,6 +235,7 @@ test('participants join by the common link and the organizer can remove a bad na
   await expect(joiner.getByText('Присоединиться к игре')).toBeVisible()
   await expect(joiner.getByText('Ваше имя', { exact: true })).toBeVisible()
   await expect(joiner.getByLabel('Ваше имя')).toHaveAttribute('placeholder', 'Аня')
+  await expect(joiner.getByLabel('Ваше имя')).not.toHaveAttribute('aria-label')
   await joiner.getByLabel('Ваше имя').fill('Глупое имя')
   await joiner.getByRole('button', { name: 'Присоединиться' }).click()
   await expect(joiner).toHaveURL(/\/join\//)

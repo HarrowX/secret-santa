@@ -451,7 +451,6 @@ function saveTenant() {
             maxlength="80"
             required
             placeholder="Аня"
-            aria-label="Ваше имя"
             class="rounded-xl border border-white/15 bg-white/5 px-4 py-2 text-sm outline-none placeholder:text-current/40 focus:border-white/40"
           />
         </label>
@@ -531,7 +530,6 @@ function saveTenant() {
               type="text"
               maxlength="80"
               placeholder="Аня"
-              aria-label="Имя участника"
               class="rounded-xl border border-white/15 bg-white/5 px-4 py-2 text-sm outline-none placeholder:text-current/40 focus:border-white/40"
             />
           </label>
@@ -551,7 +549,6 @@ function saveTenant() {
               type="text"
               maxlength="1000"
               placeholder="Аня, Борис, Вика"
-              aria-label="Список имён через запятую"
               class="w-full rounded-xl border border-white/15 bg-white/5 px-4 py-2 text-sm outline-none placeholder:text-current/40 focus:border-white/40"
             />
           </label>
