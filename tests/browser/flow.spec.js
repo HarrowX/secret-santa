@@ -264,3 +264,43 @@ test('anonymous access is restored from a recovery code in a clean context', asy
 
   await cleanContext.close()
 })
+
+test('login clears recovery codes and logout starts a fresh anonymous session', async ({ browser, request }) => {
+  const email = 'session-switch@example.test'
+  const password = 'secret123'
+  const account = await request.post('/api/auth/register', { data: { email, password } })
+  expect(account.ok()).toBeTruthy()
+
+  const context = await browser.newContext()
+  const page = await context.newPage()
+  const title = 'Игра со сменой доступа'
+
+  await page.goto('/new')
+  await page.getByLabel('Название').fill(title)
+  await page.getByRole('main').getByRole('button', { name: 'Создать игру' }).click()
+  await expect(page).toHaveURL(/\/game\//)
+
+  await page.goto('/my')
+  const codes = page.getByRole('region', { name: 'Коды восстановления' })
+  await expect(codes.getByRole('button', { name: /Скопировать код восстановления/ })).toHaveCount(5)
+  const oldCodes = (await codes.locator('code').allInnerTexts()).map((value) => value.trim())
+  await expect(page.getByRole('button', { name: `Открыть игру ${title}` })).toBeVisible()
+
+  await page.getByLabel('Email').fill(email)
+  await page.getByLabel('Пароль').fill(password)
+  await page.getByRole('button', { name: 'Войти' }).click()
+
+  await expect(page.getByText(`Вы вошли как ${email}`)).toBeVisible()
+  await expect(codes).toHaveCount(0)
+  await expect(page.getByRole('button', { name: `Открыть игру ${title}` })).toHaveCount(0)
+
+  await page.getByRole('button', { name: 'Выйти' }).click()
+
+  const freshCodes = page.getByRole('region', { name: 'Коды восстановления' })
+  await expect(freshCodes.getByRole('button', { name: /Скопировать код восстановления/ })).toHaveCount(5)
+  const freshCodeValues = (await freshCodes.locator('code').allInnerTexts()).map((value) => value.trim())
+  expect(freshCodeValues).not.toEqual(oldCodes)
+  await expect(page.getByRole('button', { name: `Открыть игру ${title}` })).toHaveCount(0)
+
+  await context.close()
+})

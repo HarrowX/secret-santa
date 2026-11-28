@@ -99,6 +99,7 @@ async function login() {
   authError.value = ''
   try {
     await api.auth.login({ email: email.value, password: password.value })
+    clearRecoveryCodes()
     password.value = ''
     await load()
   } catch (requestError) {
