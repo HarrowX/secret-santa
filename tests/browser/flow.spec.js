@@ -300,6 +300,7 @@ test('organizer and anonymous participants complete the game in the browser', as
     .locator('xpath=..')
   await remindersSection.getByLabel('Текст напоминания').fill('Напоминание для Ани и Бориса')
   await remindersSection.getByLabel('Получатели напоминания').selectOption([{ label: 'Аня' }, { label: 'Борис' }])
+  await expect(remindersSection.getByText('Получатели: Аня, Борис', { exact: true })).toBeVisible()
   await expect(remindersSection.getByRole('button', { name: 'Отправить', exact: true })).toHaveCount(0)
   await remindersSection.getByRole('button', { name: 'Отправить напоминание', exact: true }).click()
   const reminderList = remindersSection.locator('ul')

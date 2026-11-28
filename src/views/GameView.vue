@@ -64,6 +64,14 @@ const questionRequired = ref(false)
 const questionCount = computed(() => data.value?.questions?.length ?? 0)
 const gameToken = computed(() => String(route.params.token ?? ''))
 const gameLabel = computed(() => (gameToken.value ? gameToken.value.slice(0, 8) : '—'))
+const reminderRecipientSummary = computed(() => {
+  if (!reminderRecipients.value.length) return 'Получатели не выбраны'
+  const selected = new Set(reminderRecipients.value.map(Number))
+  const names = (data.value?.participants ?? [])
+    .filter((person) => selected.has(person.id))
+    .map((person) => person.name)
+  return `Получатели: ${names.join(', ')}`
+})
 const selfName = ref('')
 const selfInviteToken = ref('')
 const selfJoinError = ref('')
@@ -1236,6 +1244,7 @@ function saveTenant() {
                 </option>
               </select>
             </label>
+            <span class="text-xs opacity-60">{{ reminderRecipientSummary }}</span>
             <span class="text-xs opacity-60">{{ reminderBody.length }}/1000</span>
             <button
               type="submit"
