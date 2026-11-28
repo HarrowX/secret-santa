@@ -2,6 +2,7 @@
 import { computed, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { api } from '../lib/api'
+import { plural } from '../lib/plural.js'
 import { domain } from '../config'
 import { themes } from '../data/themes'
 import { presets } from '../content/presets'
@@ -82,14 +83,6 @@ const filteredEvents = computed(() => {
     return true
   })
 })
-
-function answerCountLabel(count) {
-  const lastTwo = count % 100
-  const last = count % 10
-  if (last === 1 && lastTwo !== 11) return `${count} ответ`
-  if (last >= 2 && last <= 4 && (lastTwo < 12 || lastTwo > 14)) return `${count} ответа`
-  return `${count} ответов`
-}
 
 function syncSettings(game) {
   settings.value = {
@@ -916,7 +909,13 @@ function saveTenant() {
           >
             <summary class="cursor-pointer font-semibold">
               {{ person.name }} —
-              {{ answerCountLabel(answers.filter((item) => item.participant_id === person.id).length) }}
+              {{
+                plural(answers.filter((item) => item.participant_id === person.id).length, [
+                  'ответ',
+                  'ответа',
+                  'ответов',
+                ])
+              }}
             </summary>
             <div class="mt-3">
               <QuestionnaireForm

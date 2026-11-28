@@ -1,5 +1,6 @@
 <script setup>
 import ThemeDecor from './ThemeDecor.vue'
+import { plural } from '../lib/plural.js'
 
 defineProps({
   themes: Array,
@@ -11,14 +12,6 @@ const emit = defineEmits(['update:themeId', 'update:mode'])
 
 const activeClass = 'bg-white text-slate-950 shadow-sm'
 const idleClass = 'text-inherit opacity-70 hover:opacity-100'
-
-function themeCountLabel(count) {
-  const lastTwo = count % 100
-  const last = count % 10
-  if (last === 1 && lastTwo !== 11) return `${count} оформление`
-  if (last >= 2 && last <= 4 && (lastTwo < 12 || lastTwo > 14)) return `${count} оформления`
-  return `${count} оформлений`
-}
 </script>
 
 <template>
@@ -27,7 +20,9 @@ function themeCountLabel(count) {
       <div>
         <p class="text-xs font-semibold uppercase tracking-[0.3em] opacity-60">Выберите свой мир</p>
         <h2 class="mt-2 text-2xl font-bold tracking-tight">Атмосфера вашей игры</h2>
-        <p class="mt-2 text-sm opacity-60">{{ themeCountLabel(themes.length) }} · каждая тема доступна бесплатно</p>
+        <p class="mt-2 text-sm opacity-60">
+          {{ plural(themes.length, ['оформление', 'оформления', 'оформлений']) }} · каждая тема доступна бесплатно
+        </p>
       </div>
 
       <div class="inline-flex rounded-full border border-white/20 bg-white/10 p-1 text-sm">
