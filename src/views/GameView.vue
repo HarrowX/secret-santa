@@ -93,7 +93,7 @@ function syncSettings(game) {
   }
 }
 
-async function load(id) {
+async function load(id, keepTenantUrl = false) {
   loading.value = true
   error.value = ''
   errors.value = {}
@@ -108,7 +108,7 @@ async function load(id) {
   organizers.value = []
   reminders.value = []
   pastGames.value = []
-  tenantUrl.value = ''
+  if (!keepTenantUrl) tenantUrl.value = ''
   selfName.value = ''
   selfJoinError.value = ''
   selfInviteToken.value = localStorage.getItem(inviteStorageKey(id)) ?? ''
@@ -186,7 +186,7 @@ async function runAction(key, action) {
   errors.value = { ...errors.value, [key]: '' }
   try {
     await action()
-    await load(route.params.token)
+    await load(route.params.token, key === 'tenant')
   } catch (requestError) {
     errors.value = { ...errors.value, [key]: requestError.message }
   } finally {
@@ -715,15 +715,12 @@ function saveTenant() {
           </button>
           <p v-if="errors.tenant" role="alert" class="text-sm text-rose-300">{{ errors.tenant }}</p>
         </form>
-        <a
-          v-if="tenantUrl"
-          :href="tenantUrl"
-          target="_blank"
-          rel="noopener noreferrer"
-          class="mt-2 block truncate text-sm underline"
-        >
-          {{ tenantUrl }}
-        </a>
+        <div v-if="tenantUrl" class="mt-2 flex flex-wrap items-center gap-2 text-sm">
+          <a :href="tenantUrl" target="_blank" rel="noopener noreferrer" class="truncate underline">
+            Открыть адрес игры
+          </a>
+          <span class="min-w-0 truncate">{{ tenantUrl }}</span>
+        </div>
       </div>
 
       <div class="rounded-2xl border border-white/10 bg-white/5 p-5">

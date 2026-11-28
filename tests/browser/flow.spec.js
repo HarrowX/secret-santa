@@ -38,6 +38,16 @@ test('organizer and anonymous participants complete the game in the browser', as
     'Напоминаю: обмен подарками 25 декабря',
   )
   await expect(organizer.getByLabel('Адрес игры на поддомене')).toHaveAttribute('placeholder', 'korporativ-2026')
+  await organizer.getByLabel('Адрес игры на поддомене').fill('browser-tenant-link')
+  await organizer.getByRole('button', { name: 'Сохранить адрес' }).click()
+  const tenantLink = organizer.getByRole('link', { name: 'Открыть адрес игры' })
+  await expect(tenantLink).toBeVisible()
+  await expect(tenantLink).toHaveText('Открыть адрес игры')
+  await expect(tenantLink).not.toHaveAttribute('aria-label')
+  await expect(tenantLink).toHaveAttribute('target', '_blank')
+  await expect(tenantLink).toHaveAttribute('rel', 'noopener noreferrer')
+  const tenantUrl = String(await tenantLink.getAttribute('href'))
+  await expect(tenantLink.locator('xpath=..').locator('span')).toHaveText(tenantUrl)
   await expect(organizer.getByText('Получатели напоминания', { exact: true })).toBeVisible()
   await expect(
     organizer
