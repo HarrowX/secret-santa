@@ -264,7 +264,11 @@ export function clearRecoveryCodes() {
 
 export async function ensureSession() {
   const session = await api.auth.session()
-  if (session.user) return { user: session.user, recoveryCodes: readRecoveryCodes() }
+  if (session.user) {
+    const anonymous = !session.user.email && !session.user.has_password
+    if (!anonymous) clearRecoveryCodes()
+    return { user: session.user, recoveryCodes: anonymous ? readRecoveryCodes() : [] }
+  }
   const created = await api.auth.createSession()
   saveRecoveryCodes(created.recoveryCodes)
   return { user: created.user, recoveryCodes: created.recoveryCodes }

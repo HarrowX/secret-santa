@@ -34,14 +34,9 @@ export function publicUser(row) {
 }
 
 export function createRecoveryCodes(userId) {
-  const insert = db.prepare('INSERT INTO recovery_codes (user_id, code_hash) VALUES (?, ?)')
-  const codes = []
-  for (let index = 0; index < 5; index += 1) {
-    const code = randomBytes(6).toString('hex').slice(0, 10).toUpperCase()
-    insert.run(userId, hashToken(code))
-    codes.push(code)
-  }
-  return codes
+  const code = randomBytes(16).toString('hex').toUpperCase()
+  db.prepare('INSERT INTO recovery_codes (user_id, code_hash) VALUES (?, ?)').run(userId, hashToken(code))
+  return [code]
 }
 
 export function createSession(userId, res) {

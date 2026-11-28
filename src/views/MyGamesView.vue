@@ -84,8 +84,8 @@ async function register() {
   authBusy.value = true
   authError.value = ''
   try {
-    const response = await api.auth.register({ email: email.value, password: password.value })
-    saveRecoveryCodes(response.recoveryCodes)
+    await api.auth.register({ email: email.value, password: password.value })
+    clearRecoveryCodes()
     password.value = ''
     await load()
   } catch (requestError) {
@@ -241,11 +241,11 @@ load()
       </form>
       <p v-if="authError" role="alert" class="mt-2 text-sm text-rose-300">{{ authError }}</p>
       <section
-        v-if="recoveryCodes.length"
-        aria-label="Коды восстановления"
+        v-if="!user?.email && !user?.has_password && recoveryCodes.length"
+        aria-label="Код восстановления"
         class="mt-4 rounded-xl border border-white/15 bg-white/5 p-4"
       >
-        <h3 class="font-bold">Коды восстановления</h3>
+        <h3 class="font-bold">Код восстановления</h3>
         <p class="mt-1 text-sm opacity-60">Сохраните код: он вернёт доступ к играм в другом браузере.</p>
         <div class="mt-3 grid gap-2 sm:grid-cols-2">
           <div v-for="code in recoveryCodes" :key="code" class="rounded-lg border border-white/10 bg-white/5 px-3 py-2">

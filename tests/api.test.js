@@ -432,6 +432,11 @@ describe('API', () => {
     assert.equal(registered.body.user.id, anonymous.body.user.id)
     assert.equal(registered.body.user.email, 'santa@example.com')
     assert.equal(registered.body.user.has_password, true)
+    assert.equal(registered.body.recoveryCodes, undefined)
+    assert.equal(
+      db.prepare('SELECT COUNT(*) AS total FROM recovery_codes WHERE user_id = ?').get(registered.body.user.id).total,
+      0,
+    )
 
     const duplicate = await request('POST', '/auth/register', {
       email: 'santa@example.com',
@@ -460,7 +465,8 @@ describe('API', () => {
   it('создаёт анонимную сессию, восстанавливает её и добавляет email', async () => {
     const created = await request('POST', '/auth/session', {})
     assert.equal(created.status, 201)
-    assert.equal(created.body.recoveryCodes.length, 5)
+    assert.equal(created.body.recoveryCodes.length, 1)
+    assert.match(created.body.recoveryCodes[0], /^[0-9A-F]{32}$/)
     assert.equal(created.body.user.email, null)
     assert.ok(created.cookie)
 
@@ -476,7 +482,9 @@ describe('API', () => {
     })
     assert.equal(recovered.status, 200)
     assert.equal(recovered.body.user.id, created.body.user.id)
-    assert.equal(recovered.body.recoveryCodes.length, 5)
+    assert.equal(recovered.body.recoveryCodes.length, 1)
+    assert.match(recovered.body.recoveryCodes[0], /^[0-9A-F]{32}$/)
+    assert.notEqual(recovered.body.recoveryCodes[0], created.body.recoveryCodes[0])
 
     const reused = await request('POST', '/auth/recovery', {
       code: created.body.recoveryCodes[0],

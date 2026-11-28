@@ -232,12 +232,12 @@ test('anonymous access is restored from a recovery code in a clean context', asy
   await expect(owner).toHaveURL(/\/game\//)
 
   await owner.goto('/my')
-  const ownerCodes = owner.getByRole('region', { name: 'Коды восстановления' })
+  const ownerCodes = owner.getByRole('region', { name: 'Код восстановления' })
   const copyButton = ownerCodes.getByRole('button', { name: /Скопировать код восстановления/ }).first()
-  await expect(ownerCodes.getByRole('button', { name: /Скопировать код восстановления/ })).toHaveCount(5)
+  await expect(ownerCodes.getByRole('button', { name: /Скопировать код восстановления/ })).toHaveCount(1)
   await copyButton.click()
   const recoveryCode = await owner.evaluate(() => navigator.clipboard.readText())
-  expect(recoveryCode).toMatch(/^[0-9A-F]{10}$/)
+  expect(recoveryCode).toMatch(/^[0-9A-F]{32}$/)
   await expect(owner.getByRole('button', { name: `Открыть игру ${title}` })).toBeVisible()
   await ownerContext.close()
 
@@ -257,10 +257,11 @@ test('anonymous access is restored from a recovery code in a clean context', asy
   expect(recoveryResponse.status()).toBe(200)
 
   await expect(restored.getByRole('button', { name: `Открыть игру ${title}` })).toBeVisible()
-  const restoredCodes = restored.getByRole('region', { name: 'Коды восстановления' })
-  await expect(restoredCodes.getByRole('button', { name: /Скопировать код восстановления/ })).toHaveCount(5)
+  const restoredCodes = restored.getByRole('region', { name: 'Код восстановления' })
+  await expect(restoredCodes.getByRole('button', { name: /Скопировать код восстановления/ })).toHaveCount(1)
   const restoredCodeValues = await restoredCodes.locator('code').allInnerTexts()
   expect(restoredCodeValues.map((value) => value.trim())).not.toContain(recoveryCode)
+  expect(restoredCodeValues[0].trim()).toMatch(/^[0-9A-F]{32}$/)
 
   await cleanContext.close()
 })
@@ -281,9 +282,10 @@ test('login clears recovery codes and logout starts a fresh anonymous session', 
   await expect(page).toHaveURL(/\/game\//)
 
   await page.goto('/my')
-  const codes = page.getByRole('region', { name: 'Коды восстановления' })
-  await expect(codes.getByRole('button', { name: /Скопировать код восстановления/ })).toHaveCount(5)
+  const codes = page.getByRole('region', { name: 'Код восстановления' })
+  await expect(codes.getByRole('button', { name: /Скопировать код восстановления/ })).toHaveCount(1)
   const oldCodes = (await codes.locator('code').allInnerTexts()).map((value) => value.trim())
+  expect(oldCodes[0]).toMatch(/^[0-9A-F]{32}$/)
   await expect(page.getByRole('button', { name: `Открыть игру ${title}` })).toBeVisible()
 
   await page.getByLabel('Email').fill(email)
@@ -296,9 +298,10 @@ test('login clears recovery codes and logout starts a fresh anonymous session', 
 
   await page.getByRole('button', { name: 'Выйти' }).click()
 
-  const freshCodes = page.getByRole('region', { name: 'Коды восстановления' })
-  await expect(freshCodes.getByRole('button', { name: /Скопировать код восстановления/ })).toHaveCount(5)
+  const freshCodes = page.getByRole('region', { name: 'Код восстановления' })
+  await expect(freshCodes.getByRole('button', { name: /Скопировать код восстановления/ })).toHaveCount(1)
   const freshCodeValues = (await freshCodes.locator('code').allInnerTexts()).map((value) => value.trim())
+  expect(freshCodeValues[0]).toMatch(/^[0-9A-F]{32}$/)
   expect(freshCodeValues).not.toEqual(oldCodes)
   await expect(page.getByRole('button', { name: `Открыть игру ${title}` })).toHaveCount(0)
 
@@ -340,7 +343,7 @@ test('clipboard failure stays local to each copy button', async ({ browser }) =>
   await expect(gameButton).toBeVisible()
   await expect(gameCard.getByText('Не удалось скопировать ссылку')).toBeVisible()
 
-  const codesRegion = page.getByRole('region', { name: 'Коды восстановления' })
+  const codesRegion = page.getByRole('region', { name: 'Код восстановления' })
   const copyCodeButton = codesRegion.getByRole('button', { name: /Скопировать код восстановления/ }).first()
   const codeRow = copyCodeButton.locator('xpath=../..')
   await copyCodeButton.click()

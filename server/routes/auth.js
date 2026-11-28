@@ -50,7 +50,10 @@ authRouter.post('/register', validateBody(schemas.credentials), (req, res) => {
   if (req.user) {
     if (req.user.email || req.user.has_password) fail(409, 'У пользователя уже есть регистрация')
     try {
-      db.prepare('UPDATE users SET email = ?, password_hash = ? WHERE id = ?').run(email, passwordHash, req.user.id)
+      db.transaction(() => {
+        db.prepare('UPDATE users SET email = ?, password_hash = ? WHERE id = ?').run(email, passwordHash, req.user.id)
+        db.prepare('DELETE FROM recovery_codes WHERE user_id = ?').run(req.user.id)
+      })()
     } catch (error) {
       if (String(error.message).includes('UNIQUE')) fail(409, 'Этот email уже занят')
       throw error
@@ -60,7 +63,6 @@ authRouter.post('/register', validateBody(schemas.credentials), (req, res) => {
   }
 
   let user
-  let recoveryCodes
   try {
     db.transaction(() => {
       const token = createToken(16)
@@ -69,7 +71,6 @@ authRouter.post('/register', validateBody(schemas.credentials), (req, res) => {
         .run(token, email, passwordHash)
       const userId = Number(result.lastInsertRowid)
       user = userById(userId)
-      recoveryCodes = createRecoveryCodes(userId)
       createSession(userId, res)
     })()
   } catch (error) {
@@ -77,7 +78,7 @@ authRouter.post('/register', validateBody(schemas.credentials), (req, res) => {
     throw error
   }
 
-  res.status(201).json({ user: publicUser(user), recoveryCodes })
+  res.status(201).json({ user: publicUser(user) })
 })
 
 authRouter.post('/login', validateBody(schemas.credentials), (req, res) => {
