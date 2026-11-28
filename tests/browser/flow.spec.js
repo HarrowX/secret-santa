@@ -322,6 +322,8 @@ test('my games copies an absolute game link from the cabinet', async ({ browser 
 
   const copyButton = page.getByRole('button', { name: `Скопировать ссылку на игру ${title}` })
   await expect(copyButton).toBeVisible()
+  await expect(copyButton).toHaveText(`Скопировать ссылку на игру ${title}`)
+  await expect(copyButton).not.toHaveAttribute('aria-label')
   expect(await copyButton.evaluate((element) => element.tagName)).toBe('BUTTON')
   expect(await copyButton.evaluate((element) => element.querySelector('button, a, [role="button"]') !== null)).toBe(
     false,

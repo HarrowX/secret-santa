@@ -341,7 +341,6 @@ load()
               v-if="game.token"
               type="button"
               class="mt-2 text-xs underline opacity-70 transition hover:opacity-100"
-              :aria-label="`Скопировать ссылку на игру ${game.title}`"
               @click="copyLink(gameUrl(game), game.id)"
             >
               Скопировать ссылку на игру {{ game.title }}
