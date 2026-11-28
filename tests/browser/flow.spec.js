@@ -26,6 +26,8 @@ test('organizer and anonymous participants complete the game in the browser', as
   await expect(organizer).toHaveURL(/\/game\//)
   await expect(organizer.getByRole('heading', { name: 'Браузерная игра' })).toBeVisible()
 
+  await expect(organizer.getByText('Список имён через запятую', { exact: true })).toBeVisible()
+  await expect(organizer.getByLabel('Список имён через запятую')).toHaveAttribute('placeholder', 'Аня, Борис, Вика')
   await organizer.getByLabel('Список имён через запятую').fill('Аня, Борис')
   await organizer.getByRole('button', { name: 'Добавить список' }).click()
 
@@ -114,6 +116,8 @@ test('participants join by the common link and the organizer can remove a bad na
   const joiner = await joinerContext.newPage()
   await joiner.goto(commonPath)
   await expect(joiner.getByText('Присоединиться к игре')).toBeVisible()
+  await expect(joiner.getByText('Ваше имя', { exact: true })).toBeVisible()
+  await expect(joiner.getByLabel('Ваше имя')).toHaveAttribute('placeholder', 'Аня')
   await joiner.getByLabel('Ваше имя').fill('Глупое имя')
   await joiner.getByRole('button', { name: 'Присоединиться' }).click()
   await expect(joiner).toHaveURL(/\/join\//)
@@ -409,6 +413,8 @@ test('game copy links show local clipboard status', async ({ browser }) => {
   await page.getByRole('main').getByRole('button', { name: 'Создать игру' }).click()
   await expect(page).toHaveURL(/\/game\//)
 
+  await expect(page.getByText('Имя участника', { exact: true })).toBeVisible()
+  await expect(page.getByLabel('Имя участника')).toHaveAttribute('placeholder', 'Аня')
   await page.getByLabel('Имя участника').fill('Аня')
   await page.getByRole('button', { name: 'Добавить', exact: true }).click()
 

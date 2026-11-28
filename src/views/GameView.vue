@@ -443,15 +443,18 @@ function saveTenant() {
         </button>
       </div>
       <form v-else class="mt-4 flex flex-wrap gap-2" @submit.prevent="selfJoin">
-        <input
-          v-model="selfName"
-          type="text"
-          maxlength="80"
-          required
-          placeholder="Как вас зовут"
-          aria-label="Ваше имя"
-          class="min-w-48 flex-1 rounded-xl border border-white/15 bg-white/5 px-4 py-2 text-sm outline-none placeholder:text-current/40 focus:border-white/40"
-        />
+        <label class="grid min-w-48 flex-1 gap-1 text-sm">
+          <span class="text-xs font-semibold uppercase tracking-widest opacity-60">Ваше имя</span>
+          <input
+            v-model="selfName"
+            type="text"
+            maxlength="80"
+            required
+            placeholder="Аня"
+            aria-label="Ваше имя"
+            class="rounded-xl border border-white/15 bg-white/5 px-4 py-2 text-sm outline-none placeholder:text-current/40 focus:border-white/40"
+          />
+        </label>
         <button
           type="submit"
           class="rounded-xl px-4 py-2 text-sm font-bold transition hover:opacity-80 disabled:opacity-50"
@@ -521,14 +524,17 @@ function saveTenant() {
           </div>
         </div>
         <form class="mt-4 flex flex-wrap gap-2" @submit.prevent="addParticipant">
-          <input
-            v-model="newParticipant"
-            type="text"
-            maxlength="80"
-            placeholder="Имя участника"
-            aria-label="Имя участника"
-            class="min-w-48 flex-1 rounded-xl border border-white/15 bg-white/5 px-4 py-2 text-sm outline-none placeholder:text-current/40 focus:border-white/40"
-          />
+          <label class="grid min-w-48 flex-1 gap-1 text-sm">
+            <span class="text-xs font-semibold uppercase tracking-widest opacity-60">Имя участника</span>
+            <input
+              v-model="newParticipant"
+              type="text"
+              maxlength="80"
+              placeholder="Аня"
+              aria-label="Имя участника"
+              class="rounded-xl border border-white/15 bg-white/5 px-4 py-2 text-sm outline-none placeholder:text-current/40 focus:border-white/40"
+            />
+          </label>
           <button
             type="submit"
             class="rounded-xl border border-white/20 px-4 py-2 text-sm font-semibold transition hover:bg-white/10 disabled:opacity-50"
@@ -538,14 +544,17 @@ function saveTenant() {
           </button>
         </form>
         <form class="mt-3 grid gap-2 sm:grid-cols-[1fr_auto]" @submit.prevent="addParticipants">
-          <input
-            v-model="bulkNames"
-            type="text"
-            maxlength="1000"
-            placeholder="Аня, Борис, Вика — через запятую"
-            aria-label="Список имён через запятую"
-            class="w-full rounded-xl border border-white/15 bg-white/5 px-4 py-2 text-sm outline-none placeholder:text-current/40 focus:border-white/40"
-          />
+          <label class="grid gap-1 text-sm">
+            <span class="text-xs font-semibold uppercase tracking-widest opacity-60">Список имён через запятую</span>
+            <input
+              v-model="bulkNames"
+              type="text"
+              maxlength="1000"
+              placeholder="Аня, Борис, Вика"
+              aria-label="Список имён через запятую"
+              class="w-full rounded-xl border border-white/15 bg-white/5 px-4 py-2 text-sm outline-none placeholder:text-current/40 focus:border-white/40"
+            />
+          </label>
           <button
             type="submit"
             class="rounded-xl border border-white/20 px-4 py-2 text-sm font-semibold transition hover:bg-white/10 disabled:opacity-50"
