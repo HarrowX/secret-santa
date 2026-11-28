@@ -1006,7 +1006,10 @@ test('landing declines the theme count in Russian', async ({ browser }) => {
   await expect(
     page.getByText(`До ${MAX_QUESTIONS} своих вопросов: текст, число, да/нет и выбор вариантов.`),
   ).toBeVisible()
-  await expect(page.getByText('До трёх человек управляют одной игрой и спокойно передают её дальше.')).toBeVisible()
+  await expect(
+    page.getByText('До трёх человек управляют одной игрой и могут передать её другому организатору.'),
+  ).toBeVisible()
+  await expect(page.getByText('спокойно передают её дальше', { exact: false })).toHaveCount(0)
   await expect(page.getByText('До три человек', { exact: false })).toHaveCount(0)
   const organizersCard = page.locator('article').filter({ hasText: 'Команда организаторов' })
   await expect(organizersCard.getByText('До трёх организаторов и передача игры', { exact: true })).toBeVisible()
