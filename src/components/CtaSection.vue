@@ -1,4 +1,6 @@
 <script setup>
+import { MAX_ORGANIZERS, MAX_QUESTIONS } from '../../limits.js'
+
 defineProps({
   accent: String,
 })
@@ -30,7 +32,10 @@ const emit = defineEmits(['open-create'])
           Создать игру бесплатно
         </button>
       </div>
-      <p class="relative mt-5 text-xs opacity-50">Все возможности доступны сразу.</p>
+      <p class="relative mt-5 text-xs opacity-50">
+        Настраивайте до {{ MAX_QUESTIONS }} вопросов, добавляйте до {{ MAX_ORGANIZERS }} организаторов и назначайте пары
+        вручную.
+      </p>
     </div>
   </section>
 </template>

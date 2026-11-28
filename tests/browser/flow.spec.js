@@ -949,6 +949,13 @@ test('landing declines the theme count in Russian', async ({ browser }) => {
   await expect(
     page.getByText('Создайте игру, пригласите участников по ссылке и проведите жеребьёвку.', { exact: true }),
   ).toBeVisible()
+  await expect(
+    page.getByText(
+      `Настраивайте до ${MAX_QUESTIONS} вопросов, добавляйте до ${MAX_ORGANIZERS} организаторов и назначайте пары вручную.`,
+      { exact: true },
+    ),
+  ).toBeVisible()
+  await expect(page.getByText('Все возможности доступны сразу', { exact: false })).toHaveCount(0)
   for (const oldCtaText of ['за пару минут', 'пригласите близких', 'предвкушение подарков']) {
     await expect(page.getByText(oldCtaText, { exact: false })).toHaveCount(0)
   }
@@ -973,7 +980,7 @@ test('landing declines the theme count in Russian', async ({ browser }) => {
   await expect(page.getByText('Участники по одному или списком')).toBeVisible()
   await expect(page.getByText('Безлимит участников', { exact: false })).toHaveCount(0)
   await expect(page.getByText(`До ${MAX_QUESTIONS} вопросов в анкете`)).toBeVisible()
-  await expect(page.getByText(`До ${MAX_ORGANIZERS} организаторов`)).toBeVisible()
+  await expect(page.getByText(`До ${MAX_ORGANIZERS} организаторов`, { exact: true })).toBeVisible()
   await expect(
     page.getByText(`До ${MAX_QUESTIONS} своих вопросов: текст, число, да/нет и выбор вариантов.`),
   ).toBeVisible()
