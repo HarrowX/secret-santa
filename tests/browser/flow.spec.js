@@ -946,6 +946,12 @@ test('landing declines the theme count in Russian', async ({ browser }) => {
   await expect(page.getByText('Готовы удивить друзей или коллег?', { exact: true })).toBeVisible()
   await expect(page.getByText('Без регистрации и email', { exact: true })).toBeVisible()
   await expect(page.getByText('Друзьям, коллегам и семье', { exact: true })).toBeVisible()
+  await expect(
+    page.getByText('Создайте игру, пригласите участников по ссылке и проведите жеребьёвку.', { exact: true }),
+  ).toBeVisible()
+  for (const oldCtaText of ['за пару минут', 'пригласите близких', 'предвкушение подарков']) {
+    await expect(page.getByText(oldCtaText, { exact: false })).toHaveCount(0)
+  }
   await expect(page.getByText('Праздник начинается с маленькой тайны', { exact: false })).toHaveCount(0)
   await expect(page.getByText('свою команду', { exact: false })).toHaveCount(0)
   await expect(

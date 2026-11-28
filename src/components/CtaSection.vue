@@ -18,7 +18,7 @@ const emit = defineEmits(['open-create'])
       <p class="relative text-xs font-semibold uppercase tracking-[0.3em] opacity-60">Без регистрации и email</p>
       <h2 class="relative mt-3 text-3xl font-black sm:text-4xl">Готовы удивить друзей или коллег?</h2>
       <p class="relative mx-auto mt-3 max-w-xl leading-relaxed opacity-70">
-        Создайте игру за пару минут, пригласите близких и наблюдайте, как растёт предвкушение подарков.
+        Создайте игру, пригласите участников по ссылке и проведите жеребьёвку.
       </p>
       <div class="relative mt-7 flex flex-wrap justify-center gap-3">
         <button
