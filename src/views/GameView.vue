@@ -1150,7 +1150,8 @@ function saveTenant() {
           </div>
           <ol class="mt-3 grid gap-2 text-sm opacity-80">
             <li v-for="pair in data.pairs" :key="pair.id" class="flex flex-wrap items-center gap-2">
-              <span>{{ participantName(pair.from_id) }} → {{ participantName(pair.to_id) }}</span>
+              <span>Дарит: {{ participantName(pair.from_id) }}</span>
+              <span>Получает: {{ participantName(pair.to_id) }}</span>
               <span v-if="pair.manual" class="opacity-50">(вручную)</span>
               <button
                 v-if="!pair.revealed_at"
