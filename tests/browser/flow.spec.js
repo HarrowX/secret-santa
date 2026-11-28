@@ -929,10 +929,10 @@ test('landing declines the theme count in Russian', async ({ browser }) => {
   const metricsSection = page.locator('section').filter({ hasText: 'Как проходит игра' })
   for (const [title, count, caption] of [
     ['Игра создана', '3', '100 из 100 игр доходят до этого шага'],
-    ['Участники в сборе', '1', '33 из 100 игр доходят до этого шага'],
+    ['Участники добавлены', '1', '33 из 100 игр доходят до этого шага'],
     ['Пары распределены', '1', '33 из 100 игр доходят до этого шага'],
     ['Подарки отправлены', '1', '33 из 100 игр доходят до этого шага'],
-    ['Хочется ещё одну игру', '2', '67 из 100 игр доходят до этого шага'],
+    ['Организатор создал ещё одну игру', '2', '67 из 100 игр доходят до этого шага'],
   ]) {
     const stage = metricsSection.locator('div').filter({ hasText: title }).last()
     await expect(stage.locator('p').first()).toHaveText(count)
@@ -941,7 +941,9 @@ test('landing declines the theme count in Russian', async ({ browser }) => {
   }
   await expect(page.getByText('Воронка', { exact: false })).toHaveCount(0)
   await expect(page.getByText('% от созданных игр', { exact: false })).toHaveCount(0)
-  await expect(page.getByText('Организатор вернулся', { exact: false })).toHaveCount(0)
+  for (const oldMetricTitle of ['Участники в сборе', 'Хочется ещё одну игру', 'Организатор вернулся']) {
+    await expect(page.getByText(oldMetricTitle, { exact: false })).toHaveCount(0)
+  }
   await expect(page.getByText(/позовите друзей или коллег/)).toBeVisible()
   await expect(page.getByText('Готовы удивить друзей или коллег?', { exact: true })).toBeVisible()
   await expect(page.getByText('Без регистрации и email', { exact: true })).toBeVisible()

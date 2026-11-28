@@ -18,10 +18,10 @@ const loaded = ref(false)
 
 const stageCopy = {
   game_created: 'Игра создана',
-  participant_invited: 'Участники в сборе',
+  participant_invited: 'Участники добавлены',
   draw_completed: 'Пары распределены',
   gift_sent: 'Подарки отправлены',
-  organizer_return: 'Хочется ещё одну игру',
+  organizer_return: 'Организатор создал ещё одну игру',
 }
 
 function stageTitle(stage) {
