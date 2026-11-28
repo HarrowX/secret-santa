@@ -140,6 +140,8 @@ test('organizer and anonymous participants complete the game in the browser', as
         .locator('span')
         .getByText(text, { exact: true }),
     ).toBeVisible()
+    await expect(organizer.getByLabel(name)).toBeVisible()
+    await expect(organizer.getByLabel(name)).not.toHaveAttribute('aria-label')
   }
 
   await organizer.getByLabel('Кто дарит в ручной паре').selectOption({ label: 'Аня' })

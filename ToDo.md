@@ -452,3 +452,4 @@
 - [x] 13.104 Поля имён участников получают имя из видимых label без aria-label; browser E2E обновлён.
 - [x] 13.105 Select отметки подарка получает имя из видимого label без aria-label; browser E2E обновлён.
 - [x] 13.106 Select собеседника получает имя из видимого label без aria-label; browser E2E обновлён.
+- [x] 13.107 Selects исключений и ручных пар получают имя из видимых label без aria-label; browser E2E обновлён.

@@ -980,7 +980,6 @@ function saveTenant() {
             <span class="text-xs font-semibold uppercase tracking-widest opacity-60">Кто не дарит</span>
             <select
               v-model="exclusionFrom"
-              aria-label="Кто не дарит"
               class="rounded-xl border border-white/15 px-3 py-2 text-sm outline-none focus:border-white/40"
             >
               <option value="" disabled>Кто не дарит</option>
@@ -991,7 +990,6 @@ function saveTenant() {
             <span class="text-xs font-semibold uppercase tracking-widest opacity-60">Кому не дарит</span>
             <select
               v-model="exclusionTo"
-              aria-label="Кому не дарит"
               class="rounded-xl border border-white/15 px-3 py-2 text-sm outline-none focus:border-white/40"
             >
               <option value="" disabled>Кому не дарит</option>
@@ -1030,7 +1028,6 @@ function saveTenant() {
             <span class="text-xs font-semibold uppercase tracking-widest opacity-60">Кто дарит в ручной паре</span>
             <select
               v-model="manualFrom"
-              aria-label="Кто дарит в ручной паре"
               class="rounded-xl border border-white/15 px-3 py-2 text-sm outline-none focus:border-white/40"
             >
               <option value="" disabled>Кто дарит</option>
@@ -1041,7 +1038,6 @@ function saveTenant() {
             <span class="text-xs font-semibold uppercase tracking-widest opacity-60">Кому дарит в ручной паре</span>
             <select
               v-model="manualTo"
-              aria-label="Кому дарит в ручной паре"
               class="rounded-xl border border-white/15 px-3 py-2 text-sm outline-none focus:border-white/40"
             >
               <option value="" disabled>Кому дарит</option>
