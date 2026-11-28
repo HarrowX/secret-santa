@@ -1051,7 +1051,9 @@ function saveTenant() {
             class="rounded-xl border border-white/20 px-4 py-2 text-sm font-semibold transition hover:bg-white/10 disabled:opacity-50"
             :disabled="busy || !exclusionFrom || !exclusionTo"
           >
-            Исключить
+            Исключить:
+            {{ exclusionFrom ? participantName(exclusionFrom) : 'Выберите участника' }} не дарит
+            {{ exclusionTo ? participantName(exclusionTo) : 'Выберите участника' }}
           </button>
         </form>
         <ul class="mt-3 grid gap-1 text-sm opacity-70">

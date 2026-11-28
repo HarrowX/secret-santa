@@ -388,9 +388,21 @@ test('organizer and anonymous participants complete the game in the browser', as
   await expect(newDrawButton).toHaveText('Жеребьёвка для новых участников: 2')
   await expect(organizer.getByRole('button', { name: 'Доп. жеребьёвка', exact: false })).toHaveCount(0)
 
+  await expect(
+    organizer.getByRole('button', {
+      name: 'Исключить: Выберите участника не дарит Выберите участника',
+      exact: true,
+    }),
+  ).toBeVisible()
   await organizer.getByLabel('Кто не дарит').selectOption({ label: 'Аня' })
   await organizer.getByLabel('Кому не дарит').selectOption({ label: 'Борис' })
-  await organizer.getByRole('button', { name: 'Исключить' }).click()
+  const createExclusion = organizer.getByRole('button', {
+    name: 'Исключить: Аня не дарит Борис',
+    exact: true,
+  })
+  await expect(createExclusion).toBeVisible()
+  await expect(organizer.getByRole('button', { name: 'Исключить', exact: true })).toHaveCount(0)
+  await createExclusion.click()
   const exclusionText = organizer.getByText('Аня не дарит Борис', { exact: true })
   const exclusionRow = exclusionText.locator('xpath=..')
   const removeExclusion = exclusionRow.getByRole('button', {
