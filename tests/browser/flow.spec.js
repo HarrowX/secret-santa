@@ -16,7 +16,7 @@ test('organizer and anonymous participants complete the game in the browser', as
   const organizer = await organizerContext.newPage()
 
   await organizer.goto('/new')
-  await expect(organizer.getByLabel('Бюджет')).toHaveAttribute('placeholder', 'до 1000 ₽')
+  await expect(organizer.getByLabel('Бюджет')).toHaveAttribute('placeholder', '1500 ₽')
   await expect(organizer.getByLabel('Правила')).toHaveAttribute('placeholder', 'Без сладкого, до 25 декабря')
   await expect(organizer.getByLabel('Формат')).toHaveCSS('color-scheme', 'light')
   await expectDateFieldTheme(organizer, 'light', 'rgba(255, 255, 255, 0.65)', 'rgba(15, 23, 42, 0.16)', '%23334155')

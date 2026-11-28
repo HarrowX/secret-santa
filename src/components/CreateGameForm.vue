@@ -97,7 +97,7 @@ async function submit() {
             v-model="budget"
             type="text"
             maxlength="80"
-            placeholder="до 1000 ₽"
+            placeholder="1500 ₽"
             class="rounded-xl border border-white/15 bg-white/5 px-4 py-2.5 text-sm outline-none placeholder:text-current/40 focus:border-white/40"
           />
         </label>
