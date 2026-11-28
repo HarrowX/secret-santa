@@ -153,6 +153,10 @@ test('organizer and anonymous participants complete the game in the browser', as
   await boris.getByLabel('Желания').fill('Книга')
   await boris.getByRole('button', { name: 'Подтвердить участие' }).click()
   await expect(boris.getByText('Вы в игре')).toBeVisible()
+  await expect(
+    organizer.getByText('Исключения и ручные пары сохраняются при повторной жеребьёвке', { exact: true }),
+  ).toBeVisible()
+  await expect(organizer.getByText('Ограничения сохраняются', { exact: false })).toHaveCount(0)
 
   for (const [name, text] of [
     ['Кто не дарит', 'Кто не дарит'],

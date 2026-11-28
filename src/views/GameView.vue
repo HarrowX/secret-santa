@@ -970,7 +970,7 @@ function saveTenant() {
         <div class="flex flex-wrap items-center justify-between gap-3">
           <div>
             <h2 class="font-bold">Исключения и ручные пары</h2>
-            <p class="mt-1 text-sm opacity-60">Ограничения сохраняются при повторной жеребьёвке</p>
+            <p class="mt-1 text-sm opacity-60">Исключения и ручные пары сохраняются при повторной жеребьёвке</p>
           </div>
           <button
             type="button"
