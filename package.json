@@ -21,6 +21,7 @@
     "preview": "vite preview",
     "env:validate": "node scripts/validate-env.js",
     "db:migrate": "node scripts/migrate.js",
+    "db:seed": "node scripts/seed-local.js",
     "db:backup": "node scripts/backup-db.js",
     "db:restore": "node scripts/restore-db.js",
     "db:check-backup": "node scripts/check-backup.js"
