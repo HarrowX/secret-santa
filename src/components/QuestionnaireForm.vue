@@ -54,6 +54,10 @@ function options(question) {
   return Array.isArray(question.options) ? question.options.map(String) : []
 }
 
+function questionLabel(question) {
+  return `${question.title}${question.required ? ' (обязательно)' : ''}`
+}
+
 function checked(questionId, option) {
   return toArray(values.value[questionId]).includes(option)
 }
@@ -96,10 +100,7 @@ function save() {
 <template>
   <form v-if="questions.length" class="grid gap-3" @submit.prevent="save">
     <div v-for="question in questions" :key="question.id" class="grid gap-1 text-sm">
-      <label :for="`question-${question.id}`" class="font-semibold">
-        {{ question.title }}
-        <span v-if="question.required" class="opacity-60">*</span>
-      </label>
+      <label :for="`question-${question.id}`" class="font-semibold">{{ questionLabel(question) }}</label>
       <span v-if="question.hint" class="text-xs opacity-50">{{ question.hint }}</span>
       <span v-if="['single', 'multi'].includes(question.type)" class="text-xs opacity-50">
         Выберите подходящий вариант
@@ -110,7 +111,7 @@ function save() {
         :id="`question-${question.id}`"
         v-model="values[question.id]"
         type="number"
-        :aria-label="question.title"
+        :aria-label="questionLabel(question)"
         :aria-invalid="Boolean(errors[question.id])"
         class="rounded-xl border border-white/15 bg-white/5 px-4 py-2 text-sm outline-none focus:border-white/40 disabled:opacity-60"
         :class="errors[question.id] ? 'border-rose-400' : ''"
@@ -120,7 +121,7 @@ function save() {
         v-else-if="question.type === 'boolean'"
         :id="`question-${question.id}`"
         v-model="values[question.id]"
-        :aria-label="question.title"
+        :aria-label="questionLabel(question)"
         :aria-invalid="Boolean(errors[question.id])"
         class="rounded-xl border border-white/15 px-4 py-2 text-sm outline-none focus:border-white/40 disabled:opacity-60"
         :class="errors[question.id] ? 'border-rose-400' : ''"
@@ -134,7 +135,7 @@ function save() {
         v-else-if="question.type === 'single'"
         :id="`question-${question.id}`"
         v-model="values[question.id]"
-        :aria-label="question.title"
+        :aria-label="questionLabel(question)"
         :aria-invalid="Boolean(errors[question.id])"
         class="rounded-xl border border-white/15 px-4 py-2 text-sm outline-none focus:border-white/40 disabled:opacity-60"
         :class="errors[question.id] ? 'border-rose-400' : ''"
@@ -146,10 +147,10 @@ function save() {
       <fieldset
         v-else-if="question.type === 'multi'"
         role="group"
-        :aria-label="question.title"
+        :aria-label="questionLabel(question)"
         class="flex flex-wrap gap-2 rounded-xl border border-white/10 p-2"
       >
-        <legend class="sr-only">{{ question.title }}</legend>
+        <legend class="sr-only">{{ questionLabel(question) }}</legend>
         <label
           v-for="option in options(question)"
           :key="option"
@@ -174,7 +175,7 @@ function save() {
         v-model="values[question.id]"
         type="text"
         maxlength="2000"
-        :aria-label="question.title"
+        :aria-label="questionLabel(question)"
         :aria-invalid="Boolean(errors[question.id])"
         class="rounded-xl border border-white/15 bg-white/5 px-4 py-2 text-sm outline-none placeholder:text-current/40 focus:border-white/40 disabled:opacity-60"
         :class="errors[question.id] ? 'border-rose-400' : ''"
