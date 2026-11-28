@@ -236,7 +236,7 @@ async function send() {
             type="url"
             maxlength="500"
             placeholder="https://example.com/gift.jpg"
-            aria-label="Ссылка на изображение"
+            aria-label="Ссылка на изображение (необязательно)"
             class="rounded-xl border border-white/15 bg-white/5 px-3 py-2 text-sm outline-none focus:border-white/40"
           />
         </label>

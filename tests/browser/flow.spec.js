@@ -122,12 +122,15 @@ test('organizer and anonymous participants complete the game in the browser', as
   await expect(
     ania
       .locator('label')
-      .filter({ has: ania.getByLabel('Ссылка на изображение') })
+      .filter({ has: ania.getByLabel('Ссылка на изображение (необязательно)') })
       .locator('span')
       .getByText('Ссылка на изображение (необязательно)', { exact: true }),
   ).toBeVisible()
   await expect(ania.getByLabel('Текст сообщения')).toHaveAttribute('placeholder', 'Привет! Спасибо за подарок.')
-  await expect(ania.getByLabel('Ссылка на изображение')).toHaveAttribute('placeholder', 'https://example.com/gift.jpg')
+  await expect(ania.getByLabel('Ссылка на изображение (необязательно)')).toHaveAttribute(
+    'placeholder',
+    'https://example.com/gift.jpg',
+  )
 
   await ania.getByLabel('Текст сообщения').fill('Привет, Борис!')
   await ania.getByRole('button', { name: 'Отправить' }).click()
