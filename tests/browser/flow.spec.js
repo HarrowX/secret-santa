@@ -955,6 +955,8 @@ test('landing declines the theme count in Russian', async ({ browser }) => {
   await expect(page).toHaveURL(/#features$/)
   const ownSpaceCard = page.locator('article').filter({ hasText: 'Своё пространство' })
   await expect(ownSpaceCard.getByText('Личная ссылка')).toBeVisible()
+  await expect(ownSpaceCard.locator('p').last()).toHaveText('Ссылка на игру и выбор оформления.')
+  await expect(page.getByText('которое чувствуется как ваше', { exact: false })).toHaveCount(0)
   expect(await ownSpaceCard.textContent()).not.toContain(new URL(page.url()).hostname)
   await expect(page.getByText('Участники по одному или списком')).toBeVisible()
   await expect(page.getByText('Безлимит участников', { exact: false })).toHaveCount(0)
