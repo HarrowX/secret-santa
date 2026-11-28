@@ -84,7 +84,7 @@ test('organizer and anonymous participants complete the game in the browser', as
   await expect(ania.getByLabel('Заметки организатору')).toHaveAttribute('placeholder', 'Не звонить после 21:00')
   await expect(ania.getByLabel('Код участия из прошлой игры (необязательно)')).toHaveAttribute(
     'placeholder',
-    '2f1e3d4c-5b6a-7f80-9c1d-2e3f4a5b6c7d',
+    'A1B2-C3D4-E5F6-7182',
   )
   await ania.getByLabel('Желания').fill('Книга для Ани')
   await ania.getByRole('button', { name: 'Подтвердить участие' }).click()

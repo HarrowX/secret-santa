@@ -328,7 +328,7 @@ async function saveAnswers(payload) {
                 v-model="pastIdentityToken"
                 type="text"
                 maxlength="120"
-                placeholder="2f1e3d4c-5b6a-7f80-9c1d-2e3f4a5b6c7d"
+                placeholder="A1B2-C3D4-E5F6-7182"
                 aria-label="Код участия из прошлой игры (необязательно)"
                 class="rounded-xl border border-white/15 bg-white/5 px-4 py-2.5 text-sm outline-none placeholder:text-current/40 focus:border-white/40"
               />
