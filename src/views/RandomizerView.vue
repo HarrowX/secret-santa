@@ -59,7 +59,7 @@ async function copyResult() {
           :style="{ background: preferences.theme.accent, color: '#0b1120' }"
           :disabled="busy || !names.trim()"
         >
-          {{ busy ? 'Распределяем…' : 'Перемешать' }}
+          {{ busy ? 'Проводим жеребьёвку…' : 'Провести жеребьёвку' }}
         </button>
       </form>
       <p v-if="error" role="alert" class="mt-3 text-sm text-rose-300">{{ error }}</p>
