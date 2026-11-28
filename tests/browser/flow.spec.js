@@ -217,3 +217,50 @@ test('my games copies an absolute game link from the cabinet', async ({ browser 
 
   await context.close()
 })
+
+test('anonymous access is restored from a recovery code in a clean context', async ({ browser }) => {
+  const ownerContext = await browser.newContext()
+  const owner = await ownerContext.newPage()
+  const title = 'Игра с восстановлением доступа'
+
+  await owner.goto('/new')
+  const origin = await owner.evaluate(() => window.location.origin)
+  await ownerContext.grantPermissions(['clipboard-read', 'clipboard-write'], { origin })
+
+  await owner.getByLabel('Название').fill(title)
+  await owner.getByRole('main').getByRole('button', { name: 'Создать игру' }).click()
+  await expect(owner).toHaveURL(/\/game\//)
+
+  await owner.goto('/my')
+  const ownerCodes = owner.getByRole('region', { name: 'Коды восстановления' })
+  const copyButton = ownerCodes.getByRole('button', { name: /Скопировать код восстановления/ }).first()
+  await expect(ownerCodes.getByRole('button', { name: /Скопировать код восстановления/ })).toHaveCount(5)
+  await copyButton.click()
+  const recoveryCode = await owner.evaluate(() => navigator.clipboard.readText())
+  expect(recoveryCode).toMatch(/^[0-9A-F]{10}$/)
+  await expect(owner.getByRole('button', { name: `Открыть игру ${title}` })).toBeVisible()
+  await ownerContext.close()
+
+  const cleanContext = await browser.newContext()
+  const restored = await cleanContext.newPage()
+
+  await restored.goto('/my')
+  await expect(restored.getByRole('heading', { name: 'Мои игры и обмены' })).toBeVisible()
+  await expect(restored.getByRole('button', { name: `Открыть игру ${title}` })).toHaveCount(0)
+
+  const recoveryResponsePromise = restored.waitForResponse(
+    (response) => response.url().includes('/api/auth/recovery') && response.request().method() === 'POST',
+  )
+  await restored.getByRole('textbox', { name: 'Код восстановления' }).fill(recoveryCode)
+  await restored.getByRole('button', { name: 'Восстановить доступ' }).click()
+  const recoveryResponse = await recoveryResponsePromise
+  expect(recoveryResponse.status()).toBe(200)
+
+  await expect(restored.getByRole('button', { name: `Открыть игру ${title}` })).toBeVisible()
+  const restoredCodes = restored.getByRole('region', { name: 'Коды восстановления' })
+  await expect(restoredCodes.getByRole('button', { name: /Скопировать код восстановления/ })).toHaveCount(5)
+  const restoredCodeValues = await restoredCodes.locator('code').allInnerTexts()
+  expect(restoredCodeValues.map((value) => value.trim())).not.toContain(recoveryCode)
+
+  await cleanContext.close()
+})

@@ -1,7 +1,7 @@
 <script setup>
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
-import { api, ensureSession } from '../lib/api'
+import { api, clearRecoveryCodes, ensureSession, saveRecoveryCodes } from '../lib/api'
 import { usePreferencesStore } from '../stores/preferences'
 import ChatPanel from '../components/ChatPanel.vue'
 import QuestionnaireForm from '../components/QuestionnaireForm.vue'
@@ -19,6 +19,9 @@ const error = ref('')
 const authError = ref('')
 const loading = ref(true)
 const authBusy = ref(false)
+const recoveryCodes = ref([])
+const recoveryCode = ref('')
+const recoveryBusy = ref(false)
 
 function normalizeAnswers(data) {
   const rows = Array.isArray(data) ? data : data?.answers
@@ -61,9 +64,9 @@ async function load() {
   loading.value = true
   error.value = ''
   try {
-    await ensureSession()
-    const session = await api.auth.session()
+    const session = await ensureSession()
     user.value = session.user
+    recoveryCodes.value = session.recoveryCodes
     email.value = session.user?.email ?? email.value
     ;[games.value, exchanges.value] = await Promise.all([api.me.games(), api.me.exchanges()])
     questionsByGame.value = {}
@@ -80,7 +83,8 @@ async function register() {
   authBusy.value = true
   authError.value = ''
   try {
-    await api.auth.register({ email: email.value, password: password.value })
+    const response = await api.auth.register({ email: email.value, password: password.value })
+    saveRecoveryCodes(response.recoveryCodes)
     password.value = ''
     await load()
   } catch (requestError) {
@@ -104,8 +108,24 @@ async function login() {
   }
 }
 
+async function recoverAccess() {
+  recoveryBusy.value = true
+  authError.value = ''
+  try {
+    const response = await api.auth.recover(recoveryCode.value.trim())
+    saveRecoveryCodes(response.recoveryCodes)
+    recoveryCode.value = ''
+    await load()
+  } catch (requestError) {
+    authError.value = requestError.message
+  } finally {
+    recoveryBusy.value = false
+  }
+}
+
 async function logout() {
   await api.auth.logout()
+  clearRecoveryCodes()
   await load()
 }
 
@@ -114,6 +134,14 @@ async function copyLink(value) {
     await navigator.clipboard.writeText(value)
   } catch {
     error.value = 'Не удалось скопировать ссылку'
+  }
+}
+
+async function copyCode(value) {
+  try {
+    await navigator.clipboard.writeText(value)
+  } catch {
+    error.value = 'Не удалось скопировать код'
   }
 }
 
@@ -205,7 +233,56 @@ load()
         </button>
       </form>
       <p v-if="authError" role="alert" class="mt-2 text-sm text-rose-300">{{ authError }}</p>
+      <section
+        v-if="recoveryCodes.length"
+        aria-label="Коды восстановления"
+        class="mt-4 rounded-xl border border-white/15 bg-white/5 p-4"
+      >
+        <h3 class="font-bold">Коды восстановления</h3>
+        <p class="mt-1 text-sm opacity-60">Сохраните код: он вернёт доступ к играм в другом браузере.</p>
+        <div class="mt-3 grid gap-2 sm:grid-cols-2">
+          <div
+            v-for="code in recoveryCodes"
+            :key="code"
+            class="flex items-center justify-between gap-2 rounded-lg border border-white/10 bg-white/5 px-3 py-2"
+          >
+            <code class="text-sm font-semibold tracking-widest">{{ code }}</code>
+            <button
+              type="button"
+              class="text-xs underline opacity-70 transition hover:opacity-100"
+              :aria-label="`Скопировать код восстановления ${code}`"
+              @click="copyCode(code)"
+            >
+              Скопировать
+            </button>
+          </div>
+        </div>
+      </section>
     </div>
+
+    <form class="mt-4 rounded-2xl border border-white/10 bg-white/5 p-5" @submit.prevent="recoverAccess">
+      <h2 class="font-bold">Восстановить доступ</h2>
+      <p class="mt-1 text-sm opacity-60">Введите сохранённый код, чтобы вернуться к своим играм.</p>
+      <div class="mt-3 grid gap-2 sm:grid-cols-[1fr_auto]">
+        <input
+          v-model="recoveryCode"
+          type="text"
+          required
+          maxlength="40"
+          placeholder="Код восстановления"
+          aria-label="Код восстановления"
+          class="rounded-xl border border-white/15 bg-white/5 px-4 py-2 text-sm outline-none focus:border-white/40"
+        />
+        <button
+          type="submit"
+          class="rounded-xl px-4 py-2 text-sm font-bold transition hover:opacity-80 disabled:opacity-50"
+          :style="{ background: preferences.theme.accent, color: '#0b1120' }"
+          :disabled="recoveryBusy || !recoveryCode.trim()"
+        >
+          Восстановить доступ
+        </button>
+      </div>
+    </form>
 
     <p v-if="loading" class="mt-8 rounded-2xl border border-white/10 bg-white/5 p-6 text-sm opacity-70">
       Загружаем кабинет…

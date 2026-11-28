@@ -1,5 +1,6 @@
 const baseUrl = (import.meta.env.VITE_API_BASE_URL || '/api').replace(/\/$/, '')
 const CSRF_COOKIE = 'santa_csrf'
+const RECOVERY_CODES_KEY = 'santa-recovery-codes'
 
 function csrfToken() {
   const cookie = document.cookie.split('; ').find((item) => item.startsWith(`${CSRF_COOKIE}=`))
@@ -235,8 +236,36 @@ export const api = {
   metrics: () => request('/metrics'),
 }
 
+export function saveRecoveryCodes(codes) {
+  if (!Array.isArray(codes) || !codes.length) return
+  try {
+    localStorage.setItem(RECOVERY_CODES_KEY, JSON.stringify(codes))
+  } catch {
+    return
+  }
+}
+
+export function readRecoveryCodes() {
+  try {
+    const codes = JSON.parse(localStorage.getItem(RECOVERY_CODES_KEY) || '[]')
+    return Array.isArray(codes) ? codes : []
+  } catch {
+    return []
+  }
+}
+
+export function clearRecoveryCodes() {
+  try {
+    localStorage.removeItem(RECOVERY_CODES_KEY)
+  } catch {
+    return
+  }
+}
+
 export async function ensureSession() {
-  const { user } = await api.auth.session()
-  if (user) return user
-  return (await api.auth.createSession()).user
+  const session = await api.auth.session()
+  if (session.user) return { user: session.user, recoveryCodes: readRecoveryCodes() }
+  const created = await api.auth.createSession()
+  saveRecoveryCodes(created.recoveryCodes)
+  return { user: created.user, recoveryCodes: created.recoveryCodes }
 }
