@@ -699,8 +699,15 @@ test('assistant invite is accepted in another browser context and survives page 
   const removeResponsePromise = organizer.waitForResponse(
     (response) => response.url().includes('/organizers/') && response.request().method() === 'DELETE',
   )
-  organizer.once('dialog', (dialog) => dialog.accept())
+  let removeDialogMessage
+  organizer.once('dialog', async (dialog) => {
+    removeDialogMessage = dialog.message()
+    await dialog.accept()
+  })
   await removeAssistant.click()
+  expect(removeDialogMessage).toBe('Удалить организатора: Помощник организатора?')
+  expect(removeDialogMessage).not.toBe('Удалить организатора?')
+  expect(removeDialogMessage).not.toBe('Отменить приглашение организатора?')
   expect((await removeResponsePromise).status()).toBe(200)
   await expect(removeAssistant).toHaveCount(0)
 
@@ -720,8 +727,15 @@ test('assistant invite is accepted in another browser context and survives page 
   const cancelResponsePromise = organizer.waitForResponse(
     (response) => response.url().includes('/organizers/') && response.request().method() === 'DELETE',
   )
-  organizer.once('dialog', (dialog) => dialog.accept())
+  let cancelDialogMessage
+  organizer.once('dialog', async (dialog) => {
+    cancelDialogMessage = dialog.message()
+    await dialog.accept()
+  })
   await cancelInvite.click()
+  expect(cancelDialogMessage).toBe('Отменить приглашение: Приглашённый организатор?')
+  expect(cancelDialogMessage).not.toBe('Отменить приглашение организатора?')
+  expect(cancelDialogMessage).not.toBe('Удалить организатора?')
   expect((await cancelResponsePromise).status()).toBe(200)
   await expect(cancelInvite).toHaveCount(0)
   await expect(organizer.getByRole('button', { name: 'Отменить', exact: true })).toHaveCount(0)

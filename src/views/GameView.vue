@@ -291,7 +291,8 @@ function canRemoveOrganizer(organizer) {
 }
 
 function removeOrganizer(organizer) {
-  const text = organizer.invited ? 'Отменить приглашение организатора?' : 'Удалить организатора?'
+  const action = organizer.invited ? 'Отменить приглашение' : 'Удалить организатора'
+  const text = `${action}: ${organizer.displayName}?`
   if (!window.confirm(text)) return
   return runAction('organizer', () => api.games.removeOrganizer(route.params.token, organizer.id))
 }
