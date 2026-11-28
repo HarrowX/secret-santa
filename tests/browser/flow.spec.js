@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test'
+import { themes } from '../../src/data/themes.js'
 
 async function expectDateFieldTheme(page, colorScheme, backgroundColor, borderColor, calendarColor) {
   const dateField = page.getByLabel('Дата обмена')
@@ -897,6 +898,29 @@ test('organizer creates a choice question through the game form', async ({ brows
   await joinerContext.close()
   await secondJoinerContext.close()
   await thirdJoinerContext.close()
+})
+
+test('landing declines the theme count in Russian', async ({ browser }) => {
+  const context = await browser.newContext()
+  const page = await context.newPage()
+  const themeSection = page.locator('section').filter({ hasText: 'Атмосфера вашей игры' })
+  const themeButtons = themeSection
+    .getByRole('button')
+    .filter({ hasText: /Классика|Природа|История|Ретро|Весна|Космос|Неон|Лето/ })
+
+  for (const [count, label] of [
+    [1, '1 оформление'],
+    [2, '2 оформления'],
+    [10, '10 оформлений'],
+  ]) {
+    await page.route('**/api/themes', (route) => route.fulfill({ json: themes.slice(0, count) }))
+    await page.goto('/')
+    await expect(page.getByText(`${label} · каждая доступна бесплатно`)).toBeVisible()
+    await expect(themeButtons).toHaveCount(count)
+    await page.unroute('**/api/themes')
+  }
+
+  await context.close()
 })
 
 test('mobile menu button has a visible name and toggles navigation', async ({ browser }) => {
