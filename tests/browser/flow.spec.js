@@ -422,7 +422,12 @@ test('support form sends two requests in one session', async ({ page }) => {
     (response) => response.url().includes('/api/support') && response.request().method() === 'POST',
   )
   await page.getByRole('button', { name: 'Отправить обращение' }).click()
-  expect((await firstResponse).status()).toBe(201)
+  const first = await firstResponse
+  expect(first.status()).toBe(201)
+  expect(JSON.parse(first.request().postData() ?? '{}')).toEqual({
+    subject: 'Первый вопрос',
+    body: 'Первое обращение',
+  })
   await expect(confirmation).toBeVisible()
   await expect(page.getByRole('button', { name: 'Написать ещё' })).toBeVisible()
 
@@ -439,7 +444,13 @@ test('support form sends two requests in one session', async ({ page }) => {
     (response) => response.url().includes('/api/support') && response.request().method() === 'POST',
   )
   await page.getByRole('button', { name: 'Отправить обращение' }).click()
-  expect((await secondResponse).status()).toBe(201)
+  const second = await secondResponse
+  expect(second.status()).toBe(201)
+  expect(JSON.parse(second.request().postData() ?? '{}')).toEqual({
+    email: 'user@example.test',
+    subject: 'Второй вопрос',
+    body: 'Второе обращение',
+  })
   await expect(confirmation).toBeVisible()
 })
 
