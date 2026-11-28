@@ -913,6 +913,12 @@ test('landing declines the theme count in Russian', async ({ browser }) => {
   ).toBeVisible()
   await expect(page.getByText('До трёх человек управляют одной игрой и спокойно передают её дальше.')).toBeVisible()
   await expect(page.getByText('До три человек', { exact: false })).toHaveCount(0)
+  const featureCard = page.locator('article').filter({ hasText: 'Все темы оформления' })
+  const themeNames = themes.map((item) => item.name)
+  await expect(featureCard.locator('p').last()).toHaveText(`${themeNames.join(', ')} — выбирайте под настроение.`)
+  const featureCardText = await featureCard.textContent()
+  for (const name of themeNames) expect(featureCardText).toContain(name)
+  for (const oldName of ['Альпы', 'Египет', 'пиксели', 'сакура']) expect(featureCardText).not.toContain(oldName)
   const themeSection = page.locator('section').filter({ hasText: 'Атмосфера вашей игры' })
   const themeButtons = themeSection
     .getByRole('button')

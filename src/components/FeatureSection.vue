@@ -1,6 +1,7 @@
 <script setup>
 import { onMounted, ref } from 'vue'
 import { domain } from '../config'
+import { themes } from '../data/themes.js'
 import { api } from '../lib/api'
 import { MAX_ORGANIZERS_WORD_AFTER_DO, MAX_QUESTIONS } from '../../limits.js'
 
@@ -37,7 +38,7 @@ const features = [
   },
   {
     title: 'Все темы оформления',
-    text: 'Зима, Хэллоуин, Альпы, Египет, пиксели, сакура — выбирайте под настроение.',
+    text: `${themes.map((item) => item.name).join(', ')} — выбирайте под настроение.`,
     hint: 'Ночь и день',
   },
   {
