@@ -508,6 +508,9 @@ test('support form sends two requests in one session', async ({ page }) => {
   const body = page.getByLabel('Сообщение')
   const confirmation = page.getByText('Обращение отправлено. Если вы указали email, мы ответим на него.')
 
+  await expect(subject).toHaveAttribute('placeholder', 'Вопрос по игре')
+  await expect(body).toHaveAttribute('placeholder', 'Не пришло приглашение, подскажите, что делать')
+
   await subject.fill('Первый вопрос')
   await body.fill('Первое обращение')
   const firstResponse = page.waitForResponse(

@@ -69,6 +69,7 @@ function startNew() {
             type="text"
             required
             maxlength="120"
+            placeholder="Вопрос по игре"
             class="rounded-xl border border-white/15 bg-white/5 px-4 py-2.5 text-sm outline-none focus:border-white/40"
           />
         </label>
@@ -79,6 +80,7 @@ function startNew() {
             required
             rows="6"
             maxlength="2000"
+            placeholder="Не пришло приглашение, подскажите, что делать"
             class="rounded-xl border border-white/15 bg-white/5 px-4 py-2.5 text-sm outline-none focus:border-white/40"
           ></textarea>
         </label>
