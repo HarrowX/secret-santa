@@ -141,6 +141,18 @@ function participantName(id) {
   return data.value?.participants.find((person) => person.id === id)?.name ?? 'Участник'
 }
 
+function actorLabel(actor) {
+  if (!actor) return ''
+  const raw = String(actor)
+  const userId = Number(raw)
+  const organizer = organizers.value.find((item) => Number(item.userId) === userId)
+  if (organizer) return organizer.role === 'owner' ? 'Создатель' : 'Организатор'
+  const participant = data.value?.participants.find(
+    (person) => (person.user_id && Number(person.user_id) === userId) || person.name === raw,
+  )
+  return participant?.name ?? 'Участник'
+}
+
 const questionTypeLabels = {
   text: 'Текст',
   number: 'Число',
@@ -1178,7 +1190,9 @@ function saveTenant() {
             <li v-for="item in filteredEvents" :key="item.id" class="flex flex-wrap gap-x-3">
               <span><span class="font-semibold">Когда:</span> {{ formatDateTime(item.created_at) }}</span>
               <span><span class="font-semibold">Событие:</span> {{ item.text }}</span>
-              <span v-if="item.actor" class="opacity-60"><span class="font-semibold">Кто:</span> {{ item.actor }}</span>
+              <span v-if="item.actor" class="opacity-60"
+                ><span class="font-semibold">Инициатор:</span> {{ actorLabel(item.actor) }}</span
+              >
             </li>
             <li v-if="!filteredEvents.length" class="opacity-50">
               Под выбранные условия событий пока нет. Попробуйте другой фильтр или период.

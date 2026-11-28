@@ -226,9 +226,14 @@ test('organizer and anonymous participants complete the game in the browser', as
     await expect(row.getByText('Когда:', { exact: true })).toBeVisible()
     await expect(row.getByText('Событие:', { exact: true })).toBeVisible()
   }
-  const actorRow = historyRows.filter({ hasText: 'Кто:' }).first()
+  const actorRow = historyRows.filter({ hasText: 'Инициатор:' }).first()
   await expect(actorRow).toBeVisible()
-  await expect(actorRow.getByText('Кто:', { exact: true })).toBeVisible()
+  await expect(actorRow.getByText('Инициатор:', { exact: true })).toBeVisible()
+  await expect(historyList.getByText('Создатель', { exact: false }).first()).toBeVisible()
+  await expect(historyList.getByText('Кто:', { exact: true })).toHaveCount(0)
+  for (const label of await historyList.getByText('Инициатор:', { exact: true }).all()) {
+    await expect(label.locator('xpath=..')).not.toHaveText(/@|\d/)
+  }
   await expect(historyList.getByText(/—\s+\S/)).toHaveCount(0)
   await expect(historyList.getByText(' · ', { exact: false })).toHaveCount(0)
   await expect(historyList.getByText(/\d{1,2}\.\d{1,2}\./).first()).toBeVisible()
