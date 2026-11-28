@@ -247,6 +247,10 @@ test('anonymous access is restored from a recovery code in a clean context', asy
   const restored = await cleanContext.newPage()
 
   await restored.goto('/my')
+  await expect(restored.getByRole('textbox', { name: 'Код восстановления' })).toHaveAttribute(
+    'placeholder',
+    'A1B2C3D4E5F60718293A4B5C6D7E8F90',
+  )
   await expect(restored.getByRole('heading', { name: 'Мои игры и обмены' })).toBeVisible()
   await expect(restored.getByRole('button', { name: `Открыть игру ${title}` })).toHaveCount(0)
 
@@ -284,6 +288,8 @@ test('login clears recovery codes and logout starts a fresh anonymous session', 
   await expect(page).toHaveURL(/\/game\//)
 
   await page.goto('/my')
+  await expect(page.getByLabel('Email')).toHaveAttribute('placeholder', 'name@example.com')
+  await expect(page.getByLabel('Пароль')).toHaveAttribute('placeholder', 'example123')
   const codes = page.getByRole('region', { name: 'Код восстановления' })
   await expect(codes.getByRole('button', { name: /Скопировать код восстановления/ })).toHaveCount(1)
   const oldCodes = (await codes.locator('code').allInnerTexts()).map((value) => value.trim())

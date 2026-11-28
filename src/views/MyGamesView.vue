@@ -208,7 +208,7 @@ load()
           type="email"
           required
           maxlength="160"
-          placeholder="Email"
+          placeholder="name@example.com"
           aria-label="Email"
           class="rounded-xl border border-white/15 bg-white/5 px-4 py-2 text-sm outline-none focus:border-white/40"
         />
@@ -218,7 +218,7 @@ load()
           required
           minlength="6"
           maxlength="200"
-          placeholder="Пароль от 6 символов"
+          placeholder="example123"
           aria-label="Пароль"
           class="rounded-xl border border-white/15 bg-white/5 px-4 py-2 text-sm outline-none focus:border-white/40"
         />
@@ -283,7 +283,7 @@ load()
           type="text"
           required
           maxlength="40"
-          placeholder="Код восстановления"
+          placeholder="A1B2C3D4E5F60718293A4B5C6D7E8F90"
           aria-label="Код восстановления"
           class="rounded-xl border border-white/15 bg-white/5 px-4 py-2 text-sm outline-none focus:border-white/40"
         />
