@@ -1018,6 +1018,13 @@ test('landing declines the theme count in Russian', async ({ browser }) => {
   const pairsCard = page.locator('article').filter({ hasText: 'Просмотр и назначение пар' })
   await expect(pairsCard.getByRole('heading', { name: 'Просмотр и назначение пар', exact: true })).toBeVisible()
   await expect(page.getByText('Полный контроль пар', { exact: false })).toHaveCount(0)
+  await expect(
+    pairsCard.getByText(
+      'Смотрите пары до и после подтверждения, назначайте их вручную и проводите дополнительную жеребьёвку для новых участников.',
+      { exact: true },
+    ),
+  ).toBeVisible()
+  await expect(page.getByText('заполняйте оставшиеся', { exact: false })).toHaveCount(0)
   await expect(pairsCard.getByText('Просмотр и ручные пары', { exact: true })).toBeVisible()
   await expect(page.getByText('Изменения после сохранения', { exact: false })).toHaveCount(0)
   const historyCard = page.locator('article').filter({ hasText: 'История и напоминания' })
