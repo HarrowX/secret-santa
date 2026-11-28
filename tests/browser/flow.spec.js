@@ -995,6 +995,9 @@ test('landing declines the theme count in Russian', async ({ browser }) => {
   await expect(page.getByText('Участники по одному или списком')).toBeVisible()
   await expect(page.getByText('Безлимит участников', { exact: false })).toHaveCount(0)
   await expect(page.getByText(`До ${MAX_QUESTIONS} вопросов в анкете`)).toBeVisible()
+  const questionnaireCard = page.locator('article').filter({ hasText: 'Свои вопросы в анкете' })
+  await expect(questionnaireCard.getByRole('heading', { name: 'Свои вопросы в анкете', exact: true })).toBeVisible()
+  await expect(page.getByText('Анкета с характером', { exact: false })).toHaveCount(0)
   await expect(page.getByText(`До ${MAX_ORGANIZERS} организаторов`, { exact: true })).toBeVisible()
   await expect(
     page.getByText(`До ${MAX_QUESTIONS} своих вопросов: текст, число, да/нет и выбор вариантов.`),
