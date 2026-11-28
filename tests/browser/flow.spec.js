@@ -163,6 +163,9 @@ test('organizer and anonymous participants complete the game in the browser', as
       .filter({ has: ania.getByLabel('Собеседник') })
       .getByText('Собеседник', { exact: true }),
   ).toBeVisible()
+  const interlocutorSelect = ania.locator('label').filter({ hasText: 'Собеседник' }).getByLabel('Собеседник')
+  await expect(interlocutorSelect).toBeVisible()
+  await expect(interlocutorSelect).not.toHaveAttribute('aria-label')
   await expect(
     ania
       .locator('label')

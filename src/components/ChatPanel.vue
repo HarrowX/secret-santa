@@ -176,7 +176,6 @@ async function send() {
         <select
           v-model="selectedToId"
           class="mt-1 w-full rounded-xl border border-white/15 px-3 py-2 text-sm text-current outline-none"
-          aria-label="Собеседник"
         >
           <option
             v-for="contact in tabs.find((tab) => tab.key === activeTab)?.contacts"
