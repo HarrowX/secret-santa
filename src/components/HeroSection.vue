@@ -49,7 +49,6 @@ const highlights = ['Приглашения по ссылке', 'Анкеты и
         <RouterLink
           to="/randomizer"
           class="rounded-full border border-white/25 px-6 py-3 font-semibold text-inherit backdrop-blur transition hover:bg-white/10"
-          aria-label="Открыть быструю жеребьёвку"
         >
           Быстрая жеребьёвка
         </RouterLink>

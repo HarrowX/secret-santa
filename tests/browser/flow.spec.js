@@ -568,7 +568,11 @@ test('randomizer draws pairs and reports clipboard status', async ({ browser }) 
   })
   const page = await context.newPage()
 
-  await page.goto('/randomizer')
+  await page.goto('/')
+  const quickDrawLink = page.getByRole('main').getByRole('link', { name: 'Быстрая жеребьёвка' })
+  await expect(quickDrawLink).toBeVisible()
+  await quickDrawLink.click()
+  await expect(page).toHaveURL(/\/randomizer/)
   await expect(
     page
       .locator('label')
