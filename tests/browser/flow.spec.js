@@ -60,6 +60,10 @@ test('organizer and anonymous participants complete the game in the browser', as
   ).toBeVisible()
   await expect(organizer.getByText('защита от повторов', { exact: false })).toHaveCount(0)
   await expect(organizer.getByText('статусы доставки', { exact: false })).toHaveCount(0)
+  await expect(
+    organizer.getByText('Напоминаний пока нет. Отправленные напоминания появятся здесь.', { exact: true }),
+  ).toBeVisible()
+  await expect(organizer.getByText('Напоминаний пока нет', { exact: true })).toHaveCount(0)
   await expect(organizer.getByText('Текст напоминания', { exact: true })).toBeVisible()
   const reminderText = organizer.getByLabel('Текст напоминания')
   await expect(reminderText).toBeVisible()

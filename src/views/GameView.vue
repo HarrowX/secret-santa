@@ -1219,7 +1219,9 @@ function saveTenant() {
             {{ item.created_at }} · {{ item.participant_name }} · {{ item.status }}
             <span v-if="item.error" class="text-amber-300">— {{ item.error }}</span>
           </li>
-          <li v-if="!reminders.length" class="opacity-50">Напоминаний пока нет</li>
+          <li v-if="!reminders.length" class="opacity-50">
+            Напоминаний пока нет. Отправленные напоминания появятся здесь.
+          </li>
         </ul>
         <p v-if="errors.reminder" role="alert" class="mt-2 text-sm text-rose-300">{{ errors.reminder }}</p>
       </div>
