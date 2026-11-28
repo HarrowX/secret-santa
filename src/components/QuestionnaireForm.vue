@@ -60,6 +60,10 @@ function questionLabel(question) {
   return `${question.title}${question.required ? ' (обязательно)' : ''}`
 }
 
+function errorId(questionId) {
+  return `${formId}-question-${questionId}-error`
+}
+
 function checked(questionId, option) {
   return toArray(values.value[questionId]).includes(option)
 }
@@ -116,6 +120,7 @@ function save() {
         v-model="values[question.id]"
         type="number"
         :aria-invalid="Boolean(errors[question.id])"
+        :aria-describedby="errors[question.id] ? errorId(question.id) : undefined"
         class="rounded-xl border border-white/15 bg-white/5 px-4 py-2 text-sm outline-none focus:border-white/40 disabled:opacity-60"
         :class="errors[question.id] ? 'border-rose-400' : ''"
         :disabled="!editable || busy"
@@ -125,6 +130,7 @@ function save() {
         :id="`${formId}-question-${question.id}`"
         v-model="values[question.id]"
         :aria-invalid="Boolean(errors[question.id])"
+        :aria-describedby="errors[question.id] ? errorId(question.id) : undefined"
         class="rounded-xl border border-white/15 px-4 py-2 text-sm outline-none focus:border-white/40 disabled:opacity-60"
         :class="errors[question.id] ? 'border-rose-400' : ''"
         :disabled="!editable || busy"
@@ -138,6 +144,7 @@ function save() {
         :id="`${formId}-question-${question.id}`"
         v-model="values[question.id]"
         :aria-invalid="Boolean(errors[question.id])"
+        :aria-describedby="errors[question.id] ? errorId(question.id) : undefined"
         class="rounded-xl border border-white/15 px-4 py-2 text-sm outline-none focus:border-white/40 disabled:opacity-60"
         :class="errors[question.id] ? 'border-rose-400' : ''"
         :disabled="!editable || busy"
@@ -148,6 +155,8 @@ function save() {
       <fieldset
         v-else-if="question.type === 'multi'"
         role="group"
+        :aria-invalid="Boolean(errors[question.id])"
+        :aria-describedby="errors[question.id] ? errorId(question.id) : undefined"
         class="flex flex-wrap gap-2 rounded-xl border border-white/10 p-2"
       >
         <legend class="font-semibold">{{ questionLabel(question) }}</legend>
@@ -176,11 +185,14 @@ function save() {
         type="text"
         maxlength="2000"
         :aria-invalid="Boolean(errors[question.id])"
+        :aria-describedby="errors[question.id] ? errorId(question.id) : undefined"
         class="rounded-xl border border-white/15 bg-white/5 px-4 py-2 text-sm outline-none placeholder:text-current/40 focus:border-white/40 disabled:opacity-60"
         :class="errors[question.id] ? 'border-rose-400' : ''"
         :disabled="!editable || busy"
       />
-      <p v-if="errors[question.id]" role="alert" class="text-xs text-rose-300">{{ errors[question.id] }}</p>
+      <p v-if="errors[question.id]" :id="errorId(question.id)" role="alert" class="text-xs text-rose-300">
+        {{ errors[question.id] }}
+      </p>
     </div>
     <button
       v-if="editable"
