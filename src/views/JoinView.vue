@@ -379,6 +379,7 @@ async function saveAnswers(payload) {
           :game-id="gameId"
           :invite-token="String(route.params.token)"
           :game-token="gameToken"
+          :game-title="invite?.game?.title || 'игра'"
           title="Уведомления по вашей карточке и паре"
         />
 

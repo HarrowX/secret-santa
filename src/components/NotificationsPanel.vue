@@ -25,6 +25,10 @@ const props = defineProps({
     type: String,
     default: 'Уведомления',
   },
+  gameTitle: {
+    type: String,
+    default: 'игра',
+  },
   pollMs: {
     type: Number,
     default: 15000,
@@ -102,7 +106,7 @@ defineExpose({ refresh })
         :disabled="loading"
         @click="refresh"
       >
-        Обновить уведомления
+        Обновить уведомления: {{ gameTitle || 'игра' }}
       </button>
     </div>
     <p class="mt-1 text-xs opacity-60">Обновляется автоматически каждые 15 секунд</p>

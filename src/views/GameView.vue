@@ -1292,6 +1292,7 @@ function saveTenant() {
         <NotificationsPanel
           :game-id="gameToken"
           :game-token="gameToken"
+          :game-title="data?.game?.title || 'игра'"
           title="Уведомления об изменениях"
           :show-names="true"
         />

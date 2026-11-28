@@ -54,9 +54,18 @@ test('organizer and anonymous participants complete the game in the browser', as
   expect(notificationsTitleId).toBeTruthy()
   await expect(notifications).toHaveAttribute('aria-labelledby', notificationsTitleId)
   await expect(notifications).not.toHaveAttribute('aria-labelledby', 'notifications-title')
-  const refreshNotifications = notifications.getByRole('button', { name: 'Обновить уведомления' })
-  await expect(refreshNotifications).toHaveText('Обновить уведомления')
+  const refreshNotifications = notifications.getByRole('button', {
+    name: 'Обновить уведомления: Браузерная игра',
+    exact: true,
+  })
+  await expect(refreshNotifications).toHaveText('Обновить уведомления: Браузерная игра')
+  await expect(notifications.getByRole('button', { name: 'Обновить уведомления', exact: true })).toHaveCount(0)
   await expect(refreshNotifications).not.toHaveAttribute('aria-label')
+  const refreshResponse = organizer.waitForResponse(
+    (response) => response.url().includes('/notifications') && response.request().method() === 'GET',
+  )
+  await refreshNotifications.click()
+  expect((await refreshResponse).status()).toBe(200)
   await expect(
     organizer.getByText(
       'До 1000 символов, выбранные получатели и один текст можно отправить тем же получателям только один раз',
