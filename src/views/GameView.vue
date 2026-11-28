@@ -793,7 +793,11 @@ function saveTenant() {
             class="rounded-xl border border-white/20 px-4 py-2 text-sm font-semibold transition hover:bg-white/10 disabled:opacity-50"
             :disabled="busy || !giftParticipant"
           >
-            {{ giftParticipant ? `Подарок отправлен: ${participantName(giftParticipant)}` : 'Подарок отправлен' }}
+            {{
+              giftParticipant
+                ? `Подарок отправлен: ${participantName(giftParticipant)}`
+                : 'Отметить подарок отправленным: выберите участника'
+            }}
           </button>
           <button
             type="button"
@@ -801,7 +805,11 @@ function saveTenant() {
             :disabled="busy || !giftParticipant"
             @click="markGift('received')"
           >
-            {{ giftParticipant ? `Подарок получен: ${participantName(giftParticipant)}` : 'Подарок получен' }}
+            {{
+              giftParticipant
+                ? `Подарок получен: ${participantName(giftParticipant)}`
+                : 'Отметить подарок полученным: выберите участника'
+            }}
           </button>
           <p v-if="errors.gift" role="alert" class="text-sm text-rose-300">{{ errors.gift }}</p>
         </form>

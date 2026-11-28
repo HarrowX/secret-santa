@@ -107,7 +107,7 @@ test('organizer and anonymous participants complete the game in the browser', as
   const giftInstruction =
     'Отмечайте подарки вручную: выберите участника и нажмите действие. Отметка сразу обновит прогресс игры.'
   await expect(progressCard.getByText(giftInstruction, { exact: true })).toBeVisible()
-  await expect(progressCard.getByText('Отметить подарок', { exact: false })).toHaveCount(0)
+  await expect(progressCard.getByText('Отметить подарок', { exact: true })).toHaveCount(0)
   await expect(progressCard.getByText('Статус подарка', { exact: false })).toHaveCount(0)
   await expect(
     organizer
@@ -128,11 +128,23 @@ test('organizer and anonymous participants complete the game in the browser', as
   await organizer.getByLabel('Список имён через запятую').fill('Аня, Борис')
   await organizer.getByRole('button', { name: 'Добавить список' }).click()
   const giftForm = organizer.locator('form').filter({ has: organizer.getByLabel('Участник для отметки подарка') })
+  await expect(
+    giftForm.getByRole('button', { name: 'Отметить подарок отправленным: выберите участника', exact: true }),
+  ).toBeVisible()
+  await expect(
+    giftForm.getByRole('button', { name: 'Отметить подарок полученным: выберите участника', exact: true }),
+  ).toBeVisible()
+  await expect(giftForm.getByRole('button', { name: 'Подарок отправлен', exact: true })).toHaveCount(0)
+  await expect(giftForm.getByRole('button', { name: 'Подарок получен', exact: true })).toHaveCount(0)
   await giftForm.getByLabel('Участник для отметки подарка').selectOption({ label: 'Аня' })
   await expect(giftForm.getByRole('button', { name: 'Подарок отправлен: Аня', exact: true })).toBeVisible()
   await expect(giftForm.getByRole('button', { name: 'Подарок получен: Аня', exact: true })).toBeVisible()
   await expect(giftForm.getByRole('button', { name: 'Подарок отправлен', exact: true })).toHaveCount(0)
   await expect(giftForm.getByRole('button', { name: 'Подарок получен', exact: true })).toHaveCount(0)
+  const sentProgress = progressCard.locator('div').filter({ hasText: 'Отправили подарок' }).last()
+  await expect(sentProgress.locator('span').last()).toHaveText('0%')
+  await giftForm.getByRole('button', { name: 'Подарок отправлен: Аня', exact: true }).click()
+  await expect(sentProgress.locator('span').last()).toHaveText('50%')
 
   const aniaLink = organizer.getByRole('button', { name: 'Скопировать ссылку-приглашение для Аня' })
   const borisLink = organizer.getByRole('button', { name: 'Скопировать ссылку-приглашение для Борис' })
