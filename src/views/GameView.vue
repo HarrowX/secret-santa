@@ -1229,7 +1229,7 @@ function saveTenant() {
               :style="{ background: preferences.theme.accent, color: '#0b1120' }"
               :disabled="busy || !reminderBody.trim() || !reminderRecipients.length"
             >
-              Отправить
+              Отправить напоминание
             </button>
           </div>
         </form>
