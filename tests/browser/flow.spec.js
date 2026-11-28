@@ -1,5 +1,15 @@
 import { test, expect } from '@playwright/test'
 
+async function expectDateFieldTheme(page, colorScheme, backgroundColor, borderColor, calendarColor) {
+  const dateField = page.getByLabel('Дата обмена')
+  await expect(dateField).toHaveCSS('color-scheme', colorScheme)
+  await expect(dateField).toHaveCSS('background-color', backgroundColor)
+  await expect(dateField).toHaveCSS('border-color', borderColor)
+  const backgroundImage = await dateField.evaluate((element) => getComputedStyle(element).backgroundImage)
+  expect(backgroundImage).toContain('data:image/svg+xml')
+  expect(backgroundImage).toContain(calendarColor)
+}
+
 test('organizer and anonymous participants complete the game in the browser', async ({ browser }) => {
   const organizerContext = await browser.newContext()
   await organizerContext.addInitScript(() => localStorage.setItem('santa-mode', 'day'))
@@ -7,6 +17,7 @@ test('organizer and anonymous participants complete the game in the browser', as
 
   await organizer.goto('/new')
   await expect(organizer.getByLabel('Формат')).toHaveCSS('color-scheme', 'light')
+  await expectDateFieldTheme(organizer, 'light', 'rgba(255, 255, 255, 0.65)', 'rgba(15, 23, 42, 0.16)', '%23334155')
   await expect(organizer.locator('.theme-decor--winter').first()).toBeVisible()
   await organizer.getByLabel('Название').fill('Браузерная игра')
   await organizer.getByRole('main').getByRole('button', { name: 'Создать игру' }).click()
@@ -184,6 +195,8 @@ test('my games copies an absolute game link from the cabinet', async ({ browser 
   await page.getByRole('main').getByRole('button', { name: 'Создать игру' }).click()
   await expect(page).toHaveURL(/\/game\/[^/]+$/)
   const gameToken = new URL(page.url()).pathname.split('/').pop()
+  await expect(page.getByLabel('Формат игры')).toHaveCSS('color-scheme', 'dark')
+  await expectDateFieldTheme(page, 'dark', 'rgba(255, 255, 255, 0.05)', 'rgba(255, 255, 255, 0.15)', '%23cbd5e1')
 
   await page.goto('/my')
   await expect(page).toHaveURL(/\/my$/)

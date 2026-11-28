@@ -26,6 +26,7 @@ export default defineConfig({
       DOMAIN_NAME: `127.0.0.1:${port}`,
       TRUST_PROXY: 'false',
       MONITORING_ENABLED: 'false',
+      AUTH_RATE_LIMIT_MAX: '200',
     },
     url: `${baseURL}/api/health`,
     reuseExistingServer: false,

@@ -86,7 +86,8 @@ export function createApp() {
     res.json({ errors: recentErrors(), checks: latestChecks() })
   })
 
-  app.use('/api/auth', rateLimit({ name: 'auth', windowMs: 60_000, max: 20 }), authRouter)
+  const authRateLimitMax = Number(process.env.AUTH_RATE_LIMIT_MAX || 20)
+  app.use('/api/auth', rateLimit({ name: 'auth', windowMs: 60_000, max: authRateLimitMax }), authRouter)
   app.use('/api/games', gamesRouter)
   app.use('/api/invites', invitesRouter)
   app.use('/api/me', meRouter)
