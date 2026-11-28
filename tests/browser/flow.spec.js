@@ -531,6 +531,13 @@ test('randomizer draws pairs and reports clipboard status', async ({ browser }) 
   const page = await context.newPage()
 
   await page.goto('/randomizer')
+  await expect(
+    page
+      .locator('label')
+      .filter({ has: page.getByPlaceholder('Аня, Борис, Вика') })
+      .locator('span')
+      .getByText('Имена участников', { exact: true }),
+  ).toBeVisible()
   await page.getByPlaceholder('Аня, Борис, Вика').fill('Аня, Борис, Вика')
   await page.getByRole('button', { name: 'Перемешать' }).click()
 

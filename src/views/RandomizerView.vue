@@ -43,13 +43,17 @@ async function copyResult() {
 
     <div class="mt-8 rounded-2xl border border-white/10 bg-white/5 p-5">
       <form class="grid gap-3" @submit.prevent="draw">
-        <textarea
-          v-model="names"
-          rows="8"
-          maxlength="5000"
-          placeholder="Аня, Борис, Вика"
-          class="rounded-xl border border-white/15 bg-white/5 px-4 py-3 text-sm outline-none placeholder:text-current/40 focus:border-white/40"
-        ></textarea>
+        <label class="grid gap-1 text-sm">
+          <span class="text-xs font-semibold uppercase tracking-widest opacity-60">Имена участников</span>
+          <textarea
+            v-model="names"
+            rows="8"
+            maxlength="5000"
+            placeholder="Аня, Борис, Вика"
+            aria-label="Имена участников"
+            class="rounded-xl border border-white/15 bg-white/5 px-4 py-3 text-sm outline-none placeholder:text-current/40 focus:border-white/40"
+          ></textarea>
+        </label>
         <button
           type="submit"
           class="rounded-full px-5 py-2.5 text-sm font-bold transition hover:opacity-80 disabled:opacity-50"
