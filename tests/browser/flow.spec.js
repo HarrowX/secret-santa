@@ -785,7 +785,10 @@ test('organizer creates a choice question through the game form', async ({ brows
     'Красный',
   ])
 
-  await joiner.getByLabel('Любимый цвет').selectOption('Зелёный')
+  const questionnaireSelect = joiner.getByLabel('Любимый цвет')
+  await expect(questionnaireSelect).toBeVisible()
+  await expect(questionnaireSelect).not.toHaveAttribute('aria-label')
+  await questionnaireSelect.selectOption('Зелёный')
   await joiner.getByRole('checkbox', { name: 'Синий' }).check()
   await joiner.getByRole('checkbox', { name: 'Красный' }).check()
   await joiner.getByRole('button', { name: 'Сохранить ответы' }).click()
