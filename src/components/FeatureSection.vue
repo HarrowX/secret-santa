@@ -102,7 +102,7 @@ const features = computed(() => [
 
     <div class="mt-14 flex flex-wrap items-end justify-between gap-4">
       <div>
-        <p class="text-xs font-semibold uppercase tracking-[0.3em] opacity-60">Возможности</p>
+        <p class="text-xs font-semibold uppercase tracking-[0.3em] opacity-60">Управление игрой</p>
         <h2 class="mt-2 text-3xl font-bold tracking-tight">
           Настраивайте анкету, управляйте парами, работайте в команде и храните историю
         </h2>

@@ -946,6 +946,13 @@ test('landing declines the theme count in Russian', async ({ browser }) => {
     page.getByText('Настраивайте анкету, управляйте парами, работайте в команде и храните историю', { exact: true }),
   ).toBeVisible()
   await expect(page.getByText(/Больше контроля|волшебство/)).toHaveCount(0)
+  const desktopNavigation = page.getByRole('navigation', { name: 'Навигация' })
+  await expect(desktopNavigation.getByRole('button', { name: 'Управление игрой' })).toBeVisible()
+  await expect(page.getByText('Возможности', { exact: true })).toHaveCount(0)
+  const featuresSection = page.locator('section#features')
+  await expect(featuresSection.getByText('Управление игрой', { exact: true })).toBeVisible()
+  await desktopNavigation.getByRole('button', { name: 'Управление игрой' }).click()
+  await expect(page).toHaveURL(/#features$/)
   const ownSpaceCard = page.locator('article').filter({ hasText: 'Своё пространство' })
   await expect(ownSpaceCard.getByText('Личная ссылка')).toBeVisible()
   expect(await ownSpaceCard.textContent()).not.toContain(new URL(page.url()).hostname)

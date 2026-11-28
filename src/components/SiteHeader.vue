@@ -16,7 +16,7 @@ const links = [
   { label: 'Создать игру', target: 'create' },
   { label: 'Мои игры', target: 'my' },
   { label: 'Быстрая жеребьёвка', target: 'randomizer' },
-  { label: 'Возможности', target: 'features' },
+  { label: 'Управление игрой', target: 'features' },
 ]
 
 function go(target) {
