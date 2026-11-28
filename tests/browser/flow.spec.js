@@ -187,6 +187,13 @@ test('organizer and anonymous participants complete the game in the browser', as
   ).toBeVisible()
   await expect(organizer.getByText(/ручные пары сохраняются при.*очистке пар/i)).toHaveCount(0)
   await expect(organizer.getByText('Ограничения сохраняются', { exact: false })).toHaveCount(0)
+  const pairsCard = organizer.getByRole('heading', { name: 'Пары', exact: true }).locator('xpath=../..')
+  await expect(pairsCard.getByRole('button', { name: 'Провести жеребьёвку', exact: true })).toBeVisible()
+  await expect(pairsCard.locator('ol > li').first()).toHaveText(
+    'Пары появятся после жеребьёвки. Нажмите «Провести жеребьёвку», когда все участники будут готовы.',
+  )
+  await expect(pairsCard.getByRole('button', { name: 'Перемешать заново', exact: false })).toHaveCount(0)
+  await expect(pairsCard.getByText('Пары ещё не распределены', { exact: false })).toHaveCount(0)
 
   for (const [name, text] of [
     ['Кто не дарит', 'Кто не дарит'],
@@ -209,14 +216,13 @@ test('organizer and anonymous participants complete the game in the browser', as
   await organizer.getByLabel('Кому дарит в ручной паре').selectOption({ label: 'Борис' })
   await organizer.getByRole('button', { name: 'Зафиксировать' }).click()
   await expect(organizer.getByText('Аня → Борис')).toBeVisible()
+  await expect(pairsCard.getByRole('button', { name: 'Перемешать заново', exact: true })).toBeVisible()
+  await expect(pairsCard.getByRole('button', { name: 'Провести жеребьёвку', exact: false })).toHaveCount(0)
   const exclusionsHeading = organizer.getByRole('heading', { name: 'Исключения и ручные пары', exact: true })
   await expect(
     exclusionsHeading.locator('xpath=../..').getByRole('button', { name: 'Очистить пары', exact: true }),
   ).toBeVisible()
-  const pairsHeading = organizer.getByRole('heading', { name: 'Пары', exact: true })
-  await expect(
-    pairsHeading.locator('xpath=..').getByRole('button', { name: 'Очистить пары', exact: true }),
-  ).toBeVisible()
+  await expect(pairsCard.getByRole('button', { name: 'Очистить пары', exact: true })).toBeVisible()
   await expect(organizer.getByRole('button', { name: 'Очистить пары, оставить исключения', exact: false })).toHaveCount(
     0,
   )

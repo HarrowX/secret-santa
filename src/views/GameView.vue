@@ -1136,7 +1136,7 @@ function saveTenant() {
                 :disabled="busy || data.participants.length < 2"
                 @click="draw"
               >
-                Перемешать заново
+                {{ data.pairs.length ? 'Перемешать заново' : 'Провести жеребьёвку' }}
               </button>
               <button
                 type="button"
@@ -1162,7 +1162,9 @@ function saveTenant() {
                 Показать пару
               </button>
             </li>
-            <li v-if="!data.pairs.length" class="opacity-50">Пары ещё не распределены</li>
+            <li v-if="!data.pairs.length" class="opacity-50">
+              Пары появятся после жеребьёвки. Нажмите «Провести жеребьёвку», когда все участники будут готовы.
+            </li>
           </ol>
           <p v-if="errors.pairs" role="alert" class="mt-2 text-sm text-rose-300">{{ errors.pairs }}</p>
         </div>
