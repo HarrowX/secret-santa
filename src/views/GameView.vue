@@ -1178,23 +1178,31 @@ function saveTenant() {
         <h2 class="font-bold">Массовые напоминания</h2>
         <p class="mt-1 text-sm opacity-60">До 1000 символов, статусы доставки и защита от повторов</p>
         <form class="mt-4 grid gap-2" @submit.prevent="sendReminder">
-          <textarea
-            v-model="reminderBody"
-            maxlength="1000"
-            rows="3"
-            placeholder="Текст напоминания"
-            aria-label="Текст напоминания"
-            class="w-full rounded-xl border border-white/15 bg-white/5 px-4 py-2 text-sm outline-none placeholder:text-current/40 focus:border-white/40"
-          ></textarea>
+          <label class="grid gap-1 text-sm">
+            <span class="text-xs font-semibold uppercase tracking-widest opacity-60">Текст напоминания</span>
+            <textarea
+              v-model="reminderBody"
+              maxlength="1000"
+              rows="3"
+              placeholder="Напоминаю: обмен подарками 25 декабря"
+              aria-label="Текст напоминания"
+              class="w-full rounded-xl border border-white/15 bg-white/5 px-4 py-2 text-sm outline-none placeholder:text-current/40 focus:border-white/40"
+            ></textarea>
+          </label>
           <div class="flex flex-wrap items-center justify-between gap-2">
-            <select
-              v-model="reminderRecipients"
-              aria-label="Получатели напоминания"
-              multiple
-              class="min-w-48 flex-1 rounded-xl border border-white/15 px-3 py-2 text-sm outline-none"
-            >
-              <option v-for="person in data.participants" :key="person.id" :value="person.id">{{ person.name }}</option>
-            </select>
+            <label class="grid min-w-48 flex-1 gap-1 text-sm">
+              <span class="text-xs font-semibold uppercase tracking-widest opacity-60">Получатели напоминания</span>
+              <select
+                v-model="reminderRecipients"
+                aria-label="Получатели напоминания"
+                multiple
+                class="rounded-xl border border-white/15 px-3 py-2 text-sm outline-none"
+              >
+                <option v-for="person in data.participants" :key="person.id" :value="person.id">
+                  {{ person.name }}
+                </option>
+              </select>
+            </label>
             <span class="text-xs opacity-60">{{ reminderBody.length }}/1000</span>
             <button
               type="submit"

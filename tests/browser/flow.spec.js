@@ -25,6 +25,12 @@ test('organizer and anonymous participants complete the game in the browser', as
   await organizer.getByRole('main').getByRole('button', { name: 'Создать игру' }).click()
   await expect(organizer).toHaveURL(/\/game\//)
   await expect(organizer.getByRole('heading', { name: 'Браузерная игра' })).toBeVisible()
+  await expect(organizer.getByText('Текст напоминания', { exact: true })).toBeVisible()
+  await expect(organizer.getByLabel('Текст напоминания')).toHaveAttribute(
+    'placeholder',
+    'Напоминаю: обмен подарками 25 декабря',
+  )
+  await expect(organizer.getByText('Получатели напоминания', { exact: true })).toBeVisible()
 
   await expect(organizer.getByText('Список имён через запятую', { exact: true })).toBeVisible()
   await expect(organizer.getByLabel('Список имён через запятую')).toHaveAttribute('placeholder', 'Аня, Борис, Вика')
