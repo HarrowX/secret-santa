@@ -325,7 +325,7 @@ test('anonymous access is restored from a recovery code in a clean context', asy
   await restored.goto('/my')
   await expect(restored.getByRole('textbox', { name: 'Код восстановления' })).toHaveAttribute(
     'placeholder',
-    'A1B2C3D4E5F60718293A4B5C6D7E8F90',
+    'A1B2-C3D4-E5F6-7182',
   )
   await expect(
     restored
