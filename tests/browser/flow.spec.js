@@ -41,7 +41,7 @@ test('organizer and anonymous participants complete the game in the browser', as
   await expect(
     organizer
       .locator('label')
-      .filter({ has: organizer.getByLabel('Участник, отметки о подарке') })
+      .filter({ has: organizer.getByLabel('Участник для отметки подарка') })
       .locator('span')
       .getByText('Участник для отметки подарка', { exact: true }),
   ).toBeVisible()

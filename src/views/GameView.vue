@@ -757,7 +757,7 @@ function saveTenant() {
             <span class="text-xs font-semibold uppercase tracking-widest opacity-60">Участник для отметки подарка</span>
             <select
               v-model="giftParticipant"
-              aria-label="Участник, отметки о подарке"
+              aria-label="Участник для отметки подарка"
               class="rounded-xl border border-white/15 px-3 py-2 text-sm outline-none"
             >
               <option value="" disabled>Выберите участника</option>
