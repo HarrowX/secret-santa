@@ -163,9 +163,12 @@ test('organizer and anonymous participants complete the game in the browser', as
   await ania.reload()
   await expect(ania.getByText('Вы дарите: Борис')).toBeVisible()
   await expect(ania.getByText('Желания: Книга')).toBeVisible()
+  await expect(ania.getByRole('button', { name: 'Получателю' })).toBeVisible()
+  await expect(ania.getByRole('button', { name: 'Получателю' })).toHaveAttribute('aria-pressed', 'true')
 
   await boris.reload()
-  await expect(boris.getByRole('tab', { name: 'От Санты' })).toBeVisible()
+  await expect(boris.getByRole('button', { name: 'От Санты' })).toBeVisible()
+  await expect(boris.getByRole('button', { name: 'От Санты' })).toHaveAttribute('aria-pressed', 'true')
 
   await expect(
     ania

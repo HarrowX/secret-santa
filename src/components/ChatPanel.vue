@@ -155,13 +155,12 @@ async function send() {
     </p>
 
     <template v-else>
-      <div class="mt-3 flex flex-wrap gap-2" role="tablist" aria-label="Выбор собеседника">
+      <div class="mt-3 flex flex-wrap gap-2">
         <button
           v-for="tab in tabs"
           :key="tab.key"
           type="button"
-          role="tab"
-          :aria-selected="activeTab === tab.key"
+          :aria-pressed="activeTab === tab.key"
           class="rounded-full border px-3 py-1 text-xs transition"
           :class="activeTab === tab.key ? 'border-transparent' : 'border-white/20 opacity-70'"
           :style="activeTab === tab.key ? { background: accent, color: '#0b1120' } : {}"
