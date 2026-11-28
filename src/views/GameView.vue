@@ -63,7 +63,6 @@ const questionType = ref('text')
 const questionRequired = ref(false)
 const questionCount = computed(() => data.value?.questions?.length ?? 0)
 const gameToken = computed(() => String(route.params.token ?? ''))
-const gameLabel = computed(() => (gameToken.value ? gameToken.value.slice(0, 8) : '—'))
 const reminderRecipientSummary = computed(() => {
   if (!reminderRecipients.value.length) return 'Получатели не выбраны'
   const selected = new Set(reminderRecipients.value.map(Number))
@@ -447,7 +446,7 @@ function saveTenant() {
 
     <div class="mt-8">
       <p class="text-xs font-semibold uppercase tracking-[0.3em] opacity-60">
-        Игра · {{ gameLabel }}<span v-if="data?.game.format"> · {{ data.game.format }}</span>
+        Игра<span v-if="data?.game.format"> · {{ data.game.format }}</span>
       </p>
       <h1 class="mt-2 text-3xl font-bold tracking-tight sm:text-4xl">{{ data?.game.title ?? 'Загрузка игры' }}</h1>
     </div>

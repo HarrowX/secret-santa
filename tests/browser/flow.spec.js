@@ -30,6 +30,11 @@ test('organizer and anonymous participants complete the game in the browser', as
   await organizer.getByRole('main').getByRole('button', { name: 'Создать игру' }).click()
   await expect(organizer).toHaveURL(/\/game\//)
   await expect(organizer.getByRole('heading', { name: 'Браузерная игра' })).toBeVisible()
+  const gameTokenPrefix = new URL(organizer.url()).pathname.split('/').filter(Boolean).pop().slice(0, 8)
+  const gameHeader = organizer.getByRole('heading', { name: 'Браузерная игра' }).locator('xpath=..')
+  await expect(gameHeader.getByText('Игра', { exact: true })).toBeVisible()
+  await expect(gameHeader.getByText(gameTokenPrefix, { exact: false })).toHaveCount(0)
+  await expect(gameHeader.getByText('Игра · —', { exact: false })).toHaveCount(0)
   await expect(
     organizer.getByText('Добавляйте участников, выполняйте жеребьёвку и настраивайте пары вручную', { exact: true }),
   ).toBeVisible()
