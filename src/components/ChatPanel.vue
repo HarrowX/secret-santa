@@ -216,22 +216,30 @@ async function send() {
       </div>
 
       <form class="mt-3 grid gap-2" @submit.prevent="send">
-        <textarea
-          v-model="body"
-          rows="2"
-          maxlength="1000"
-          placeholder="Написать анонимно"
-          aria-label="Текст сообщения"
-          class="rounded-xl border border-white/15 bg-white/5 px-3 py-2 text-sm outline-none focus:border-white/40"
-        ></textarea>
-        <input
-          v-model="imageUrl"
-          type="url"
-          maxlength="500"
-          placeholder="Ссылка на изображение (необязательно)"
-          aria-label="Ссылка на изображение"
-          class="rounded-xl border border-white/15 bg-white/5 px-3 py-2 text-sm outline-none focus:border-white/40"
-        />
+        <label class="grid gap-1 text-sm">
+          <span class="text-xs font-semibold uppercase tracking-widest opacity-60">Текст сообщения</span>
+          <textarea
+            v-model="body"
+            rows="2"
+            maxlength="1000"
+            placeholder="Привет! Спасибо за подарок."
+            aria-label="Текст сообщения"
+            class="rounded-xl border border-white/15 bg-white/5 px-3 py-2 text-sm outline-none focus:border-white/40"
+          ></textarea>
+        </label>
+        <label class="grid gap-1 text-sm">
+          <span class="text-xs font-semibold uppercase tracking-widest opacity-60">
+            Ссылка на изображение (необязательно)
+          </span>
+          <input
+            v-model="imageUrl"
+            type="url"
+            maxlength="500"
+            placeholder="https://example.com/gift.jpg"
+            aria-label="Ссылка на изображение"
+            class="rounded-xl border border-white/15 bg-white/5 px-3 py-2 text-sm outline-none focus:border-white/40"
+          />
+        </label>
         <p v-if="error" role="alert" class="text-xs text-rose-300">{{ error }}</p>
         <button
           type="submit"

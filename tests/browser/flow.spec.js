@@ -105,6 +105,23 @@ test('organizer and anonymous participants complete the game in the browser', as
   await boris.reload()
   await expect(boris.getByRole('tab', { name: 'От Санты' })).toBeVisible()
 
+  await expect(
+    ania
+      .locator('label')
+      .filter({ has: ania.getByLabel('Текст сообщения') })
+      .locator('span')
+      .getByText('Текст сообщения', { exact: true }),
+  ).toBeVisible()
+  await expect(
+    ania
+      .locator('label')
+      .filter({ has: ania.getByLabel('Ссылка на изображение') })
+      .locator('span')
+      .getByText('Ссылка на изображение (необязательно)', { exact: true }),
+  ).toBeVisible()
+  await expect(ania.getByLabel('Текст сообщения')).toHaveAttribute('placeholder', 'Привет! Спасибо за подарок.')
+  await expect(ania.getByLabel('Ссылка на изображение')).toHaveAttribute('placeholder', 'https://example.com/gift.jpg')
+
   await ania.getByLabel('Текст сообщения').fill('Привет, Борис!')
   await ania.getByRole('button', { name: 'Отправить' }).click()
   await expect(ania.getByText('Привет, Борис!')).toBeVisible()
