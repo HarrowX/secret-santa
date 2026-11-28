@@ -103,6 +103,12 @@ test('organizer and anonymous participants complete the game in the browser', as
     organizer.getByText('Прошлых игр пока нет. Они появятся здесь после вашего участия в игре.', { exact: true }),
   ).toBeVisible()
   await expect(organizer.getByText('Войдите и поучаствуйте в игре', { exact: false })).toHaveCount(0)
+  const progressCard = organizer.getByRole('heading', { name: 'Прогресс игры', exact: true }).locator('xpath=..')
+  const giftInstruction =
+    'Отмечайте подарки вручную: выберите участника и нажмите действие. Отметка сразу обновит прогресс игры.'
+  await expect(progressCard.getByText(giftInstruction, { exact: true })).toBeVisible()
+  await expect(progressCard.getByText('Отметить подарок', { exact: false })).toHaveCount(0)
+  await expect(progressCard.getByText('Статус подарка', { exact: false })).toHaveCount(0)
   await expect(
     organizer
       .locator('label')

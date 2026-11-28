@@ -775,6 +775,9 @@ function saveTenant() {
             </div>
           </div>
         </div>
+        <p v-if="data.canManage" class="mt-4 text-sm opacity-60">
+          Отмечайте подарки вручную: выберите участника и нажмите действие. Отметка сразу обновит прогресс игры.
+        </p>
         <form v-if="data.canManage" class="mt-4 flex flex-wrap gap-2" @submit.prevent="markGift('sent')">
           <label class="grid gap-1 text-sm">
             <span class="text-xs font-semibold uppercase tracking-widest opacity-60">Участник для отметки подарка</span>
