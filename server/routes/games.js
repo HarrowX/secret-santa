@@ -84,8 +84,21 @@ function parseOptions(raw) {
   }
 }
 
+function normalizeQuestion(question) {
+  const options = parseOptions(question.options)
+  if (!['single', 'multi'].includes(question.type) || options?.length) {
+    return { ...question, options }
+  }
+  const legacyOptions = String(question.hint ?? '')
+    .split(',')
+    .map((item) => item.trim())
+    .filter(Boolean)
+  if (!legacyOptions.length) return { ...question, options }
+  return { ...question, hint: '', options: legacyOptions }
+}
+
 function serializeQuestion(question) {
-  return { ...question, options: parseOptions(question.options) }
+  return normalizeQuestion(question)
 }
 
 function normalizeOptions(type, options) {
@@ -215,7 +228,7 @@ function validateAnswer(question, value) {
   if (question.type === 'boolean' && !['да', 'нет', 'true', 'false', '1', '0'].includes(String(value).toLowerCase())) {
     fail(400, `Вопрос «${question.title}» требует да/нет`)
   }
-  const options = parseOptions(question.options)
+  const options = normalizeQuestion(question).options
   if (question.type === 'single') {
     if (!options?.includes(String(value))) fail(400, `Недопустимый вариант для вопроса «${question.title}»`)
   }
@@ -915,7 +928,7 @@ gamesRouter.patch('/:id/questions/:questionId', validateBody(schemas.questionUpd
         ? question.options
         : null
       : normalizeOptions(type, req.body.options)
-  if (['single', 'multi'].includes(type) && !parseOptions(options)?.length) {
+  if (['single', 'multi'].includes(type) && !normalizeQuestion({ type, hint, options }).options?.length) {
     fail(400, 'Для вопросов с выбором нужны варианты')
   }
 
@@ -1046,16 +1059,19 @@ gamesRouter.get('/:id/recipient-answers', (req, res) => {
     `,
     )
     .all(pair.to_id, id)
-    .map((row) => ({
-      questionId: row.question_id,
-      title: row.title,
-      hint: row.hint,
-      type: row.type,
-      options: parseOptions(row.options),
-      required: Boolean(row.required),
-      position: row.position,
-      value: row.value ?? '',
-    }))
+    .map((row) => {
+      const question = serializeQuestion(row)
+      return {
+        questionId: row.question_id,
+        title: question.title,
+        hint: question.hint,
+        type: question.type,
+        options: question.options,
+        required: Boolean(row.required),
+        position: row.position,
+        value: row.value ?? '',
+      }
+    })
 
   res.json({ participant: recipient, answers })
 })

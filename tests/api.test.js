@@ -745,6 +745,64 @@ describe('API', () => {
     assert.match(limit.body.error.message, /10 вопросов/)
   })
 
+  it('понимает старые вопросы с выбором, где варианты лежат в подсказке', async () => {
+    const owner = await request('POST', '/auth/session', {})
+    const headers = cookieHeader(owner)
+    const game = await createGame('Старые вопросы', headers)
+    const people = await addParticipants(game.token, ['Аня'], headers)
+    const storedGame = db.prepare('SELECT id FROM games WHERE token = ?').get(game.token)
+    const legacyInsert = db
+      .prepare(
+        `
+        INSERT INTO questions (game_id, title, hint, type, options, required, position)
+        VALUES (?, ?, ?, ?, ?, ?, ?)
+      `,
+      )
+      .run(storedGame.id, 'Любимый цвет', 'Синий, Зелёный, Красный', 'single', null, 0, 1)
+    const legacyId = Number(legacyInsert.lastInsertRowid)
+
+    const modern = await request(
+      'POST',
+      `/games/${game.token}/questions`,
+      {
+        title: 'Любимый напиток',
+        hint: 'Например, чай',
+        type: 'single',
+        options: ['Чай', 'Кофе'],
+        position: 2,
+      },
+      headers,
+    )
+    assert.equal(modern.status, 201)
+    assert.equal(modern.body.hint, 'Например, чай')
+    assert.deepEqual(modern.body.options, ['Чай', 'Кофе'])
+
+    const listed = await request('GET', `/games/${game.token}/questions`, undefined, headers)
+    assert.equal(listed.status, 200)
+    const legacy = listed.body.find((question) => question.id === legacyId)
+    assert.deepEqual(legacy.options, ['Синий', 'Зелёный', 'Красный'])
+    assert.equal(legacy.hint, '')
+    const modernListed = listed.body.find((question) => question.id === modern.body.id)
+    assert.equal(modernListed.hint, 'Например, чай')
+    assert.deepEqual(modernListed.options, ['Чай', 'Кофе'])
+
+    const invalid = await request(
+      'PUT',
+      `/games/${game.token}/participants/${people[0].id}/answers`,
+      { answers: [{ questionId: legacyId, value: 'Жёлтый' }] },
+      { 'x-invite-token': people[0].invite_token, 'x-test-no-cookies': true },
+    )
+    assert.equal(invalid.status, 400)
+
+    const saved = await request(
+      'PUT',
+      `/games/${game.token}/participants/${people[0].id}/answers`,
+      { answers: [{ questionId: legacyId, value: 'Зелёный' }] },
+      { 'x-invite-token': people[0].invite_token, 'x-test-no-cookies': true },
+    )
+    assert.equal(saved.status, 200)
+  })
+
   it('приглашает организатора по ссылке и защищает последнего организатора', async () => {
     const owner = await request('POST', '/auth/session', {})
     const session = await request('POST', '/auth/session', {})
